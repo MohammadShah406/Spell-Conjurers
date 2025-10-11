@@ -3,6 +3,9 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
     private ICustomBehavior behavior;
+    public GameObject projectilePrefab;
+    public Transform firePoint;
+    public float moveSpeed = 5f;
 
     void Start()
     {

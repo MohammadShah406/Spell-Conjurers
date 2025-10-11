@@ -15,6 +15,7 @@ public static class RuntimeCompiler
     {
         string wrappedCode = $@"
 using UnityEngine;
+using static UnityEngine.Object;
 
 public class DynamicBehavior : ICustomBehavior
 {{
