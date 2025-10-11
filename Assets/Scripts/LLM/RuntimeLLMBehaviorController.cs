@@ -97,6 +97,7 @@ public class RuntimeLLMBehaviorController : MonoBehaviour
     private async Task<string> GenerateCodeFromLLM(string prompt)
     {
         string endpoint = "https://api.openai.com/v1/chat/completions";
+        prompt += "You are a Unity C# coding assistant. Only return code inside Update(player)." + "\r\nGenerate only the contents of the Update(Player player) method.\\r\\nDo NOT include `void Update` or the class.\\r\\nDo NOT include any other methods. If it is a projectile add projectile behavior as well";
 
         ChatRequest requestData = new ChatRequest
         {
@@ -106,9 +107,18 @@ public class RuntimeLLMBehaviorController : MonoBehaviour
                 new ChatMessage
                 {
                     role = "system",
-                    content = "You are a Unity C# scripting assistant. Generate only valid C# code for the body of an Update(Player player) method. The Player class has public fields like projectilePrefab (GameObject)," +
-                    " firePoint (Transform), and moveSpeed (float). Always access them as player.projectilePrefab etc. Use Object.Instantiate() for spawning.  No comments or explanations. Raw code Only. You are a Unity C# coding assistant. Only return code inside Update(player)." +
-                    "Generate only the contents of the Update(Player player) method.\r\nDo NOT include `void Update` or the class.\r\nDo NOT include any other methods.\r\nUse `player.transform` to access the player."
+                    content = "You are a Unity C# scripting assistant. " +
+                              "Generate only valid C# code for the body of an Update(Player player) method. " +
+                              "The Player class has these public fields: " +
+                              "projectilePrefab (GameObject), firePoint (Transform), and moveSpeed (float). " +
+                              "Always access them as player.projectilePrefab, player.firePoint, and player.moveSpeed. " +
+                              "Use Object.Instantiate() for spawning. " +
+                              "Use Input.GetKey or GetKeyDown for input. " +
+                              "Never break the following rules: No comments, no explanations, no class definitions, no Update() method wrapper. " +
+                              "Output only the raw C# code that goes inside Update(Player player). " +
+                              "Use player.transform for movement and transformations, and only if requested" +
+                              "Never assume new variables or field names. " +
+                              "Respond only with code — no markdown or text formatting."
                 },
                 new ChatMessage
                 {

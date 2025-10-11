@@ -15,6 +15,7 @@ public class Player : MonoBehaviour
     void Update()
     {
         behavior?.Update(this);
+        
     }
 
     public void SetBehavior(ICustomBehavior newBehavior)
