@@ -35,6 +35,11 @@ public class GridManager : MonoBehaviour
             }
         }
         SpawnPlayer();
+        
+    }
+
+    public void Start()
+    {
         SpawnEnemies(enemyCount);
     }
 
@@ -65,7 +70,6 @@ public class GridManager : MonoBehaviour
         playerTransform = playerObj.transform;
         GetTile(playerStartPos).occupant = playerObj;
 
-        // Optionally initialize player if your Player script needs it
         var playerScript = playerObj.GetComponent<Player>();
         if (playerScript != null)
         {

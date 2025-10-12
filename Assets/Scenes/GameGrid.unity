@@ -150,6 +150,7 @@ Transform:
   - {fileID: 1828248410}
   - {fileID: 2013295177}
   - {fileID: 1901604357}
+  - {fileID: 1151854937}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &273676328
@@ -441,6 +442,60 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+--- !u!1 &1151854936
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1151854937}
+  - component: {fileID: 1151854938}
+  m_Layer: 0
+  m_Name: JsonManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1151854937
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1151854936}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 125494047}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1151854938
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1151854936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2715d8799353e964889b4c9625505808, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  location: Spells
+  current:
+    damage: 0
+    accuracy: 0
+    resourceCost: 0
+    range: 0
+    selfDamage: 0
+    support: 0
+    name: 
+    description: 
 --- !u!1 &1828248409
 GameObject:
   m_ObjectHideFlags: 0
@@ -485,8 +540,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c93df5d4b2bfd9e48b1c2e125e3c9973, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 10
-  height: 10
+  width: 12
+  height: 12
   tilePrefab: {fileID: 3302588247465112586, guid: 63f9be8374ec34a4faa56fd0fc4f63a9, type: 3}
   map: {fileID: 273676328}
   enemyCount: 3
@@ -538,6 +593,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enemies: []
+  player: {fileID: 0}
 --- !u!1 &2013295176
 GameObject:
   m_ObjectHideFlags: 0

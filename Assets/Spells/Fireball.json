@@ -1,0 +1,10 @@
+{
+    "damage": 50,
+    "accuracy": 80,
+    "resourceCost": 10,
+    "range": 15,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Fireball",
+    "description": "A fiery projectile that burns enemies."
+}

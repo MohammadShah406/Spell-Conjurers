@@ -12,6 +12,8 @@ public class Enemy : MonoBehaviour
     private GridManager gridManager;
     private Transform player;
 
+    public Spell[] spells = new Spell[4];
+
     public void Initialize(Vector2Int startPos, GridManager grid, Transform playerRef)
     {
         gridPosition = startPos;
@@ -22,6 +24,8 @@ public class Enemy : MonoBehaviour
         grid.GetTile(startPos).occupant = gameObject;
 
         StartCoroutine(FacePlayer());
+
+        InitializeSpells();
     }
 
     public IEnumerator TakeTurn(System.Action onComplete)
@@ -154,6 +158,14 @@ public class Enemy : MonoBehaviour
             }
 
             transform.rotation = targetRotation;
+        }
+    }
+
+    private void InitializeSpells()
+    {
+        for(int i =0; i< spells.Length;i++)
+        {
+            spells[i] = JsonManager.Instance.ReturnRandomSpell();
         }
     }
 

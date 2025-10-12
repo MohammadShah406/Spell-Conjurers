@@ -6,6 +6,7 @@ public class EnemyManager : MonoBehaviour
 {
     public List<Enemy> enemies = new List<Enemy>();
     private bool isTakingTurn;
+    public Transform player;
 
     public void AddEnemy(Enemy enemy)
     {
