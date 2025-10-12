@@ -21,7 +21,7 @@ public class Sandbox : MonoBehaviour
             Debug.Log($"{movementCode}");
 
             var behavior = await RuntimeCompiler.CompileBehavior(movementCode);
-            player.SetBehavior(behavior);
+            //player.SetBehavior(behavior);
         }
     }
 }

@@ -14,7 +14,7 @@ public class OpenAIConfig
 
         if (!File.Exists(path))
         {
-            Debug.LogError($"❌ Missing config file: {path}");
+            Debug.LogError($"Missing config file: {path}");
             return null;
         }
 
@@ -23,12 +23,12 @@ public class OpenAIConfig
             string json = File.ReadAllText(path);
             OpenAIConfig config = JsonUtility.FromJson<OpenAIConfig>(json);
             if (string.IsNullOrEmpty(config.apiKey))
-                Debug.LogWarning("⚠️ API key is empty in openai_config.json");
+                Debug.LogWarning("API key is empty in openai_config.json");
             return config;
         }
         catch (Exception ex)
         {
-            Debug.LogError($"❌ Failed to load OpenAI config: {ex.Message}");
+            Debug.LogError($"Failed to load OpenAI config: {ex.Message}");
             return null;
         }
     }

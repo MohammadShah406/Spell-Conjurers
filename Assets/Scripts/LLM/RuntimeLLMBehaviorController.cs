@@ -8,9 +8,15 @@ using System.IO;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.Networking;
+using TMPro;
+using static UnityEngine.GraphicsBuffer;
+using UnityEngine.UIElements.Experimental;
 
 public class RuntimeLLMBehaviorController : MonoBehaviour
 {
+    [Header("UI References")]
+    public List<TMP_InputField> skillInputs;
+
     public string apiKey;
     public string model = "gpt-4o-mini";
 
@@ -42,25 +48,50 @@ public class RuntimeLLMBehaviorController : MonoBehaviour
 
     private void Update()
     {
-        currentBehavior?.Update(player);
+        //currentBehavior?.Update(player);
     }
 
-    private void OnGUI()
+    public void OnGenerateButtonClicked()
     {
-        GUI.Label(new Rect(20, 20, 200, 25), "Enter Prompt:");
-        userPrompt = GUI.TextField(new Rect(20, 50, 400, 25), userPrompt);
+        StartCoroutine(GenerateAllSkills());
+    }
 
-        if (GUI.Button(new Rect(430, 50, 80, 25), "Run") && !isGenerating)
+    private IEnumerator GenerateAllSkills()
+    {
+        if (isGenerating)
         {
-            if (!string.IsNullOrWhiteSpace(userPrompt))
-                StartCoroutine(GenerateAndCompileBehavior(userPrompt));
+            Debug.LogWarning("Already generating skills");
+            yield break;
         }
+
+        isGenerating = true;
+        player.skills.Clear(); // reset old skills
+        for (int i = 0; i < skillInputs.Count; i++)
+        {
+            string prompt = skillInputs[i].text;
+            if (string.IsNullOrWhiteSpace(prompt)) continue;
+
+            yield return GenerateAndCompileBehavior(prompt, i);
+        }
+        Debug.Log($"Finished generating {player.skills.Count} skills.");
+        isGenerating = false;
     }
 
-    private IEnumerator GenerateAndCompileBehavior(string prompt)
+    //private void OnGUI()
+    //{
+    //    GUI.Label(new Rect(20, 20, 200, 25), "Enter Prompt:");
+    //    userPrompt = GUI.TextField(new Rect(20, 50, 400, 25), userPrompt);
+
+    //    if (GUI.Button(new Rect(430, 50, 80, 25), "Run") && !isGenerating)
+    //    {
+    //        if (!string.IsNullOrWhiteSpace(userPrompt))
+    //            StartCoroutine(GenerateAndCompileBehavior(userPrompt));
+    //    }
+    //}
+
+    private IEnumerator GenerateAndCompileBehavior(string prompt, int index)
     {
-        isGenerating = true;
-        Debug.Log($"Sending prompt: {prompt}");
+        Debug.Log($"[Skill {index}] Sending prompt: {prompt}");
 
         Task<string> task = GenerateCodeFromLLM(prompt);
         yield return new WaitUntil(() => task.IsCompleted);
@@ -68,36 +99,34 @@ public class RuntimeLLMBehaviorController : MonoBehaviour
         string code = task.Result;
         if (string.IsNullOrEmpty(code))
         {
-            Debug.LogError("LLM returned empty code.");
-            isGenerating = false;
+            Debug.LogError($"[Skill {index}] LLM returned empty code.");
             yield break;
         }
 
         code = ExtractCodeFromResponse(code);
-        Debug.Log($"Generated Code:\n{code}");
+        Debug.Log($"[Skill {index}] Generated Code:\n{code}");
 
         var behaviorTask = RuntimeCompiler.CompileBehavior(code);
         yield return new WaitUntil(() => behaviorTask.IsCompleted);
 
-        currentBehavior = behaviorTask.Result;
-
-        if (currentBehavior != null)
+        ICustomBehavior compiledSkill = behaviorTask.Result;
+        if (compiledSkill != null)
         {
-            Debug.Log("Behavior compiled and applied!");
-            currentBehavior.Start(player);
+            player.skills.Add(compiledSkill);
+            compiledSkill.Start(player);
+            Debug.Log($"[Skill {index}] Skill compiled and added to player.");
         }
         else
         {
-            Debug.LogError("Failed to compile behavior.");
+            Debug.LogError($"[Skill {index}] Failed to compile skill.");
         }
-
-        isGenerating = false;
     }
 
     private async Task<string> GenerateCodeFromLLM(string prompt)
     {
         string endpoint = "https://api.openai.com/v1/chat/completions";
 
+        prompt += "You are a Unity C# coding assistant. Only return code inside Update(player)." + "\r\nGenerate only the contents of the Update(Player player) method.\r\nDo NOT include void Update or the class.\r\nDo NOT include any other methods. If it is a projectile add projectile behavior as well";
         ChatRequest requestData = new ChatRequest
         {
             model = model,
@@ -108,7 +137,12 @@ public class RuntimeLLMBehaviorController : MonoBehaviour
                     role = "system",
                     content = "You are a Unity C# scripting assistant. Generate only valid C# code for the body of an Update(Player player) method. The Player class has public fields like projectilePrefab (GameObject)," +
                     " firePoint (Transform), and moveSpeed (float). Always access them as player.projectilePrefab etc. Use Object.Instantiate() for spawning.  No comments or explanations. Raw code Only. You are a Unity C# coding assistant. Only return code inside Update(player)." +
-                    "Generate only the contents of the Update(Player player) method.\r\nDo NOT include `void Update` or the class.\r\nDo NOT include any other methods.\r\nUse `player.transform` to access the player."
+                    "Generate only the contents of the Update(Player player) method.\r\nDo NOT include `void Update` or the class.\r\nDo NOT include any other methods.\r\nUse `player.transform` to access the player." +
+                    "You are a Unity C# coding assistant. Only return code inside Update(player)." + "\r\nGenerate only the contents of the Update(Player player) method.\r\nDo NOT include void Update or the class.\r\nDo NOT include any other methods. If it is a projectile add projectile behavior as well" +
+                    "with the exact structure and field names as described." + "make sure the input of each skills are 1 , 2 , 3 , 4" +
+                    "Template: [int damage, int accuracy, int resourceCost, int range, int selfDamage, bool support, string name, string description]"+
+                    "E.g.:      [10, 80, 2, 2, 0, false, Fireball, Hurls a fireball dealing single target damage.]" +
+                    "E.g.:      [0, 100, 4, 3, -10, true, Healing Ray, Heals the target with soothing rays.]"
                 },
                 new ChatMessage
                 {
@@ -130,6 +164,7 @@ public class RuntimeLLMBehaviorController : MonoBehaviour
 
             var operation = request.SendWebRequest();
             while (!operation.isDone)
+
                 await Task.Yield();
 
             if (request.result != UnityWebRequest.Result.Success)
