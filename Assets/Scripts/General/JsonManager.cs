@@ -48,7 +48,7 @@ public class JsonManager : MonoBehaviour
         
 
         
-        DontDestroyOnLoad(gameObject); // Optional: keeps it across scenes
+        DontDestroyOnLoad(gameObject); // Keep it across scenes
 
         // Ensure the folder exists inside project
         if (!Directory.Exists(FolderPath))
