@@ -1,11 +1,15 @@
 {
-    "damage": 2,
-    "accuracy": 80,
+    "damage": 3,
+    "accuracy": 90,
     "resourceCost": 10,
     "range": 2,
     "selfDamage": 0,
     "support": false,
     "name": "Fireball",
-    "description": "A fiery projectile that does moderate single target damage",
-    "code": "string actionLog = \"\";\r\n        if (spell.damage > 0)\r\n        {\r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" dealt \" + spell.damage + \" to \" + to.name + \". \";\r\n        }\r\n        if (spell.selfDamage > 0)\r\n        {\r\n            from.GetComponent<Stats>().takeDamage(spell.selfDamage);\r\n            actionLog += from.name + \" dealt \" + spell.selfDamage + \" to itself. \";\r\n        }"
+    "description": "Hurls a blazing orb that explodes on impact.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" hurled a Fireball at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(spell.status, spell.statusDuration, spell.statusDamagePerTurn);\r\n        \r\n        ",
+    "spellVisualType": "Sphere",
+    "status": "Burn",
+    "statusDuration": 2,
+    "statusDamagePerTurn": 1
 }

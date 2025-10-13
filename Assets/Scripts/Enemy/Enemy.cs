@@ -129,8 +129,8 @@ public class Enemy : MonoBehaviour
                 AttackPlayer();
             }
         }
-
-            onComplete?.Invoke();
+        SyncGridPosition();
+        onComplete?.Invoke();
     }
 
     private IEnumerator MoveTo(Vector2Int targetPos)
@@ -147,7 +147,37 @@ public class Enemy : MonoBehaviour
         }
 
         transform.position = end;
+        SyncGridPosition();
     }
+
+    public void SyncGridPosition()
+    {
+        if (gridManager == null || gridManager.grid == null)
+            return;
+
+        // Calculate nearest grid coordinates
+        Vector2Int newPos = new Vector2Int(
+            Mathf.RoundToInt(transform.position.x),
+            Mathf.RoundToInt(transform.position.z)
+        );
+
+        // If position changed, clear the old tile
+        if (newPos != gridPosition)
+        {
+            Tile oldTile = gridManager.GetTile(gridPosition);
+            if (oldTile != null && oldTile.occupant == gameObject)
+                oldTile.occupant = null;
+        }
+
+        // Update to new position
+        Tile newTile = gridManager.GetTile(newPos);
+        if (newTile != null)
+        {
+            newTile.occupant = gameObject;
+            gridPosition = newPos;
+        }
+    }
+
 
     private IEnumerator FacePlayer()
     {

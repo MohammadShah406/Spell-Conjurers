@@ -28,15 +28,20 @@ public class JsonManager : MonoBehaviour
         //Making New spell
         current = new Spell
         {
-            name = "Different Nether Swap",
-            damage = 0,
-            accuracy = 100,
+            damage = 1,
+            accuracy = 90,
             resourceCost = 10,
-            range = 20,
+            range = 10,
             selfDamage = 0,
             support = false,
-            description = "Swap positions with target",
-            code = "string actionLog = \"\";\r\n        Vector3 fromPos = from.transform.position;\r\n        Vector3 toPos = to.transform.position;\r\n        from.transform.position = toPos;\r\n        to.transform.position = fromPos;\r\n        actionLog += from.name + \" swapped positions with \" + to.name + \".\";",
+            name = "Ice Lance",
+            description = "Hurls an ice lance at surprising accuracy",
+            code = "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" hurled a Fireball at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(spell.status, spell.statusDuration, spell.statusDamagePerTurn);\r\n        \r\n        ",
+            spellVisualType = "Sphere",
+            status = "None",
+            statusDuration = 0,
+            statusDamagePerTurn = 0
+
         };
         CreateJsonFile(current);
     }

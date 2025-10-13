@@ -13,4 +13,9 @@ public class Spell
     public string description;
     public string code;
 
+    public string spellVisualType;
+    public string status;
+    public int statusDuration;
+    public int statusDamagePerTurn;
+
 }

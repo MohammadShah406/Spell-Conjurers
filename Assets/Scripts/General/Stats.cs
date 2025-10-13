@@ -1,3 +1,5 @@
+using JetBrains.Annotations;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class Stats : MonoBehaviour
@@ -24,5 +26,17 @@ public class Stats : MonoBehaviour
         {
             Debug.Log("Gameobject " + gameObject.name + " died");
         }
+
     }
+
+    public void StatusDamage(string name, int duration, int dot)
+    {
+        Debug.Log("Status name: " + name + "\n Status duration: " + duration + "\n dot: " + dot);
+        Debug.Log(name + " applied");
+
+
+        //apply status dmg like burn here. It will take damage every turn
+    }
+
+
 }
