@@ -11,6 +11,6 @@ public class Spell
     public bool support;
     public string name;
     public string description;
-
+    public string code;
 
 }

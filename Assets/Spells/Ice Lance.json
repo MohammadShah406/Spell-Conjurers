@@ -6,5 +6,6 @@
     "selfDamage": 0,
     "support": false,
     "name": "Ice Lance",
-    "description": "An icy projectile with surprising accuracy."
+    "description": "An icy projectile with surprising accuracy.",
+    "code": "string actionLog = \"\";\r\n        if (spell.damage > 0)\r\n        {\r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" dealt \" + spell.damage + \" to \" + to.name + \". \";\r\n        }\r\n        if (spell.selfDamage > 0)\r\n        {\r\n            from.GetComponent<Stats>().takeDamage(spell.selfDamage);\r\n            actionLog += from.name + \" dealt \" + spell.selfDamage + \" to itself. \";\r\n        }"
 }

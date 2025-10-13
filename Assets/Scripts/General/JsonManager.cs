@@ -28,14 +28,15 @@ public class JsonManager : MonoBehaviour
         //Making New spell
         current = new Spell
         {
-            name = "Ice Lance",
-            damage = 1,
-            accuracy = 90,
+            name = "Different Nether Swap",
+            damage = 0,
+            accuracy = 100,
             resourceCost = 10,
-            range = 5,
+            range = 20,
             selfDamage = 0,
             support = false,
-            description = "An icy projectile with surprising accuracy."
+            description = "Swap positions with target",
+            code = "string actionLog = \"\";\r\n        Vector3 fromPos = from.transform.position;\r\n        Vector3 toPos = to.transform.position;\r\n        from.transform.position = toPos;\r\n        to.transform.position = fromPos;\r\n        actionLog += from.name + \" swapped positions with \" + to.name + \".\";",
         };
         CreateJsonFile(current);
     }

@@ -15,18 +15,6 @@ public class ActionManager : MonoBehaviour
         }
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
     public void UseSpell(Spell spell, GameObject from, GameObject to)
     {
         int roll = Random.Range(0, 101);
@@ -37,17 +25,22 @@ public class ActionManager : MonoBehaviour
         }
 
 
-        string actionLog = "";
-        if (spell.damage > 0)
-        {
-            to.GetComponent<Stats>().takeDamage(spell.damage);
-            actionLog += from.name + " dealt " + spell.damage + " to " + to.name + ". ";
-        }
-        if (spell.selfDamage > 0) 
-        {
-            from.GetComponent<Stats>().takeDamage(spell.selfDamage);
-            actionLog += from.name + " dealt " + spell.selfDamage + " to itself. ";
-        }
-        
+        //string actionLog = "";
+        //if (spell.damage > 0)
+        //{
+        //    to.GetComponent<Stats>().takeDamage(spell.damage);
+        //    actionLog += from.name + " dealt " + spell.damage + " to " + to.name + ". ";
+        //}
+        //if (spell.selfDamage > 0)
+        //{
+        //    from.GetComponent<Stats>().takeDamage(spell.selfDamage);
+        //    actionLog += from.name + " dealt " + spell.selfDamage + " to itself. ";
+        //}
+
+        SpellFunction.Instance.SetVariables(spell, from, to);
+        SpellFunction.Instance.CustomSpellFunction();
+
     }
 }
+
+

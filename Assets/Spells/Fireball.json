@@ -6,5 +6,6 @@
     "selfDamage": 0,
     "support": false,
     "name": "Fireball",
-    "description": "A fiery projectile that burns enemies."
+    "description": "A fiery projectile that does moderate single target damage",
+    "code": "string actionLog = \"\";\r\n        if (spell.damage > 0)\r\n        {\r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" dealt \" + spell.damage + \" to \" + to.name + \". \";\r\n        }\r\n        if (spell.selfDamage > 0)\r\n        {\r\n            from.GetComponent<Stats>().takeDamage(spell.selfDamage);\r\n            actionLog += from.name + \" dealt \" + spell.selfDamage + \" to itself. \";\r\n        }"
 }
