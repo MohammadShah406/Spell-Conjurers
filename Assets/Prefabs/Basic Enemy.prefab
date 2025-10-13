@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 8377593967623520930}
   - component: {fileID: 3876828828057110342}
   - component: {fileID: 5745414467886833454}
+  - component: {fileID: 4304294238587302398}
   m_Layer: 0
   m_Name: Basic Enemy
   m_TagString: Untagged
@@ -124,10 +125,58 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb114ef52ce49834ba1da0428a6cd18a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  yPos: 1.5
   gridPosition: {x: 0, y: 0}
   moveRange: 3
   attackRange: 1
   moveSpeed: 5
+  spells:
+  - damage: 0
+    accuracy: 0
+    resourceCost: 0
+    range: 0
+    selfDamage: 0
+    support: 0
+    name: 
+    description: 
+  - damage: 0
+    accuracy: 0
+    resourceCost: 0
+    range: 0
+    selfDamage: 0
+    support: 0
+    name: 
+    description: 
+  - damage: 0
+    accuracy: 0
+    resourceCost: 0
+    range: 0
+    selfDamage: 0
+    support: 0
+    name: 
+    description: 
+  - damage: 0
+    accuracy: 0
+    resourceCost: 0
+    range: 0
+    selfDamage: 0
+    support: 0
+    name: 
+    description: 
+--- !u!114 &4304294238587302398
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2453988585503360838}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e993916f1466c3b4bbff0ccbdd6b79b3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  health: 10
+  armor: 0
 --- !u!1 &3671256503806757496
 GameObject:
   m_ObjectHideFlags: 0

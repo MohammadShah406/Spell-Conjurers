@@ -15,10 +15,9 @@ public class JsonManager : MonoBehaviour
     public Spell current;
 
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    private void Awake()
     {
-
+        Instance = this;
         // Singleton setup
         if (Instance != null && Instance != this)
         {
@@ -26,7 +25,28 @@ public class JsonManager : MonoBehaviour
             return;
         }
 
-        Instance = this;
+        //Making New spell
+        current = new Spell
+        {
+            name = "Ice Lance",
+            damage = 1,
+            accuracy = 90,
+            resourceCost = 10,
+            range = 5,
+            selfDamage = 0,
+            support = false,
+            description = "An icy projectile with surprising accuracy."
+        };
+        CreateJsonFile(current);
+    }
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+
+        
+
+        
         DontDestroyOnLoad(gameObject); // Optional: keeps it across scenes
 
         // Ensure the folder exists inside project
@@ -37,19 +57,7 @@ public class JsonManager : MonoBehaviour
         }
         
 
-        //Making New spell
-        //current = new Spell
-        //{
-        //    name = "Fireball",
-        //    damage = 50,
-        //    accuracy = 80,
-        //    resourceCost = 10,
-        //    range = 15,
-        //    selfDamage = 0,
-        //    support = false,
-        //    description = "A fiery projectile that burns enemies."
-        //};
-        //CreateJsonFile(current);
+        
 
         //Reading random spell
         //current = ReturnRandomJson();
@@ -76,7 +84,7 @@ public class JsonManager : MonoBehaviour
         string json = File.ReadAllText(randomFile);
         Spell spell = JsonUtility.FromJson<Spell>(json);
 
-        Debug.Log($"Loaded Spell: {spell.name}, Damage: {spell.damage}");
+        Debug.Log($"Loaded Spell: {spell.name}");
         return spell;
     }
 

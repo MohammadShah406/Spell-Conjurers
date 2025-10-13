@@ -10,13 +10,14 @@ public class GridManager : MonoBehaviour
     public Tile[,] grid;
 
     [Header("Enemy Settings")]
+    public GameObject EnemyHolder;
     public int enemyCount = 3;
     public EnemyManager enemyManager;
     public GameObject enemyPrefab;
 
     [Header("Player Settings")]
     public GameObject playerPrefab;
-    private Transform playerTransform;
+    private GameObject playerObj;
 
     void Awake()
     {
@@ -57,8 +58,9 @@ public class GridManager : MonoBehaviour
         {
             Vector2Int pos = new Vector2Int(i * 2, height - 1); // back row
             var enemyObj = Instantiate(enemyPrefab);
+            enemyObj.transform.parent = EnemyHolder.transform;
             var enemy = enemyObj.GetComponent<Enemy>();
-            enemy.Initialize(pos, this, playerTransform);
+            enemy.Initialize(pos, this, playerObj);
             enemyManager.AddEnemy(enemy);
         }
     }
@@ -66,11 +68,11 @@ public class GridManager : MonoBehaviour
     private void SpawnPlayer()
     {
         Vector2Int playerStartPos = new Vector2Int(width / 2, 0); // center bottom of grid
-        var playerObj = Instantiate(playerPrefab, new Vector3(playerStartPos.x, 1.5f, playerStartPos.y), Quaternion.identity);
-        playerTransform = playerObj.transform;
-        GetTile(playerStartPos).occupant = playerObj;
+        var instantiatedPlayerObj = Instantiate(playerPrefab, new Vector3(playerStartPos.x, 1.5f, playerStartPos.y), Quaternion.identity);
+        playerObj = instantiatedPlayerObj;
+        GetTile(playerStartPos).occupant = instantiatedPlayerObj;
 
-        var playerScript = playerObj.GetComponent<Player>();
+        var playerScript = instantiatedPlayerObj.GetComponent<Player>();
         if (playerScript != null)
         {
             //playerScript.Initialize(playerStartPos, this);

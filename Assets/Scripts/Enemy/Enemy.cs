@@ -10,11 +10,12 @@ public class Enemy : MonoBehaviour
     public float moveSpeed = 5f;
 
     private GridManager gridManager;
-    private Transform player;
+    private GameObject player;
 
     public Spell[] spells = new Spell[4];
+    public int preffered = 0;
 
-    public void Initialize(Vector2Int startPos, GridManager grid, Transform playerRef)
+    public void Initialize(Vector2Int startPos, GridManager grid, GameObject playerRef)
     {
         gridPosition = startPos;
         gridManager = grid;
@@ -26,12 +27,14 @@ public class Enemy : MonoBehaviour
         StartCoroutine(FacePlayer());
 
         InitializeSpells();
+        PrioriizeSpell();
     }
 
     public IEnumerator TakeTurn(System.Action onComplete)
     {
+        PrioriizeSpell();
         Player playerScript = player.GetComponent<Player>();
-        Tile playerTile = gridManager.GetTile(new Vector2Int(Mathf.RoundToInt(player.position.x), Mathf.RoundToInt(player.position.z)));
+        Tile playerTile = gridManager.GetTile(new Vector2Int(Mathf.RoundToInt(player.transform.position.x), Mathf.RoundToInt(player.transform.position.z)));
 
         if (playerTile == null)
         {
@@ -43,12 +46,12 @@ public class Enemy : MonoBehaviour
         int distToPlayer = Mathf.Abs(playerTile.gridPosition.x - gridPosition.x) +
                            Mathf.Abs(playerTile.gridPosition.y - gridPosition.y);
 
+        attackRange = spells[preffered].range;
+
         //Attack Player if in range
         if (distToPlayer <= attackRange)
         {
-            yield return FacePlayer();
-            Debug.Log($"{name} attacks player!");
-            yield return new WaitForSeconds(0.5f);
+            AttackPlayer();
             onComplete?.Invoke();
             yield break;
         }
@@ -116,12 +119,18 @@ public class Enemy : MonoBehaviour
 
         if (distToPlayer <= attackRange)
         {
-            yield return FacePlayer();
-            Debug.Log($"{name} attacks player after moving!");
-            yield return new WaitForSeconds(0.5f);
+            AttackPlayer();
+        }
+        else
+        {
+            CheckAnySpellRange(distToPlayer);
+            if (distToPlayer <= attackRange)
+            {
+                AttackPlayer();
+            }
         }
 
-        onComplete?.Invoke();
+            onComplete?.Invoke();
     }
 
     private IEnumerator MoveTo(Vector2Int targetPos)
@@ -142,7 +151,7 @@ public class Enemy : MonoBehaviour
 
     private IEnumerator FacePlayer()
     {
-        Vector3 direction = player.position - transform.position;
+        Vector3 direction = player.transform.position - transform.position;
         direction.y = 0; // keep rotation only on the Y-axis
         if (direction != Vector3.zero)
         {
@@ -169,4 +178,35 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    public void PrioriizeSpell()
+    {
+        int rando = Random.Range(0, spells.Length);
+        preffered = rando;
+    }
+
+    public void CheckAnySpellRange(int distToPlayer)
+    {
+
+        for (int i = 0; i < spells.Length; i++)
+        {
+            if (distToPlayer <= spells[i].range)
+            {
+                attackRange = spells[i].range;
+                preffered = i;
+            }
+        }
+    }
+
+    public void AttackPlayer()
+    {
+        if (ActionManager.Instance == null)
+        {
+            Debug.LogError("ActionManager.Instance is null.");
+        }
+
+
+        StartCoroutine(FacePlayer());
+        Debug.Log("Attacking Player with " + spells[preffered].name);
+        ActionManager.Instance.UseSpell(spells[preffered], this.gameObject, player.gameObject);
+    }
 }

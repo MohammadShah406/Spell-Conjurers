@@ -1,0 +1,10 @@
+{
+    "damage": 1,
+    "accuracy": 90,
+    "resourceCost": 10,
+    "range": 5,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Ice Lance",
+    "description": "An icy projectile with surprising accuracy."
+}

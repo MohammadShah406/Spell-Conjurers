@@ -1,8 +1,8 @@
 {
-    "damage": 50,
+    "damage": 2,
     "accuracy": 80,
     "resourceCost": 10,
-    "range": 15,
+    "range": 2,
     "selfDamage": 0,
     "support": false,
     "name": "Fireball",
