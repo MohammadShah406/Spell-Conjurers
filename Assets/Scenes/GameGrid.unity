@@ -316,6 +316,7 @@ GameObject:
   m_Component:
   - component: {fileID: 617360265}
   - component: {fileID: 617360266}
+  - component: {fileID: 617360267}
   m_Layer: 0
   m_Name: ActionManager
   m_TagString: Untagged
@@ -350,6 +351,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd9b7a3b77e6ef84d9bb094c2d285fb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &617360267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 617360264}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3519444a8ecd9294a87dee58009a6dfa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  spell:
+    damage: 0
+    accuracy: 0
+    resourceCost: 0
+    range: 0
+    selfDamage: 0
+    support: 0
+    name: 
+    description: 
+    code: 
+  from: {fileID: 0}
+  to: {fileID: 0}
 --- !u!1 &812325885
 GameObject:
   m_ObjectHideFlags: 0
@@ -541,6 +566,7 @@ MonoBehaviour:
     support: 0
     name: 
     description: 
+    code: 
 --- !u!1 &1753473955
 GameObject:
   m_ObjectHideFlags: 0
