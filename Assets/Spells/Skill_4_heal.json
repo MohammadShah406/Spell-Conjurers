@@ -1,0 +1,15 @@
+{
+    "damage": 0,
+    "accuracy": 100,
+    "resourceCost": 15,
+    "range": 5,
+    "selfDamage": 0,
+    "support": true,
+    "name": "Heal",
+    "description": "Restores health to a target ally",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().heal(spell.damage);\r\n            actionLog += from.name + \" healed \" + to.name + \", restoring \" + spell.damage + \" health. \";\r\n        \r\n        ",
+    "spellVisualType": "Particle",
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}

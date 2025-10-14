@@ -1,0 +1,15 @@
+{
+    "damage": 5,
+    "accuracy": 85,
+    "resourceCost": 12,
+    "range": 15,
+    "selfDamage": 1,
+    "support": false,
+    "name": "Fireball",
+    "description": "Launches a fiery projectile that explodes on impact",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" launched a Fireball at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(spell.status, spell.statusDuration, spell.statusDamagePerTurn);\r\n        \r\n        ",
+    "spellVisualType": "Sphere",
+    "status": "Burn",
+    "statusDuration": 3,
+    "statusDamagePerTurn": 2
+}

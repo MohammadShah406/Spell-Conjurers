@@ -1,0 +1,17 @@
+Output valid JSON only. Do not explain. Do not use markdown or code blocks. Output JSON with the exact structure and field names as described.
+
+{
+    "damage": 1,
+    "accuracy": 90,
+    "resourceCost": 10,
+    "range": 10,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Ice Lance",
+    "description": "Hurls an ice lance at surprising accuracy",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" hurled a Fireball at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(spell.status, spell.statusDuration, spell.statusDamagePerTurn);\r\n        \r\n        ",
+    "spellVisualType": "Sphere",
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}
