@@ -1,0 +1,15 @@
+{
+    "damage": 0,
+    "accuracy": 100,
+    "resourceCost": 20,
+    "range": 30,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Teleport",
+    "description": "Instantly transports the caster to a specified location.",
+    "code": "string actionLog = \"\";\r\n        \r\n            Vector3 targetPosition = new Vector3(targetX, targetY, targetZ);\r\n            from.transform.position = targetPosition;\r\n            actionLog += from.name + \" teleported to \" + targetPosition.ToString() + \".\";\r\n        \r\n        ",
+    "spellVisualType": "Sphere",
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}
