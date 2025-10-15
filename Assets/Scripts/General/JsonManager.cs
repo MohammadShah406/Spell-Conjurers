@@ -8,7 +8,10 @@ public class JsonManager : MonoBehaviour
 
     [Header("Directory Settings")]
     public string location = "Assets/Spells";
+    public string playerLocation = "Assets/PlayerPool";
     private string FolderPath => Path.Combine(Application.dataPath, location.Replace("Assets/", ""));
+    private string playerFolderPath => Path.Combine(Application.dataPath, playerLocation.Replace("Assets/", ""));
+
 
 
     [Header("Latest Spell")]
@@ -61,9 +64,13 @@ public class JsonManager : MonoBehaviour
             Directory.CreateDirectory(FolderPath);
             Debug.Log($"Created folder at {FolderPath}");
         }
-        
+        if (!Directory.Exists(playerFolderPath))
+        {
+            Directory.CreateDirectory(playerFolderPath);
+            Debug.Log($"Created folder at {playerFolderPath}");
+        }
 
-        
+
 
         //Reading random spell
         //current = ReturnRandomJson();
@@ -88,6 +95,29 @@ public class JsonManager : MonoBehaviour
         // Pick a random file
         string randomFile = files[UnityEngine.Random.Range(0, files.Length)];
         string json = File.ReadAllText(randomFile);
+        Spell spell = JsonUtility.FromJson<Spell>(json);
+
+        Debug.Log($"Loaded Spell: {spell.name}");
+        return spell;
+    }
+
+    public Spell ReturnPlayerSpell(int index)
+    {
+        string[] files = Directory.GetFiles(playerFolderPath, "*.json");
+
+        if (files.Length == 0)
+        {
+            Debug.LogWarning("No spell files found in " + playerFolderPath);
+            return null;
+        }
+
+        if (index < 0 || index >= files.Length)
+        {
+            Debug.LogWarning($"Invalid spell index {index}. Only {files.Length} spell files found.");
+            return null;
+        }
+
+        string json = File.ReadAllText(files[index]);
         Spell spell = JsonUtility.FromJson<Spell>(json);
 
         Debug.Log($"Loaded Spell: {spell.name}");

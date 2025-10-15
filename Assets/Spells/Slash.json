@@ -6,10 +6,10 @@
     "selfDamage": 0,
     "support": false,
     "name": "Slash",
-    "description": "A quick and powerful slash that deals damage to the target.",
+    "description": "A quick and precise slash that deals damage to the target.",
     "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" slashed \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n        \r\n        ",
     "spellVisualType": "Blade",
-    "status": "Bleed",
-    "statusDuration": 2,
-    "statusDamagePerTurn": 3
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
 }

@@ -110,12 +110,22 @@ public class LLMController : MonoBehaviour
         }
 
         // Save the JSON file
-        string fileName = $"Skill_{skillIndex}_{prompt.Replace(" ", "_")}.json";
+        Spell spell = new Spell();
+        string fileName = $"{prompt.Replace(" ", "_")}.json";
         string savePath = Path.Combine(Application.dataPath, "Spells", fileName);
 
         try
         {
+            spell = JsonConvert.DeserializeObject<Spell>(skillJson);
+            if (spell == null || string.IsNullOrWhiteSpace(spell.name))
+            {
+                Debug.LogError($"Skill {skillIndex} JSON was invalid or missing skillName.");
+                yield break;
+            }
+            fileName = $"{spell.name.Replace(" ", "_")}.json";
+            savePath = Path.Combine(Application.dataPath, "Spells", fileName);
             File.WriteAllText(savePath, skillJson);
+            UnityEditor.AssetDatabase.Refresh();
             Debug.Log($"Skill {skillIndex} saved to {savePath}");
         }
         catch (Exception ex)

@@ -19,12 +19,22 @@ public class EnemyManager : MonoBehaviour
             StartCoroutine(EnemyTurnRoutine());
     }
 
+    public IEnumerator StartEnemyTurnsCoroutine()
+    {
+        if (isTakingTurn)
+            yield break;
+
+        isTakingTurn = true;
+        yield return StartCoroutine(EnemyTurnRoutine());
+        isTakingTurn = false;
+    }
     private IEnumerator EnemyTurnRoutine()
     {
         isTakingTurn = true;
 
         foreach (var enemy in enemies)
         {
+            enemy.GetComponent<Stats>().TakeStatusDamage();
             yield return enemy.TakeTurn(() => { });
             yield return new WaitForSeconds(0.25f);
         }
