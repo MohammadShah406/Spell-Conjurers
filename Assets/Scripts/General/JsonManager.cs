@@ -10,7 +10,8 @@ public class JsonManager : MonoBehaviour
     public string location = "Assets/Spells";
     public string playerLocation = "Assets/PlayerPool";
     private string FolderPath => Path.Combine(Application.dataPath, location.Replace("Assets/", ""));
-    private string playerFolderPath => Path.Combine(Application.dataPath, location.Replace("Assets/", ""));
+    private string playerFolderPath => Path.Combine(Application.dataPath, playerLocation.Replace("Assets/", ""));
+
 
 
     [Header("Latest Spell")]
@@ -63,9 +64,13 @@ public class JsonManager : MonoBehaviour
             Directory.CreateDirectory(FolderPath);
             Debug.Log($"Created folder at {FolderPath}");
         }
-        
+        if (!Directory.Exists(playerFolderPath))
+        {
+            Directory.CreateDirectory(playerFolderPath);
+            Debug.Log($"Created folder at {playerFolderPath}");
+        }
 
-        
+
 
         //Reading random spell
         //current = ReturnRandomJson();
