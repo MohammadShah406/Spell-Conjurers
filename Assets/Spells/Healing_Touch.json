@@ -1,0 +1,15 @@
+{
+    "damage": 0,
+    "accuracy": 100,
+    "resourceCost": 15,
+    "range": 1,
+    "selfDamage": 0,
+    "support": true,
+    "name": "Healing Touch",
+    "description": "Restores a small amount of health to an ally",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().heal(spell.healAmount);\r\n            actionLog += from.name + \" healed \" + to.name + \", restoring \" + spell.healAmount + \" health. \";\r\n        \r\n        ",
+    "spellVisualType": "Circle",
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}
