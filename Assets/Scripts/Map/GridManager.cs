@@ -72,10 +72,10 @@ public class GridManager : MonoBehaviour
         playerObj = instantiatedPlayerObj;
         GetTile(playerStartPos).occupant = instantiatedPlayerObj;
 
-        var playerScript = instantiatedPlayerObj.GetComponent<Player>();
+        var playerScript = instantiatedPlayerObj.GetComponent<PlayerFunctionality>();
         if (playerScript != null)
         {
-            //playerScript.Initialize(playerStartPos, this);
+            playerScript.Initialize(playerStartPos, this);
         }
     }
 }

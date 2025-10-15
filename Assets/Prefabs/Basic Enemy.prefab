@@ -140,6 +140,10 @@ MonoBehaviour:
     name: 
     description: 
     code: 
+    spellVisualType: 
+    status: 
+    statusDuration: 0
+    statusDamagePerTurn: 0
   - damage: 0
     accuracy: 0
     resourceCost: 0
@@ -149,6 +153,10 @@ MonoBehaviour:
     name: 
     description: 
     code: 
+    spellVisualType: 
+    status: 
+    statusDuration: 0
+    statusDamagePerTurn: 0
   - damage: 0
     accuracy: 0
     resourceCost: 0
@@ -158,6 +166,10 @@ MonoBehaviour:
     name: 
     description: 
     code: 
+    spellVisualType: 
+    status: 
+    statusDuration: 0
+    statusDamagePerTurn: 0
   - damage: 0
     accuracy: 0
     resourceCost: 0
@@ -167,6 +179,10 @@ MonoBehaviour:
     name: 
     description: 
     code: 
+    spellVisualType: 
+    status: 
+    statusDuration: 0
+    statusDamagePerTurn: 0
   preffered: 0
 --- !u!114 &4304294238587302398
 MonoBehaviour:
@@ -182,6 +198,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   health: 10
   armor: 0
+  floatingTextPrefab: {fileID: 7453728233935770986, guid: 629fc56a8e48f7345a32264e9df029a0, type: 3}
 --- !u!1 &3671256503806757496
 GameObject:
   m_ObjectHideFlags: 0
