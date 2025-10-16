@@ -6,9 +6,9 @@
     "selfDamage": 0,
     "support": false,
     "name": "Fireball",
-    "description": "Launches a fiery ball that explodes on impact, dealing damage to an enemy.",
-    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" cast a Fireball at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n        \r\n        ",
-    "spellVisualType": "Fireball",
+    "description": "Launches a fiery projectile that explodes on impact, dealing damage to the target.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" launched a Fireball at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n        \r\n        ",
+    "spellVisualType": "Sphere",
     "status": "Burn",
     "statusDuration": 2,
     "statusDamagePerTurn": 5

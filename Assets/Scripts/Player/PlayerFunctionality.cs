@@ -105,7 +105,11 @@ public class PlayerFunctionality : MonoBehaviour
                 Tile clickedTile = hit.collider.GetComponent<Tile>();
                 if (clickedTile != null && highlightedTiles.Contains(clickedTile))
                 {
-                    StartCoroutine(MoveToTile(clickedTile));
+                    if(clickedTile.occupant == null)
+                    {
+                        StartCoroutine(MoveToTile(clickedTile));
+                    }
+                    
                 }
             }
         }
