@@ -151,6 +151,7 @@ public class JsonManager : MonoBehaviour
         Spell spell = JsonUtility.FromJson<Spell>(json);
 
         Debug.Log($"Loaded Spell: {spell.name}");
+        PrecompileSpell(spell);
         return spell;
     }
 
