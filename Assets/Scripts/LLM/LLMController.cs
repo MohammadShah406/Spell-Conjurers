@@ -19,13 +19,10 @@ public class LLMController : MonoBehaviour
     public string model = "gpt-4o-mini";
     [Header("Events")]
     public UnityEvent onJsonGenerated;
-    //private ICustomBehavior currentBehavior;
-    //private Player player;
-    //private string userPrompt = "";
     private bool isGenerating = false;
     public string promptFileName = "LLMTrainer";
     private string loadedPrompt;
-    //private const string apiUrl = "https://api.openai.com/v1/chat/completions";
+    
 
     private void Awake()
     {
@@ -143,6 +140,8 @@ public class LLMController : MonoBehaviour
             $"The skill concept is: {prompt}. " +
             $"Output only valid JSON without code blocks or explanations.";
         skillPrompt += loadedPrompt;
+        string allScripts = LoadAllProjectScripts();
+        Debug.Log("scripts are " + allScripts);
         // Build the OpenAI chat request
         ChatRequest requestData = new ChatRequest
         {
@@ -153,6 +152,7 @@ public class LLMController : MonoBehaviour
             {
                 role = "system",
                 content = "You are a helpful assistant that outputs only clean JSON data for Unity games. " +
+                          allScripts +
                           "Never include code fences, markdown, or explanations — just valid JSON."+
                           loadedPrompt
             },
@@ -217,5 +217,43 @@ public class LLMController : MonoBehaviour
         if (start >= 0 && end > start)
             return response.Substring(start, end - start + 1);
         return null;
+    }
+
+    private string LoadAllProjectScripts()
+    {
+        string scriptsPath = Path.Combine(Application.dataPath, "Scripts");
+        if (!Directory.Exists(scriptsPath))
+        {
+            Debug.LogWarning($"Scripts folder not found: {scriptsPath}");
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        string[] files = Directory.GetFiles(scriptsPath, "*.cs", SearchOption.AllDirectories);
+
+        foreach (string file in files)
+        {
+            try
+            {
+                string code = File.ReadAllText(file);
+                sb.AppendLine($"// FILE: {Path.GetFileName(file)}");
+                sb.AppendLine(code);
+                sb.AppendLine("\n");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Could not read {file}: {ex.Message}");
+            }
+        }
+
+    
+        string allScripts = sb.ToString();
+        if (allScripts.Length > 100000)//characters is 1000000 for token limit
+        {
+            allScripts = allScripts.Substring(0, 50000);
+            Debug.LogWarning("Script context truncated to fit within token limits.");
+        }
+
+        return allScripts;
     }
 }

@@ -6,9 +6,9 @@
     "selfDamage": 0,
     "support": false,
     "name": "Poison Dart",
-    "description": "Shoots a dart that poisons the target, dealing damage over time.",
-    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" shot a Poison Dart at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(spell.status, spell.statusDuration, spell.statusDamagePerTurn);\r\n        \r\n        ",
-    "spellVisualType": "Arrow",
+    "description": "Launches a dart that poisons the target over time.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" shot a Poison Dart at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(\"Poison\", 3, 2);\r\n        \r\n        ",
+    "spellVisualType": "Dart",
     "status": "Poison",
     "statusDuration": 3,
     "statusDamagePerTurn": 2
