@@ -172,8 +172,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -336.63925}
-  m_SizeDelta: {x: -20, y: -693.2785}
+  m_AnchoredPosition: {x: 0, y: -480}
+  m_SizeDelta: {x: -20, y: -980}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8389292815473753018
 CanvasRenderer:
@@ -1272,7 +1272,7 @@ GameObject:
   - component: {fileID: 7287461005979588499}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1385,7 +1385,7 @@ MonoBehaviour:
   health: 10
   armor: 0
   statuses: []
-  floatingTextPrefab: {fileID: 7453728233935770986, guid: 629fc56a8e48f7345a32264e9df029a0, type: 3}
+  floatingTextPrefab: {fileID: 7453728233935770986, guid: bba6f4ff8db24d24081c4ecda64671e6, type: 3}
 --- !u!114 &7287461005979588499
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1466,6 +1466,10 @@ MonoBehaviour:
     status: 
     statusDuration: 0
     statusDamagePerTurn: 0
+  gridPosition: {x: 0, y: 0}
+  yPos: 1.5
+  moveRange: 3
+  moveSpeed: 5
 --- !u!1 &8790447271367986148
 GameObject:
   m_ObjectHideFlags: 0

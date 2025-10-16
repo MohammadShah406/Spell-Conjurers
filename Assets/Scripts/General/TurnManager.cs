@@ -58,5 +58,10 @@ public class TurnManager : MonoBehaviour
 
         Debug.Log("Enemy turn complete. Back to player turn.");
         currentState = TurnState.PlayerTurn;
+
+        // Reset player movement for next turn
+        var player = FindAnyObjectByType<PlayerFunctionality>();
+        if (player != null)
+            player.ResetTurn();
     }
 }

@@ -1,6 +1,10 @@
 using System;
 using UnityEngine;
 using System.IO;
+using Microsoft.CodeAnalysis.Scripting;
+using System.Collections.Generic;
+using Microsoft.CodeAnalysis.CSharp.Scripting;
+using System.Reflection;
 
 public class JsonManager : MonoBehaviour
 {
@@ -11,6 +15,9 @@ public class JsonManager : MonoBehaviour
     public string playerLocation = "Assets/PlayerPool";
     private string FolderPath => Path.Combine(Application.dataPath, location.Replace("Assets/", ""));
     private string playerFolderPath => Path.Combine(Application.dataPath, playerLocation.Replace("Assets/", ""));
+
+    // Dictionary to store precompiled spell runners
+    public Dictionary<Spell, ScriptRunner<object>> compiledSpells = new Dictionary<Spell, ScriptRunner<object>>();
 
 
 
@@ -29,24 +36,46 @@ public class JsonManager : MonoBehaviour
         }
 
         //Making New spell
-        current = new Spell
-        {
-            damage = 1,
-            accuracy = 90,
-            resourceCost = 10,
-            range = 10,
-            selfDamage = 0,
-            support = false,
-            name = "Ice Lance",
-            description = "Hurls an ice lance at surprising accuracy",
-            code = "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" hurled a Fireball at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(spell.status, spell.statusDuration, spell.statusDamagePerTurn);\r\n        \r\n        ",
-            spellVisualType = "Sphere",
-            status = "None",
-            statusDuration = 0,
-            statusDamagePerTurn = 0
+        //current = new Spell
+        //{
+        //    damage = 1,
+        //    accuracy = 90,
+        //    resourceCost = 10,
+        //    range = 10,
+        //    selfDamage = 0,
+        //    support = false,
+        //    name = "Ice Lance",
+        //    description = "Hurls an ice lance at surprising accuracy",
+        //    code = "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" hurled a Fireball at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(spell.status, spell.statusDuration, spell.statusDamagePerTurn);\r\n        \r\n        ",
+        //    spellVisualType = "Sphere",
+        //    status = "None",
+        //    statusDuration = 0,
+        //    statusDamagePerTurn = 0
 
-        };
-        CreateJsonFile(current);
+        //};
+        //CreateJsonFile(current);
+
+        PrecompileAllSpells();
+
+    }
+
+    private void PrecompileAllSpells()
+    {
+        string[] files = Directory.GetFiles(FolderPath, "*.json");
+        foreach (string file in files)
+        {
+            string json = File.ReadAllText(file);
+            Spell spell = JsonUtility.FromJson<Spell>(json);
+            PrecompileSpell(spell);
+        }
+
+        files = Directory.GetFiles(playerFolderPath, "*.json");
+        foreach (string file in files)
+        {
+            string json = File.ReadAllText(file);
+            Spell spell = JsonUtility.FromJson<Spell>(json);
+            PrecompileSpell(spell);
+        }
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -98,6 +127,7 @@ public class JsonManager : MonoBehaviour
         Spell spell = JsonUtility.FromJson<Spell>(json);
 
         Debug.Log($"Loaded Spell: {spell.name}");
+        PrecompileSpell(spell);
         return spell;
     }
 
@@ -137,5 +167,10 @@ public class JsonManager : MonoBehaviour
         File.WriteAllText(filePath, json);
 
         Debug.Log($"Saved spell '{spell.name}' to {filePath}");
+    }
+
+    private void PrecompileSpell(Spell spell)
+    {
+        SpellFunction.Instance.PrecompileSpell(spell);
     }
 }

@@ -1,3 +1,5 @@
+﻿using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,8 +16,10 @@ public class PlayerFunctionality : MonoBehaviour
 
     [Header("Player Settings")]
     public int moveRange = 3;
-    public int attackRange = 1;
     public float moveSpeed = 5f;
+
+    private List<Tile> highlightedTiles = new List<Tile>();
+    private bool hasMoved = false;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -28,17 +32,119 @@ public class PlayerFunctionality : MonoBehaviour
                 playerPanelUI.transform.GetChild(i).GetChild(0).GetComponent<TextMeshProUGUI>().text = spells[i].name;
             }
         }
+
+        selectedSpell = null;
     }
 
     // Update is called once per frame
     void Update()
     {
         //Unselect spell
-        if (Input.GetMouseButtonDown(1)) // RMB
+        if (Input.GetKeyDown(KeyCode.Escape) || TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
         {
             selectedSpell = null;
-            Debug.Log("Selected spell cleared by right-click");
+            Debug.Log("Selected spell cleared by escape");
+
+            foreach (Tile tile in highlightedTiles)
+                tile.ResetHighlight();
+            highlightedTiles.Clear();
         }
+
+        // If it's player turn and not moved yet, show reachable tiles
+        if (!hasMoved && selectedSpell == null)
+        {
+            HandleTileHighlights();
+        }
+
+        if (selectedSpell != null) 
+        {
+            UseSpell();
+        }
+    }
+
+    public void HandleTileHighlights()
+    {
+        HighlightReachableTiles();
+        HandleTileClick();
+    }
+
+    private void HighlightReachableTiles()
+    {
+        if (highlightedTiles.Count > 0) return;
+
+        foreach (Tile tile in gridManager.grid)
+        {
+            if (tile == null) continue;
+
+            int distance = Mathf.Abs(tile.gridPosition.x - gridPosition.x) + Mathf.Abs(tile.gridPosition.y - gridPosition.y);
+            if (distance <= moveRange && tile.occupant == null)
+            {
+                tile.Highlight(new Color(0.3f, 0.5f, 1f, 1f)); // soft blue
+                highlightedTiles.Add(tile);
+            }
+            else if(distance <= moveRange && tile.occupant == gameObject)
+            {
+                tile.Highlight(Color.green);
+                highlightedTiles.Add(tile);
+            }
+            else if (distance <= moveRange && tile.occupant != null)
+            {
+                tile.Highlight(Color.red);
+                highlightedTiles.Add(tile);
+            }
+        }
+    }
+
+    private void HandleTileClick()
+    {
+        if (Input.GetMouseButtonDown(0)) // LMB
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                Tile clickedTile = hit.collider.GetComponent<Tile>();
+                if (clickedTile != null && highlightedTiles.Contains(clickedTile))
+                {
+                    StartCoroutine(MoveToTile(clickedTile));
+                }
+            }
+        }
+    }
+
+    private IEnumerator MoveToTile(Tile targetTile)
+    {
+        hasMoved = true;
+
+        // Clear highlights
+        foreach (Tile tile in highlightedTiles)
+            tile.ResetHighlight();
+        highlightedTiles.Clear();
+
+        // Free old tile
+        gridManager.GetTile(gridPosition).occupant = null;
+
+        // Move smoothly
+        Vector3 targetPos = new Vector3(targetTile.gridPosition.x, yPos, targetTile.gridPosition.y);
+        while (Vector3.Distance(transform.position, targetPos) > 0.01f)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * Time.deltaTime);
+            yield return null;
+        }
+
+        transform.position = targetPos;
+        gridPosition = targetTile.gridPosition;
+        targetTile.occupant = gameObject;
+
+        yield return null;
+    }
+
+    public void ResetTurn()
+    {
+        hasMoved = false;
+        selectedSpell = null; // 👈 ensures clean start each turn
+        foreach (Tile tile in highlightedTiles)
+            tile.ResetHighlight();
+        highlightedTiles.Clear();
     }
 
     public void Initialize(Vector2Int startPos, GridManager grid)
@@ -53,6 +159,12 @@ public class PlayerFunctionality : MonoBehaviour
     public void SetSelectedSpell(int index)
     {
         selectedSpell = spells[index];
+
+        if (selectedSpell != null)
+        {
+            Debug.Log($"Selected spell: {selectedSpell.name}");
+            HighlightEnemiesInRange();
+        }
     }
 
     public void SyncGridPosition()
@@ -82,5 +194,92 @@ public class PlayerFunctionality : MonoBehaviour
             gridPosition = newPos;
         }
     }
+
+    public void UseSpell()
+    {
+        if (TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
+            return;
+
+        if (selectedSpell == null)
+            return;
+
+        if (Input.GetMouseButtonDown(0)) // Left click on target
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                Enemy enemy = hit.collider.GetComponent<Enemy>();
+                if (enemy != null)
+                {
+                    // Check if within spell range
+                    int distance = Mathf.Abs(enemy.gridPosition.x - gridPosition.x) + Mathf.Abs(enemy.gridPosition.y - gridPosition.y);
+                    if (distance <= selectedSpell.range)
+                    {
+                        Debug.Log($"Casted {selectedSpell.name} on {enemy.name}");
+
+                        // Example spell effects
+                        ActionManager.Instance.UseSpell(selectedSpell, this.gameObject, enemy.gameObject);
+
+                        // End player turn after casting
+                        TurnManager.Instance.EndPlayerTurn();
+                        foreach (Tile tile in highlightedTiles)
+                            tile.ResetHighlight();
+                        highlightedTiles.Clear();
+                        selectedSpell = null;
+                        hasMoved = true;
+
+                    }
+                    else
+                    {
+                        Debug.Log("Target out of spell range!");
+                    }
+                }
+            }
+        }
+    }
+
+    private void HighlightEnemiesInRange()
+    {
+        // Clear old highlights first
+        foreach (Tile tile in highlightedTiles)
+            tile.ResetHighlight();
+        highlightedTiles.Clear();
+
+        if (selectedSpell == null || gridManager == null)
+            return;
+
+        foreach (Tile tile in gridManager.grid)
+        {
+            if (tile == null) continue;
+
+            int distance = Mathf.Abs(tile.gridPosition.x - gridPosition.x) + Mathf.Abs(tile.gridPosition.y - gridPosition.y);
+
+            // Highlight all tiles within spell range
+            if (distance <= selectedSpell.range)
+            {
+                // Default spell range color (light red/orange)
+                Color baseColor = new Color(1f, 0.5f, 0.4f, 0.5f);
+                tile.Highlight(baseColor);
+                highlightedTiles.Add(tile);
+
+                if (tile.occupant == gameObject)
+                {
+                    tile.Highlight(Color.green);
+                    highlightedTiles.Add(tile);
+                }
+                // If occupant is an enemy, make it a stronger red
+                else if (tile.occupant != null)
+                {
+                    Enemy enemy = tile.occupant.GetComponent<Enemy>();
+                    if (enemy != null)
+                    {
+                        tile.Highlight(new Color(1f, 0f, 0f, 0.9f)); // strong red for enemies
+                    }
+                }
+                
+            }
+        }
+    }
+
 
 }

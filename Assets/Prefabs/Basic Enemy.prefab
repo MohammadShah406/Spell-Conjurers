@@ -198,7 +198,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   health: 10
   armor: 0
-  floatingTextPrefab: {fileID: 7453728233935770986, guid: 629fc56a8e48f7345a32264e9df029a0, type: 3}
+  statuses: []
+  floatingTextPrefab: {fileID: 7453728233935770986, guid: bba6f4ff8db24d24081c4ecda64671e6, type: 3}
 --- !u!1 &3671256503806757496
 GameObject:
   m_ObjectHideFlags: 0

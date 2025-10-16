@@ -2,7 +2,7 @@
     "damage": 3,
     "accuracy": 90,
     "resourceCost": 10,
-    "range": 2,
+    "range": 50,
     "selfDamage": 0,
     "support": false,
     "name": "Fireball",
