@@ -1,22 +1,34 @@
 ﻿using JetBrains.Annotations;
 using NUnit.Framework;
 using System.Collections.Generic;
+using TMPro;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class Stats : MonoBehaviour
 {
+    public int maxHealth = 10;
+    public int maxResource = 100;
+
     public int health = 10;
     public int armor = 0;
+    public int resource = 100;
 
     public List<Status> statuses = new List<Status>();
 
     public GameObject floatingTextPrefab;
 
+    public GameObject uiStatsHolder;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        health = maxHealth;
+        resource = maxResource;
+        if (gameObject.tag == "Player")
+        {
+            UpdateStatsHolder();
+        }
     }
 
     // Update is called once per frame
@@ -41,6 +53,12 @@ public class Stats : MonoBehaviour
         {
             Debug.Log("Gameobject " + gameObject.name + " died");
         }
+
+        if(gameObject.tag == "Player")
+        {
+            UpdateStatsHolder();
+        }
+        
 
     }
 
@@ -112,6 +130,15 @@ public class Stats : MonoBehaviour
         Vector3 spawnPos = transform.position + Vector3.up * 2f;
         GameObject go = Instantiate(floatingTextPrefab, spawnPos, Quaternion.identity);
         go.GetComponent<FloatingDamageNumber>().Initialize(text, color);
+    }
+
+    public void UpdateStatsHolder()
+    {
+        if(uiStatsHolder != null)
+        {
+            uiStatsHolder.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = "Health : " + health + "/" + maxHealth;
+            uiStatsHolder.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "Resource : " + resource + "/" + maxResource;
+        }
     }
 
 }

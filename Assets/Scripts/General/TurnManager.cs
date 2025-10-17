@@ -1,6 +1,7 @@
 using NUnit.Framework.Interfaces;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class TurnManager : MonoBehaviour
 {
@@ -23,6 +24,7 @@ public class TurnManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+        
     }
     void Start()
     {
@@ -58,6 +60,8 @@ public class TurnManager : MonoBehaviour
 
         Debug.Log("Enemy turn complete. Back to player turn.");
         currentState = TurnState.PlayerTurn;
+        GameManager.Instance.player[0].GetComponent<PlayerFunctionality>().OnTurnStart();
+
 
         // Reset player movement for next turn
         var player = FindAnyObjectByType<PlayerFunctionality>();

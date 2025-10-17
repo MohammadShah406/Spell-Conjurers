@@ -1,4 +1,6 @@
+using Unity.VisualScripting;
 using UnityEngine;
+using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class GridManager : MonoBehaviour
 {
@@ -70,6 +72,7 @@ public class GridManager : MonoBehaviour
         Vector2Int playerStartPos = new Vector2Int(width / 2, 0); // center bottom of grid
         var instantiatedPlayerObj = Instantiate(playerPrefab, new Vector3(playerStartPos.x, 1.5f, playerStartPos.y), Quaternion.identity);
         playerObj = instantiatedPlayerObj;
+        GameManager.Instance.player.Add(playerObj);
         GetTile(playerStartPos).occupant = instantiatedPlayerObj;
 
         var playerScript = instantiatedPlayerObj.GetComponent<PlayerFunctionality>();

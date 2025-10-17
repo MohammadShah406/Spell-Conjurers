@@ -1,8 +1,11 @@
 ﻿using Microsoft.CodeAnalysis.Scripting;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 public class PlayerFunctionality : MonoBehaviour
@@ -22,9 +25,16 @@ public class PlayerFunctionality : MonoBehaviour
     private List<Tile> highlightedTiles = new List<Tile>();
     private bool hasMoved = false;
 
+    public GameObject spellTextHolder;
+    public Stats playerStats;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        if(playerStats == null)
+        {
+            playerStats = GetComponent<Stats>();
+        }
         for (int i = 0; i < spells.Length; i++)
         {
             spells[i] = JsonManager.Instance.ReturnPlayerSpell(i);
@@ -43,6 +53,7 @@ public class PlayerFunctionality : MonoBehaviour
         //Unselect spell
         if (Input.GetKeyDown(KeyCode.Escape) || TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
         {
+            ResetSpellTextHolder();
             selectedSpell = null;
             Debug.Log("Selected spell cleared by escape");
 
@@ -198,7 +209,33 @@ public class PlayerFunctionality : MonoBehaviour
         {
             Debug.Log($"Selected spell: {selectedSpell.name}");
             HighlightEnemiesInRange();
+            SetSpellTextHolder();
         }
+    }
+
+    private void SetSpellTextHolder()
+    {
+        spellTextHolder.gameObject.SetActive(true);
+
+        spellTextHolder.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = "Spell : " + selectedSpell.name;
+        spellTextHolder.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "Cost : " + selectedSpell.resourceCost.ToString();
+        spellTextHolder.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "Range : " + selectedSpell.range.ToString();
+
+        if (selectedSpell.support)
+        {
+            spellTextHolder.transform.GetChild(3).GetComponent<TextMeshProUGUI>().text = "Support : " + "Yes";
+        }
+        else
+        {
+            spellTextHolder.transform.GetChild(3).GetComponent<TextMeshProUGUI>().text = "Support : " + "No";
+        }
+
+        spellTextHolder.transform.GetChild(4).GetComponent<TextMeshProUGUI>().text = "Description : " + selectedSpell.description;
+    }
+
+    private void ResetSpellTextHolder()
+    {
+        spellTextHolder.gameObject.SetActive(false);
     }
 
     public void SyncGridPosition()
@@ -249,6 +286,17 @@ public class PlayerFunctionality : MonoBehaviour
                     int distance = Mathf.Abs(enemy.gridPosition.x - gridPosition.x) + Mathf.Abs(enemy.gridPosition.y - gridPosition.y);
                     if (distance <= selectedSpell.range)
                     {
+                        if(selectedSpell.resourceCost > playerStats.resource)
+                        {
+                            Debug.Log("Not enough resource");
+                            return;
+                        }
+                        else
+                        {
+                            playerStats.resource -= selectedSpell.resourceCost;
+                            playerStats.UpdateStatsHolder();
+                        }
+
                         Debug.Log($"Casted {selectedSpell.name} on {enemy.name}");
 
                         // Example spell effects
@@ -315,5 +363,10 @@ public class PlayerFunctionality : MonoBehaviour
         }
     }
 
+    public void OnTurnStart()
+    {
+        //10% of max resource is added every turn
+        playerStats.resource = Mathf.Clamp((int)(playerStats.resource + (playerStats.maxResource * 0.1)), 0, playerStats.maxResource);
+    }
 
 }
