@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Microsoft.CodeAnalysis.Scripting;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -48,6 +49,35 @@ public class PlayerFunctionality : MonoBehaviour
             foreach (Tile tile in highlightedTiles)
                 tile.ResetHighlight();
             highlightedTiles.Clear();
+        }
+
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+          EnemyManager enemyManager = GameObject.FindAnyObjectByType<EnemyManager>();
+            if (enemyManager != null)
+            {
+                enemyManager.initializeThreatGrid(12, 12);
+                Debug.Log("MMMMM");
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            EnemyManager enemyManager = GameObject.FindAnyObjectByType<EnemyManager>();
+            if (enemyManager != null)
+            {
+                enemyManager.caculateThreatGrid();
+                Debug.Log("CCCCCCC");
+            }
+
+        }
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            EnemyManager enemyManager = GameObject.FindAnyObjectByType<EnemyManager>();
+            if (enemyManager != null)
+            {
+                enemyManager.showGrid();
+                Debug.Log("PPPPP");
+            }
         }
 
         // If it's player turn and not moved yet, show reachable tiles
