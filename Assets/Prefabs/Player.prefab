@@ -169,8 +169,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -96, y: -348.45947}
-  m_SizeDelta: {x: 200, y: 694.9185}
+  m_AnchoredPosition: {x: -237, y: -348.45947}
+  m_SizeDelta: {x: 475.4, y: 694.9185}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5779354530439352396
 CanvasRenderer:
@@ -193,7 +193,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Content: {fileID: 5102811279589079847}
-  m_Horizontal: 1
+  m_Horizontal: 0
   m_Vertical: 1
   m_MovementType: 1
   m_Elasticity: 0.1
@@ -878,7 +878,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 153.2, y: 247.6}
+  m_SizeDelta: {x: 153.2, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3455868464541809487
 CanvasRenderer:
@@ -908,8 +908,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'hello world sadsadsad sadasdasdasdasdasdasdasdasdasdasdasdasdasdasddasdasddasd
-    asdasdasd sadsa sadsa  sad '
+  m_text: heo world sadsadsad sadasasdsadsadsadasdsadsadsadsadsadsadsadsadsadsadsadsadsadsa
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -974,7 +973,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: -18.057983, w: 0}
+  m_margin: {x: 0, y: 0, z: -294.4707, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -1524,7 +1523,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 180, y: 0}
+  m_SizeDelta: {x: 451.4, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4730119513910317266
 CanvasRenderer:
@@ -1812,7 +1811,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 1
+  m_Interactable: 0
   m_TargetGraphic: {fileID: 4045406489171304152}
   m_HandleRect: {fileID: 518668950533502092}
   m_Direction: 2
@@ -1860,8 +1859,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 90, y: -133.8}
-  m_SizeDelta: {x: 178.66, y: 0}
+  m_AnchoredPosition: {x: 225.7, y: -51.005}
+  m_SizeDelta: {x: 451.7, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1659275254597128392
 CanvasRenderer:
@@ -1915,7 +1914,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_IgnoreLayout: 0
   m_MinWidth: 50
-  m_MinHeight: 153
+  m_MinHeight: -1
   m_PreferredWidth: -1
   m_PreferredHeight: -1
   m_FlexibleWidth: -1
@@ -1943,7 +1942,7 @@ MonoBehaviour:
   m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 0
-  m_ChildControlHeight: 0
+  m_ChildControlHeight: 1
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
