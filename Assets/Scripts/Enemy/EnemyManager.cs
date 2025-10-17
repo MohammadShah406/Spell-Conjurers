@@ -11,7 +11,7 @@ public class EnemyManager : MonoBehaviour
     float[,] threatGrid;
     private bool isTakingTurn;
     public Transform player;
-    private Dictionary<GameObject, float> playerMaxDamageList = new Dictionary<GameObject, float>();
+    private Dictionary<GameObject, int[]> playerMaxDamageList = new Dictionary<GameObject, int[]>();
     private GridManager gridManager;
 
     public void AddEnemy(Enemy enemy)
@@ -49,15 +49,24 @@ public class EnemyManager : MonoBehaviour
         Debug.Log("All enemies finished their turns!");
     }
 
-    public void initializeThreatGrid( int height, int width)
+    public void initializeThreatGrid(int height, int width)
     {
         gridManager = GameObject.FindFirstObjectByType<GridManager>();
         GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        //eM_PlayerDatas = new EM_PlayerData[4];
 
         foreach (GameObject player in players)
         {
-            playerMaxDamageList.Add(player, 30);
+            int[] playerData = { 30, 1 };
+            playerMaxDamageList.Add(player, playerData);
         }
+
+        /* for (int i = 0; i < players.Length; i++)
+         {
+             eM_PlayerDatas[i].player = players[i];
+             eM_PlayerDatas[i].maxDamage = 30;
+             eM_PlayerDatas[i].maxRange = 1;
+         }*/
 
         threatGrid = new float[height, width];
         for (int i = 0; i < height; i++)
@@ -88,26 +97,43 @@ public class EnemyManager : MonoBehaviour
                 foreach (Tile tile in gridManager.grid)
                 {
                     if (tile == null) continue;
-
-                    int distance = Mathf.Abs(tile.gridPosition.x - playerFunctionality.gridPosition.x) + Mathf.Abs(tile.gridPosition.y - playerFunctionality.gridPosition.y);
-                    if (distance <= playerFunctionality.moveRange && tile.occupant == null)
+                    if (playerMaxDamageList.TryGetValue(player, out int[] playerData))
                     {
-                        if (playerMaxDamageList.ContainsKey(player))
+                        int distance = Mathf.Abs(tile.gridPosition.x - playerFunctionality.gridPosition.x) + Mathf.Abs(tile.gridPosition.y - playerFunctionality.gridPosition.y);
+                        if (distance <= playerFunctionality.moveRange + playerData[1] && tile.occupant == null && playerMaxDamageList.ContainsKey(player))
                         {
-                            if (playerMaxDamageList.TryGetValue(player, out float dmg))
-                                threatGrid[tile.gridPosition.x, tile.gridPosition.y] = threatGrid[tile.gridPosition.x, tile.gridPosition.y] + dmg;
+                            threatGrid[tile.gridPosition.x, tile.gridPosition.y] = threatGrid[tile.gridPosition.x, tile.gridPosition.y] + playerData[0];
                         }
                     }
                 }
             }
         }
+        /* for (int i = 0; i <= players.Length; i++)
+         {
+             PlayerFunctionality playerFunctionality = players[i].GetComponent<PlayerFunctionality>();
+             if (playerFunctionality != null)
+             {
+                 foreach (Tile tile in gridManager.grid)
+                 {
+                     if (tile == null) continue;
+
+                     int distance = Mathf.Abs(tile.gridPosition.x - playerFunctionality.gridPosition.x) + Mathf.Abs(tile.gridPosition.y - playerFunctionality.gridPosition.y);
+                     if (distance <= playerFunctionality.moveRange + eM_PlayerDatas[i].maxRange && tile.occupant == null)
+                     {
+                         threatGrid[tile.gridPosition.x, tile.gridPosition.y] = threatGrid[tile.gridPosition.x, tile.gridPosition.y] + eM_PlayerDatas[i].maxDamage;
+                     }
+                 }
+             }
+
+         }*/
     }
 
-    public void UpdateMaxDamage(GameObject player, float damage, int range =1)
+    public void UpdateMaxDamage(GameObject player, int damage, int range = 1)
     {
         if (playerMaxDamageList.ContainsKey(player))
         {
-            playerMaxDamageList[player] = Mathf.Max(playerMaxDamageList[player], damage);
+            int[] playerData = { damage, range };
+            playerMaxDamageList[player][0] = Mathf.Max(playerMaxDamageList[player][0], damage);
         }
     }
 
@@ -121,9 +147,26 @@ public class EnemyManager : MonoBehaviour
             string rowStr = "";
             for (int j = 0; j < cols; j++)
             {
-                rowStr += threatGrid[i, j].ToString("F2") + "\t"; // F2 formats to 2 decimal places
+                rowStr += threatGrid[i, j].ToString("F2") + "\t";
             }
             Debug.Log(rowStr);
+        }
+    }
+
+    public void calculateScore(Enemy enemy)
+    {
+        foreach (Tile tile in gridManager.grid)
+        {
+            if (tile == null) continue;
+            int distance = Mathf.Abs(tile.gridPosition.x - enemy.gridPosition.x) + Mathf.Abs(tile.gridPosition.y - enemy.gridPosition.y);
+            if (distance <= enemy.moveRange && tile.occupant == null)
+            {
+                foreach (Spell spell in enemy.spells)
+                {
+                    if (spell == null) continue;
+                    
+                }
+            }
         }
     }
 }
