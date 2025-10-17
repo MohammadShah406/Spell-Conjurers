@@ -103,7 +103,7 @@ public class EnemyManager : MonoBehaviour
         }
     }
 
-    public void UpdateMaxDamage(GameObject player, float damage)
+    public void UpdateMaxDamage(GameObject player, float damage, int range =1)
     {
         if (playerMaxDamageList.ContainsKey(player))
         {
