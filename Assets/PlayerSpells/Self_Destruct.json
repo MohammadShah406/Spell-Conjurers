@@ -1,0 +1,15 @@
+{
+    "damage": 100,
+    "accuracy": 100,
+    "resourceCost": 50,
+    "range": 0,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Self Destruct",
+    "description": "Sacrifice yourself to deal massive damage to enemies in range.",
+    "code": "string actionLog = \"\";\r\n        \r\n            from.GetComponent<Stats>().takeDamage(from.GetComponent<Stats>().health);\r\n            actionLog += from.name + \" has self-destructed, causing massive damage to all enemies within range!\";\r\n        \r\n        ",
+    "spellVisualType": "Explosion",
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}

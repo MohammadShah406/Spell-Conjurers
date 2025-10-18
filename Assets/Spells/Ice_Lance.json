@@ -1,0 +1,15 @@
+{
+    "damage": 15,
+    "accuracy": 85,
+    "resourceCost": 20,
+    "range": 3,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Ice Lance",
+    "description": "Hurls an ice lance at surprising accuracy, dealing damage to a single target within range.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" hurled an Ice Lance at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n        \r\n        ",
+    "spellVisualType": "Sphere",
+    "status": "Frozen",
+    "statusDuration": 1,
+    "statusDamagePerTurn": 0
+}
