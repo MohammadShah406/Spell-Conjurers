@@ -60,10 +60,12 @@ public class GridManager : MonoBehaviour
         {
             Vector2Int pos = new Vector2Int(i * 2, height - 1); // back row
             var enemyObj = Instantiate(enemyPrefab);
+            enemyObj.name = "Enemy " + i;
             enemyObj.transform.parent = EnemyHolder.transform;
             var enemy = enemyObj.GetComponent<Enemy>();
             enemy.Initialize(pos, this, playerObj);
             enemyManager.AddEnemy(enemy);
+            GameManager.Instance.enemies.Add(enemyObj);
         }
     }
 

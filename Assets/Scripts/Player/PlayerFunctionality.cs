@@ -9,10 +9,11 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 
 public class PlayerFunctionality : MonoBehaviour
-{
-    public GameObject playerPanelUI;
+{ 
     public Spell[] spells = new Spell[4];
     public Spell selectedSpell = null;
+    public Spell enemySelectedSpell = null;
+    public string spellFrom = null;
 
     private GridManager gridManager;
     public Vector2Int gridPosition;
@@ -25,8 +26,14 @@ public class PlayerFunctionality : MonoBehaviour
     private List<Tile> highlightedTiles = new List<Tile>();
     private bool hasMoved = false;
 
+    public GameObject playerSpellPanel;
     public GameObject spellTextHolder;
+    public GameObject playerStatsHolder;
+    public GameObject ui_SelectedEnemy;
+    public GameObject selectedEnemy;
     public Stats playerStats;
+
+    public bool turnStarted = true;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -40,7 +47,7 @@ public class PlayerFunctionality : MonoBehaviour
             spells[i] = JsonManager.Instance.ReturnPlayerSpell(i);
             if(spells[i] != null)
             {
-                playerPanelUI.transform.GetChild(i).GetChild(0).GetComponent<TextMeshProUGUI>().text = spells[i].name;
+                playerSpellPanel.transform.GetChild(i).GetChild(0).GetComponent<TextMeshProUGUI>().text = spells[i].name;
             }
         }
 
@@ -50,8 +57,8 @@ public class PlayerFunctionality : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //Unselect spell
-        if (Input.GetKeyDown(KeyCode.Escape) || TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
+        //Unselect spell and Enemy Details
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
             ResetSpellTextHolder();
             selectedSpell = null;
@@ -60,7 +67,32 @@ public class PlayerFunctionality : MonoBehaviour
             foreach (Tile tile in highlightedTiles)
                 tile.ResetHighlight();
             highlightedTiles.Clear();
+
+            ui_SelectedEnemy.SetActive(false);
+            playerSpellPanel.SetActive(true);
+            playerStatsHolder.SetActive(true);
         }
+        if(TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
+        {
+            if (!turnStarted)
+            {
+                return;
+            }
+
+            ResetSpellTextHolder();
+            selectedSpell = null;
+            Debug.Log("Selected spell cleared by escape");
+
+            foreach (Tile tile in highlightedTiles)
+                tile.ResetHighlight();
+            highlightedTiles.Clear();
+
+            ui_SelectedEnemy.SetActive(false);
+            playerSpellPanel.SetActive(true);
+            playerStatsHolder.SetActive(true);
+            OnTurnEnd();
+        }
+
 
         if (Input.GetKeyDown(KeyCode.M))
         {
@@ -95,6 +127,11 @@ public class PlayerFunctionality : MonoBehaviour
         if (!hasMoved && selectedSpell == null)
         {
             HandleTileHighlights();
+        }
+        
+        if(selectedSpell == null)
+        {
+            GetEnemyDetails();
         }
 
         if (selectedSpell != null) 
@@ -201,27 +238,53 @@ public class PlayerFunctionality : MonoBehaviour
         grid.GetTile(startPos).occupant = gameObject;
     }
 
-    public void SetSelectedSpell(int index)
+    public void setSpellFrom(string from)
     {
-        selectedSpell = spells[index];
-
-        if (selectedSpell != null)
-        {
-            Debug.Log($"Selected spell: {selectedSpell.name}");
-            HighlightEnemiesInRange();
-            SetSpellTextHolder();
-        }
+        if (TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
+            return;
+        spellFrom = from;
     }
 
-    private void SetSpellTextHolder()
+    public void SetSelectedSpell(int index)
+    {
+        if (TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
+            return;
+        switch (spellFrom)
+        {
+            case "Player":
+                selectedSpell = spells[index];
+
+                if (selectedSpell != null)
+                {
+                    Debug.Log($"Selected spell: {selectedSpell.name}");
+                    HighlightEnemiesInRange();
+                    SetSpellTextHolder(selectedSpell);
+
+                }
+                break;
+            case "Enemy":
+                enemySelectedSpell = selectedEnemy.GetComponent<Enemy>().spells[index];
+                if(enemySelectedSpell != null)
+                {
+                    SetSpellTextHolder(enemySelectedSpell);
+                }
+                break;
+            default:
+                Debug.Log("spellFrom not set");
+                break;
+        }
+        
+    }
+
+    private void SetSpellTextHolder(Spell spell)
     {
         spellTextHolder.gameObject.SetActive(true);
 
-        spellTextHolder.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = "Spell : " + selectedSpell.name;
-        spellTextHolder.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "Cost : " + selectedSpell.resourceCost.ToString();
-        spellTextHolder.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "Range : " + selectedSpell.range.ToString();
+        spellTextHolder.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = "Spell : " + spell.name;
+        spellTextHolder.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "Cost : " + spell.resourceCost.ToString();
+        spellTextHolder.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "Range : " + spell.range.ToString();
 
-        if (selectedSpell.support)
+        if (spell.support)
         {
             spellTextHolder.transform.GetChild(3).GetComponent<TextMeshProUGUI>().text = "Support : " + "Yes";
         }
@@ -230,7 +293,7 @@ public class PlayerFunctionality : MonoBehaviour
             spellTextHolder.transform.GetChild(3).GetComponent<TextMeshProUGUI>().text = "Support : " + "No";
         }
 
-        spellTextHolder.transform.GetChild(4).GetComponent<TextMeshProUGUI>().text = "Description : " + selectedSpell.description;
+        spellTextHolder.transform.GetChild(4).GetComponent<TextMeshProUGUI>().text = "Description : " + spell.description;
     }
 
     private void ResetSpellTextHolder()
@@ -367,6 +430,51 @@ public class PlayerFunctionality : MonoBehaviour
     {
         //10% of max resource is added every turn
         playerStats.resource = Mathf.Clamp((int)(playerStats.resource + (playerStats.maxResource * 0.1)), 0, playerStats.maxResource);
+        playerStats.UpdateStatsHolder();
+
+        turnStarted = true;
     }
 
+    public void OnTurnEnd()
+    {
+        turnStarted = false;
+    }
+
+    public void GetEnemyDetails()
+    {
+        if (Input.GetMouseButtonDown(0) && TurnManager.Instance.currentState == TurnManager.TurnState.PlayerTurn) // Left click on target
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                Enemy enemy = hit.collider.GetComponent<Enemy>();
+                if (enemy != null)
+                {
+                    selectedEnemy = enemy.gameObject;
+                    SetSelectedEnemyDetails(selectedEnemy);
+                    ui_SelectedEnemy.SetActive(true);
+                    playerSpellPanel.SetActive(false);
+                    playerStatsHolder.SetActive(false);
+                }
+            }
+        }
+    }
+
+    public void SetSelectedEnemyDetails(GameObject selectedEnemy)
+    {
+        if (selectedEnemy != null)
+        {
+            if (ui_SelectedEnemy != null)
+            {
+                ui_SelectedEnemy.transform.GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().text = "Name: " + selectedEnemy.name;
+                ui_SelectedEnemy.transform.GetChild(0).GetChild(1).GetComponent<TextMeshProUGUI>().text = "Health: " + selectedEnemy.GetComponent<Stats>().health;
+                ui_SelectedEnemy.transform.GetChild(0).GetChild(2).GetComponent<TextMeshProUGUI>().text = "Resource: " + selectedEnemy.GetComponent<Stats>().resource;
+
+                ui_SelectedEnemy.transform.GetChild(1).GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().text = selectedEnemy.GetComponent<Enemy>().spells[0].name;
+                ui_SelectedEnemy.transform.GetChild(1).GetChild(1).GetChild(0).GetComponent<TextMeshProUGUI>().text = selectedEnemy.GetComponent<Enemy>().spells[1].name;
+                ui_SelectedEnemy.transform.GetChild(1).GetChild(2).GetChild(0).GetComponent<TextMeshProUGUI>().text = selectedEnemy.GetComponent<Enemy>().spells[2].name;
+                ui_SelectedEnemy.transform.GetChild(1).GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().text = selectedEnemy.GetComponent<Enemy>().spells[3].name;
+            }
+        }
+    }
 }

@@ -46,7 +46,7 @@ public class Stats : MonoBehaviour
         }
         else
         {
-            ShowFloatingText(damage.ToString(), Color.green);
+            ShowFloatingText((damage * -1).ToString(), Color.green);
         }
 
         if (health <= 0)

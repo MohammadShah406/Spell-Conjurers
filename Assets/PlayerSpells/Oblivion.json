@@ -3,7 +3,7 @@
     "accuracy": 85,
     "resourceCost": 20,
     "range": 3,
-    "selfDamage": 5,
+    "selfDamage": -5,
     "support": false,
     "name": "Oblivion",
     "description": "Unleashes a dark energy that damages the target and drains their vitality.",
