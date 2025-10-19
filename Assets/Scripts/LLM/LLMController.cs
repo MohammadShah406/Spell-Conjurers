@@ -138,6 +138,12 @@ public class LLMController : MonoBehaviour
         string skillPrompt =
             $"Generate a JSON object representing a game skill with the following fields: " +
             $"The skill concept is: {prompt}. " +
+             "If this skill requires a new behavior script, output a JSON object in this exact format:\n" +
+             "{\n" +
+             "  \"target\": \"The GameObject that this script should be attached to (e.g., Player, Projectile, Enemy)\",\n" +
+             "  \"scriptName\": \"The C# class name for the script\",\n" +
+             "  \"script\": \"The full valid Unity C# script code\"\n" +
+             "}\n" +
             $"Output only valid JSON without code blocks or explanations.";
         skillPrompt += loadedPrompt;
         string allScripts = LoadAllProjectScripts();
@@ -248,7 +254,7 @@ public class LLMController : MonoBehaviour
 
     
         string allScripts = sb.ToString();
-        if (allScripts.Length > 100000)//characters is 1000000 for token limit
+        if (allScripts.Length > 100000)//characters is 1000000 for token limit change it if we need to increase the char
         {
             allScripts = allScripts.Substring(0, 50000);
             Debug.LogWarning("Script context truncated to fit within token limits.");
