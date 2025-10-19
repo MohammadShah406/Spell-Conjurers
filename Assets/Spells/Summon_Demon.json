@@ -1,0 +1,18 @@
+{
+  "name": "Summon Demon",
+  "description": "Conjures a fierce demon to fight for the caster.",
+  "damage": 35,
+  "accuracy": 85,
+  "resourceCost": 10,
+  "range": 1,
+  "selfDamage": 0,
+  "support": false,
+  "spellVisualType": "Demon Summon",
+  "status": "None",
+  "statusDuration": 0,
+  "statusDamagePerTurn": 0,
+  "code": "string actionLog = \"\";\r\n        \r\n            GameObject demon = Instantiate(demonPrefab, transform.position, Quaternion.identity);\r\n            actionLog += from.name + \" summoned a demon to the battlefield!\";\r\n        \r\n        ",
+  "target": "Environment",
+  "scriptName": "DemonSummon",
+  "script": "using UnityEngine;\r\n\r\npublic class DemonSummon : MonoBehaviour\r\n{\r\n    public GameObject demonPrefab;\r\n\r\n    private void Start()\r\n    {\r\n        // Initial setup if needed\r\n    }\r\n\r\n    public void Summon()\r\n    {\r\n        Instantiate(demonPrefab, transform.position, Quaternion.identity);\r\n        Debug.Log(\"A demon has been summoned!\");\r\n    }\r\n}"
+}

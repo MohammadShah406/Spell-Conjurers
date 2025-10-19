@@ -2,22 +2,108 @@ Use the parameters from the example as a guide for the values.
 Players max health is 100.
 Max resource is 100.
 Range is 1 range equals 1 tile.
+Spells will be balanced following these rules
+The most optimal damage spell will do 35 damage and 5 resource points. If it’s less than 35 it can cost less resources. Same for healing spells 35 is the optimal heal and 5 is resource cost
+If the damage spell is more than 35 it must be balanced by costing more resources and with additional penalties such as self damage, self status or debuff, Low accuracy etc. 
+Spells with secondary status effects should do less damage and cost more. 
+Spell range should depend on the type of attack. Bow, Gun or Magic should have 2-3 grid tiles range . Melee should always be limited to adjacent grids, so range should be 1 for melee unless it’s a weapon throw or spear then it can be 2 but never more than 2. 
+If the spell does more than 70 damage or heals they should cause a catastrophic side effect like a 5% chance Spell casting NPC will die.
+All support type moves except Healing will be highly unpredictable with extreme cases of 1% accuracy or 50% chance of causing self harm. 
+All scripts that are generated will have a full working function not just only a debug. 
+
 Make sure all skills are balance.
 Output valid JSON only. Do not explain. Do not use markdown or code blocks. Output JSON with the exact structure and field names as described.
+You are generating Unity spell data in JSON format for a game.
 
+Each spell must include both gameplay properties and (optionally) runtime code.
 
+The JSON must match this structure exactly:
+
+{{
+  ""name"": ""string"",
+  ""description"": ""string"",
+  ""damage"": int,
+  ""accuracy"": int,
+  ""resourceCost"": int,
+  ""range"": int,
+  ""selfDamage"": int,
+  ""support"": bool,
+  ""spellVisualType"": ""string"",
+  ""status"": ""string"",
+  ""statusDuration"": int,
+  ""statusDamagePerTurn"": int,
+  ""code"": ""string (optional - simple skill logic)"",
+  ""target"": ""string (e.g. Player, Projectile, Enemy, or Environment)"",
+  ""scriptName"": ""string (the class name for the generated C# script)"",
+  ""script"": ""string (a complete C# MonoBehaviour script, if needed)""
+}}
+
+For example:
+{{
+  public string name"": ""Exploding Fireball"",
+  public string description"": ""A projectile that explodes on impact dealing AOE damage."",
+  public int damage"": 40,
+  public int accuracy"": 90,
+  public int resourceCost"": 25,
+  public int range"": 20,
+  public int selfDamage"": 0,
+  public bool support"": false,
+  public string spellVisualType"": ""Fireball"",
+  public string status"": ""Burn"",
+  public int statusDuration"": 3,
+  public int statusDamagePerTurn"": 5,
+  public string code"": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" hurled a Fireball at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(spell.status, spell.statusDuration, spell.statusDamagePerTurn);\r\n        \r\n        ",
+  public string target"": ""Projectile"",
+  public string scriptName"": ""ExplodingProjectile"",
+  public string script"":
+"using UnityEngine;
+ using System.Collections.Generic;
+
+public class TurnBasedSummonExample : MonoBehaviour
 {
-    "damage": 1,
-    "accuracy": 90,
-    "resourceCost": 10,
-    "range": 10,
-    "selfDamage": 0,
-    "support": false,
-    "name": "Ice Lance",
-    "description": "Hurls an ice lance at surprising accuracy",
-    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" hurled a Fireball at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(spell.status, spell.statusDuration, spell.statusDamagePerTurn);\r\n        \r\n        ",
-    "spellVisualType": "Sphere",
-    "status": "None",
-    "statusDuration": 0,
-    "statusDamagePerTurn": 0
+    public GameObject summonerPrefab;
+    public GameObject monsterPrefab;
+
+    private List<Unit> allUnits = new List<Unit>();
+    private int currentUnitIndex = 0;
+
+    private void Start()
+    {
+        Unit summoner = SpawnUnit(summonerPrefab, new Vector2Int(2, 1), Team.Player);
+        Unit enemy = SpawnUnit(summonerPrefab, new Vector2Int(2, 4), Team.Enemy);
+        allUnits.Add(summoner);
+        allUnits.Add(enemy);
+        StartTurn();
+    }
+
+    private Unit SpawnUnit(GameObject prefab, Vector2Int gridPos, Team team)
+    {
+        Vector3 pos = new Vector3(gridPos.x, 0, gridPos.y);
+        GameObject obj = Instantiate(prefab, pos, Quaternion.identity);
+        Unit u = obj.AddComponent<Unit>();
+        u.gridPos = gridPos;
+        u.team = team;
+        u.example = this;
+        return u;
+    }
+
+    private void StartTurn()
+    {
+        if (allUnits.Count == 0) return;
+        Unit current = allUnits[currentUnitIndex];
+        current.OnTurnStart();
+    }
+
+    public void EndTurn(Unit unit)
+    {
+        currentUnitIndex = (currentUnitIndex + 1) % allUnits.Count;
+        StartTurn();
+    }
+
+    public void RegisterSummon(Unit summon)
+    {
+        allUnits.Insert(currentUnitIndex + 1, summon);
+    }
 }
+
+}}"

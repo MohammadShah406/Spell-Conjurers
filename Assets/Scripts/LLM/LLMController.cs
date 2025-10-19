@@ -89,7 +89,6 @@ public class LLMController : MonoBehaviour
     {
         Debug.Log($"Generating skill {skillIndex}: {prompt}");
 
-        // Run the async skill generation as a task
         Task<string> skillTask = GenerateSkillFromLLM(prompt);
         yield return new WaitUntil(() => skillTask.IsCompleted);
 
@@ -106,8 +105,7 @@ public class LLMController : MonoBehaviour
             yield break;
         }
 
-        // Save the JSON file
-        Spell spell = new Spell();
+        Spell spell;
         string fileName = $"{prompt.Replace(" ", "_")}.json";
         string savePath = Path.Combine(Application.dataPath, "Spells", fileName);
 
@@ -116,18 +114,129 @@ public class LLMController : MonoBehaviour
             spell = JsonConvert.DeserializeObject<Spell>(skillJson);
             if (spell == null || string.IsNullOrWhiteSpace(spell.name))
             {
-                Debug.LogError($"Skill {skillIndex} JSON was invalid or missing skillName.");
+                Debug.LogError($"Skill {skillIndex} JSON invalid or missing name.");
                 yield break;
             }
+
             fileName = $"{spell.name.Replace(" ", "_")}.json";
             savePath = Path.Combine(Application.dataPath, "Spells", fileName);
             File.WriteAllText(savePath, skillJson);
+
+#if UNITY_EDITOR
             UnityEditor.AssetDatabase.Refresh();
+#endif
+
             Debug.Log($"Skill {skillIndex} saved to {savePath}");
+
+            // Compile and attach script
+            if (!string.IsNullOrWhiteSpace(spell.script))
+            {
+                Debug.Log($"Compiling generated script for {spell.name}...");
+                Type compiledType = RuntimeCompiler.CompileType(spell.script, spell.scriptName);
+
+                if (compiledType != null)
+                {
+                    GameObject target = ResolveTarget(spell.target) ?? GameObject.FindWithTag("Player");
+
+                    if (target != null)
+                    {
+                        if (target.GetComponent(compiledType) == null)
+                        {
+                            var component = target.AddComponent(compiledType);
+                            Debug.Log($"Attached {compiledType.Name} to {target.name}");
+
+                            // Auto-assign fields if they match available objects
+                            AutoAssignFields(component);
+                        }
+                        else
+                        {
+                            Debug.Log($"{compiledType.Name} already exists on {target.name}, skipping duplicate.");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError("No valid target found for script attachment.");
+                    }
+                }
+                else
+                {
+                    Debug.LogError("Script compilation failed — could not attach.");
+                }
+            }
         }
         catch (Exception ex)
         {
-            Debug.LogError($"Failed to save skill {skillIndex}: {ex.Message}");
+            Debug.LogError($"Failed to save or compile skill {skillIndex}: {ex.Message}");
+        }
+    }
+    private void AutoAssignFields(Component component)
+    {
+        var fields = component.GetType()
+        .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+
+        foreach (var field in fields)
+        {
+            if (field.FieldType == typeof(GameObject))
+            {
+                string fieldName = field.Name;
+                GameObject found = GameObject.Find(fieldName);
+
+                if (found == null)
+                    found = GameObject.FindWithTag(fieldName);
+
+                if (found == null)
+                    found = Resources.Load<GameObject>($"Prefabs/{fieldName}");
+
+#if UNITY_EDITOR
+                // Try loading from generated folder
+                if (found == null)
+                    found = Resources.Load<GameObject>($"GeneratedPrefabs/{fieldName}");
+#endif
+
+                // Auto-create if missing
+                if (found == null)
+                {
+                    Debug.LogWarning($"No object or prefab found for '{fieldName}', creating one automatically.");
+                    found = new GameObject(fieldName);
+
+#if UNITY_EDITOR
+                    string folderPath = "Assets/Resources/GeneratedPrefabs";
+                    if (!Directory.Exists(folderPath))
+                        Directory.CreateDirectory(folderPath);
+
+                    string prefabPath = $"{folderPath}/{fieldName}.prefab";
+                    UnityEditor.PrefabUtility.SaveAsPrefabAsset(found, prefabPath);
+                    UnityEditor.AssetDatabase.Refresh();
+
+                    Debug.Log($"Created new prefab: {prefabPath}");
+#endif
+                }
+
+                if (found != null)
+                {
+                    field.SetValue(component, found);
+                    Debug.Log($"Assigned GameObject '{fieldName}' to {component.GetType().Name}");
+                }
+            }
+            else if (typeof(Component).IsAssignableFrom(field.FieldType))
+            {
+                var found = GameObject.FindFirstObjectByType(field.FieldType);
+                if (found != null)
+                {
+                    field.SetValue(component, found);
+                    Debug.Log($"Assigned Component '{field.FieldType.Name}' to {component.GetType().Name}");
+                }
+                else
+                {
+#if UNITY_EDITOR
+                    // Create an empty GameObject with this component if not found
+                    GameObject newObj = new GameObject(field.FieldType.Name);
+                    var newComp = newObj.AddComponent(field.FieldType);
+                    field.SetValue(component, newComp);
+                    Debug.Log($"Created new component '{field.FieldType.Name}' for {component.GetType().Name}");
+#endif
+                }
+            }
         }
     }
     private async Task<string> GenerateSkillFromLLM(string prompt)
@@ -261,5 +370,39 @@ public class LLMController : MonoBehaviour
         }
 
         return allScripts;
+    }
+    private GameObject ResolveTarget(string targetName)
+    {
+        if (string.IsNullOrEmpty(targetName))
+            return null;
+
+        // Try to find existing object by name
+        GameObject obj = GameObject.Find(targetName);
+        if (obj != null) return obj;
+
+        // Try to find by tag (ignore if tag not found)
+        try
+        {
+            obj = GameObject.FindWithTag(targetName);
+            if (obj != null) return obj;
+        }
+        catch { }
+
+        // Try Resources
+        GameObject prefab = Resources.Load<GameObject>($"Prefabs/{targetName}");
+        if (prefab == null)
+            prefab = Resources.Load<GameObject>($"GeneratedPrefabs/{targetName}");
+        if (prefab != null)
+            return Instantiate(prefab);
+
+#if UNITY_EDITOR
+        // Auto-create prefab + tag
+        return TagUtility.EnsurePrefabExists(targetName);
+#else
+    // Runtime fallback in builds
+    GameObject go = new GameObject(targetName);
+    go.name = targetName;
+    return go;
+#endif
     }
 }

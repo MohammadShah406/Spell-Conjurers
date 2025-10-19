@@ -11,11 +11,14 @@ public class Spell
     public bool support;
     public string name;
     public string description;
-    public string code;
+    public string code; // for function
 
     public string spellVisualType;
     public string status;
     public int statusDuration;
     public int statusDamagePerTurn;
 
+    public string target;       
+    public string scriptName;   
+    public string script;       // full C# MonoBehaviour code
 }

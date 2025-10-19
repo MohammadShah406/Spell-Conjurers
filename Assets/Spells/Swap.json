@@ -1,0 +1,18 @@
+{
+  "name": "Swap",
+  "description": "Exchange positions with an adjacent ally or enemy.",
+  "damage": 0,
+  "accuracy": 100,
+  "resourceCost": 5,
+  "range": 1,
+  "selfDamage": 0,
+  "support": true,
+  "spellVisualType": "SwapEffect",
+  "status": "None",
+  "statusDuration": 0,
+  "statusDamagePerTurn": 0,
+  "code": "string actionLog = \"\";\r\nif (target != null)\r\n{\r\n    Vector2Int originalPosition = new Vector2Int(Mathf.RoundToInt(from.transform.position.x), Mathf.RoundToInt(from.transform.position.z));\r\n    Vector2Int targetPosition = new Vector2Int(Mathf.RoundToInt(target.transform.position.x), Mathf.RoundToInt(target.transform.position.z));\r\n    from.transform.position = targetPosition;\r\n    target.transform.position = originalPosition;\r\n    actionLog += from.name + \" swapped positions with \" + target.name + \".\";\r\n}",
+  "target": "Player",
+  "scriptName": "SwapBehavior",
+  "script": "using UnityEngine;\r\nusing System.Collections;\r\n\r\npublic class SwapBehavior : MonoBehaviour\r\n{\r\n    public GameObject target;\r\n    \r\n    public void ExecuteSwap(GameObject from)\r\n    {\r\n        if (target != null)\r\n        {\r\n            Vector2Int originalPosition = new Vector2Int(Mathf.RoundToInt(from.transform.position.x), Mathf.RoundToInt(from.transform.position.z));\r\n            Vector2Int targetPosition = new Vector2Int(Mathf.RoundToInt(target.transform.position.x), Mathf.RoundToInt(target.transform.position.z));\r\n            from.transform.position = targetPosition;\r\n            target.transform.position = originalPosition;\r\n        }\r\n    }\r\n}"
+}

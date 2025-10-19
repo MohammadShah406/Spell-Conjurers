@@ -1,0 +1,18 @@
+{
+  "name": "Summon Rayan",
+  "description": "Calls forth the spirit of Rayan to aid in battle.",
+  "damage": 0,
+  "accuracy": 100,
+  "resourceCost": 10,
+  "range": 1,
+  "selfDamage": 0,
+  "support": true,
+  "spellVisualType": "Summoning",
+  "status": "None",
+  "statusDuration": 0,
+  "statusDamagePerTurn": 0,
+  "code": "void Start() {\r\n    Instantiate(rayanPrefab, transform.position, Quaternion.identity);\r\n}",
+  "target": "Enemy",
+  "scriptName": "SummonRayan",
+  "script": "using UnityEngine;\r\n\r\npublic class SummonRayan : MonoBehaviour {\r\n    public GameObject rayanPrefab;\r\n\r\n    void Start() {\r\n        Instantiate(rayanPrefab, transform.position, Quaternion.identity);\r\n    }\r\n}"
+}

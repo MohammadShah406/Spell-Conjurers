@@ -1,0 +1,18 @@
+{
+  "name": "Ice Bolt",
+  "description": "A chilling bolt of ice that deals damage and has a chance to freeze the target.",
+  "damage": 30,
+  "accuracy": 85,
+  "resourceCost": 4,
+  "range": 2,
+  "selfDamage": 0,
+  "support": false,
+  "spellVisualType": "Ice",
+  "status": "Freeze",
+  "statusDuration": 2,
+  "statusDamagePerTurn": 0,
+  "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" cast Ice Bolt on \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(spell.status, spell.statusDuration, spell.statusDamagePerTurn);\r\n        \r\n        ",
+  "target": "Enemy",
+  "scriptName": "IceBolt",
+  "script": "using UnityEngine;\r\n\r\npublic class IceBolt : MonoBehaviour\r\n{\r\n    public float freezeChance = 0.25f;\r\n\r\n    void Start() {\r\n        // Initialization if needed\r\n    }\r\n\r\n    public void CastIceBolt(GameObject target)\r\n    {\r\n        // Logic to cast Ice Bolt\r\n        if (Random.value <= freezeChance)\r\n        {\r\n            // Apply freeze status to target\r\n            target.GetComponent<Stats>().StatusDamage(\"Freeze\", 2, 0);\r\n        }\r\n    }\r\n}"
+}

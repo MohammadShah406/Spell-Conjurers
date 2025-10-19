@@ -144,6 +144,9 @@ MonoBehaviour:
     status: 
     statusDuration: 0
     statusDamagePerTurn: 0
+    target: 
+    scriptName: 
+    script: 
   - damage: 0
     accuracy: 0
     resourceCost: 0
@@ -157,6 +160,9 @@ MonoBehaviour:
     status: 
     statusDuration: 0
     statusDamagePerTurn: 0
+    target: 
+    scriptName: 
+    script: 
   - damage: 0
     accuracy: 0
     resourceCost: 0
@@ -170,6 +176,9 @@ MonoBehaviour:
     status: 
     statusDuration: 0
     statusDamagePerTurn: 0
+    target: 
+    scriptName: 
+    script: 
   - damage: 0
     accuracy: 0
     resourceCost: 0
@@ -183,6 +192,9 @@ MonoBehaviour:
     status: 
     statusDuration: 0
     statusDamagePerTurn: 0
+    target: 
+    scriptName: 
+    script: 
   preffered: 0
 --- !u!114 &4304294238587302398
 MonoBehaviour:
@@ -196,10 +208,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e993916f1466c3b4bbff0ccbdd6b79b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxHealth: 10
+  maxResource: 100
   health: 10
   armor: 0
+  resource: 100
   statuses: []
   floatingTextPrefab: {fileID: 7453728233935770986, guid: bba6f4ff8db24d24081c4ecda64671e6, type: 3}
+  uiStatsHolder: {fileID: 0}
 --- !u!1 &3671256503806757496
 GameObject:
   m_ObjectHideFlags: 0

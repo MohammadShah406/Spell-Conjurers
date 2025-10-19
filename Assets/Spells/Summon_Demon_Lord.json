@@ -1,0 +1,18 @@
+{
+  "name": "Summon Demon Lord",
+  "description": "Summons a powerful demon lord to fight for you.",
+  "damage": 50,
+  "accuracy": 75,
+  "resourceCost": 30,
+  "range": 1,
+  "selfDamage": 10,
+  "support": false,
+  "spellVisualType": "Dark Portal",
+  "status": "None",
+  "statusDuration": 0,
+  "statusDamagePerTurn": 0,
+  "code": "string actionLog = \"\";\r\n        \r\n            GameObject demonLord = Instantiate(demonLordPrefab, transform.position, Quaternion.identity);\r\n            actionLog += from.name + \" summoned a demon lord!\";\r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            from.GetComponent<Stats>().takeDamage(spell.selfDamage);\r\n        \r\n        ",
+  "target": "Enemy",
+  "scriptName": "DemonLordSummon",
+  "script": "using UnityEngine;\r\n\r\npublic class DemonLordSummon : MonoBehaviour\r\n{\r\n    public GameObject demonLordPrefab;\r\n\r\n    public void SummonDemonLord(GameObject from, GameObject to)\r\n    {\r\n        GameObject demonLord = Instantiate(demonLordPrefab, from.transform.position, Quaternion.identity);\r\n        demonLord.GetComponent<Stats>().Initialize(); // Assuming demon lord has an Initialize method\r\n        from.GetComponent<Stats>().takeDamage(10); // 10 self damage for summoning\r\n        Debug.Log(from.name + \" summoned a demon lord!\");\r\n    }\r\n}"
+}
