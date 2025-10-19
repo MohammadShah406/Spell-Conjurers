@@ -455,6 +455,7 @@ public class PlayerFunctionality : MonoBehaviour
                     ui_SelectedEnemy.SetActive(true);
                     playerSpellPanel.SetActive(false);
                     playerStatsHolder.SetActive(false);
+                    ResetSpellTextHolder();
                 }
             }
         }

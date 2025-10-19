@@ -37,7 +37,7 @@ public class TurnManager : MonoBehaviour
 
     void Update()
     {
-        // For switch turn
+        // Force switch turn
         if (Input.GetKeyDown(KeyCode.T))
         {
             EndPlayerTurn();
@@ -51,6 +51,8 @@ public class TurnManager : MonoBehaviour
         Debug.Log("Player turn ended. Starting enemy turn...");
         currentState = TurnState.EnemyTurn;
         StartCoroutine(HandleEnemyTurn());
+
+        GameManager.Instance.CheckGameState();
     }
 
     private IEnumerator HandleEnemyTurn()
@@ -58,9 +60,10 @@ public class TurnManager : MonoBehaviour
         // Tell the enemies to act
         yield return StartCoroutine(enemyManager.StartEnemyTurnsCoroutine());
 
+        GameManager.Instance.CheckGameState();
         Debug.Log("Enemy turn complete. Back to player turn.");
         currentState = TurnState.PlayerTurn;
-        GameManager.Instance.player[0].GetComponent<PlayerFunctionality>().OnTurnStart();
+        GameManager.Instance.players[0].GetComponent<PlayerFunctionality>().OnTurnStart();
 
 
         // Reset player movement for next turn

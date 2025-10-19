@@ -9,6 +9,7 @@ public class Stats : MonoBehaviour
 {
     public int maxHealth = 10;
     public int maxResource = 100;
+    public bool isDead = false;
 
     public int health = 10;
     public int armor = 0;
@@ -52,6 +53,7 @@ public class Stats : MonoBehaviour
         if (health <= 0)
         {
             Debug.Log("Gameobject " + gameObject.name + " died");
+            isDead = true;
         }
 
         if(gameObject.tag == "Player")

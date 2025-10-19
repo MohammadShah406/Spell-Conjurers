@@ -74,7 +74,7 @@ public class GridManager : MonoBehaviour
         Vector2Int playerStartPos = new Vector2Int(width / 2, 0); // center bottom of grid
         var instantiatedPlayerObj = Instantiate(playerPrefab, new Vector3(playerStartPos.x, 1.5f, playerStartPos.y), Quaternion.identity);
         playerObj = instantiatedPlayerObj;
-        GameManager.Instance.player.Add(playerObj);
+        GameManager.Instance.players.Add(playerObj);
         GetTile(playerStartPos).occupant = instantiatedPlayerObj;
 
         var playerScript = instantiatedPlayerObj.GetComponent<PlayerFunctionality>();
