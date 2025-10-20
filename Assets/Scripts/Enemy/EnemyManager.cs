@@ -26,6 +26,16 @@ public class EnemyManager : MonoBehaviour
     public float WTh = 0.8f; //Threat avoidance 
 
 
+
+    public float Wp = 1.0f;    // prioritize supports
+    public float Wv = 5.0f;    // target low-HP units
+    public float Wd = 2.0f;    // prefer closer targets
+    public float WTh2 = 0.8f;  // Threat avoidance if target is not within range
+
+
+
+
+
     public void AddEnemy(Enemy enemy)
     {
         enemies.Add(enemy);
@@ -167,11 +177,12 @@ public class EnemyManager : MonoBehaviour
         }
     }
 
-    public Dictionary<String, object> calculateScore(Enemy enemy)
+    public Dictionary<String, object> CalculateScore(Enemy enemy)
     {
         Dictionary<String, object> result = new Dictionary<String, object>();
         float score = 0;
         GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        Player nearestPlayer = null;
         foreach (GameObject player in players)
         {
             Stats playerStats = player.GetComponent<Stats>();
@@ -185,8 +196,9 @@ public class EnemyManager : MonoBehaviour
                     Locations = GetPositionsWithinManhattanDistance(playerFunctionality.gridPosition, spell.range, widthGrid, heightGrid);
                     foreach (Vector2Int location in Locations)
                     {
+                        
                         int moveDistance = ManhattanDistance(location, enemy.gridPosition);
-                        if (moveDistance <= enemy.moveRange)
+                        if (moveDistance <= enemy.moveRange && gridManager.grid[location.x,location.y].occupant == null)
                         {
                             float Damage = spell.damage * (spell.accuracy / 100);
                             float KillBonus = (playerStats.health - Damage) <= 0 ? 1 : 0;
@@ -216,8 +228,32 @@ public class EnemyManager : MonoBehaviour
             return result;
         else
         {
-            Vector2Int finalLocation = new Vector2Int(0,0);
-            result["Location"] = finalLocation;
+            List<Vector2Int> Locations = new List<Vector2Int>();
+            Locations = GetPositionsWithinManhattanDistance(enemy.gridPosition, enemy.moveRange, widthGrid, heightGrid);
+            foreach (Vector2Int location in Locations)
+            {
+                float tileScore = 0;
+                if (gridManager.grid[location.x, location.y].occupant != null) continue;
+                foreach (GameObject player in players)
+                {
+                    Stats playerStats = player.GetComponent<Stats>();
+                    PlayerFunctionality playerFunctionality = player.GetComponent<PlayerFunctionality>();
+
+                    float supportTarget = (playerStats.type == Stats.Type.Support) ? 1 : 0;
+                    float Vulnerability = 1 - (playerStats.health / playerStats.maxHealth);
+                    float distanceFactor = 1 / (1 + ManhattanDistance(location, playerFunctionality.gridPosition));
+                    //float KillBonus = (playerStats.health - Damage) <= 0 ? 1 : 0;
+                    float Threat = threatGrid[location.x, location.y];
+
+                    float tempTileScore = supportTarget * Wp + Vulnerability * Wv + distanceFactor* Wd - Threat*WTh2;
+                    if (tempTileScore > tileScore) tileScore = tempTileScore;
+                }
+                if (tileScore > score)
+                {
+                    score = tileScore;
+                    result["location"] = location;
+                }
+            }
             return result;
         }
             
