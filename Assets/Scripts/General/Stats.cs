@@ -21,6 +21,14 @@ public class Stats : MonoBehaviour
 
     public GameObject uiStatsHolder;
 
+    public enum Type
+    {
+        Attack,
+        Support
+    }
+    public Type type = Type.Attack;
+
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {

@@ -1,6 +1,8 @@
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -13,6 +15,16 @@ public class EnemyManager : MonoBehaviour
     public Transform player;
     private Dictionary<GameObject, int[]> playerMaxDamageList = new Dictionary<GameObject, int[]>();
     private GridManager gridManager;
+    private int widthGrid;
+    private int heightGrid;
+
+    public float WD = 1.0f;    // damage
+    public float WK = 5.0f;    // sure kill
+    public float WA = 2.0f;    // target priority
+    public float WDb = 0.5f;    // proximity
+    public float WR = 1.5f;   // efficiency
+    public float WTh = 0.8f; //Threat avoidance 
+
 
     public void AddEnemy(Enemy enemy)
     {
@@ -51,6 +63,8 @@ public class EnemyManager : MonoBehaviour
 
     public void initializeThreatGrid(int height, int width)
     {
+        widthGrid = width;
+        heightGrid = height;
         gridManager = GameObject.FindFirstObjectByType<GridManager>();
         GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
         //eM_PlayerDatas = new EM_PlayerData[4];
@@ -153,20 +167,90 @@ public class EnemyManager : MonoBehaviour
         }
     }
 
-    public void calculateScore(Enemy enemy)
+    public Dictionary<String, object> calculateScore(Enemy enemy)
     {
-        foreach (Tile tile in gridManager.grid)
+        Dictionary<String, object> result = new Dictionary<String, object>();
+        float score = 0;
+        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        foreach (GameObject player in players)
         {
-            if (tile == null) continue;
-            int distance = Mathf.Abs(tile.gridPosition.x - enemy.gridPosition.x) + Mathf.Abs(tile.gridPosition.y - enemy.gridPosition.y);
-            if (distance <= enemy.moveRange && tile.occupant == null)
+            Stats playerStats = player.GetComponent<Stats>();
+            PlayerFunctionality playerFunctionality = player.GetComponent<PlayerFunctionality>();
+            int distance = ManhattanDistance(enemy.gridPosition, playerFunctionality.gridPosition);
+            foreach (Spell spell in enemy.spells)
             {
-                foreach (Spell spell in enemy.spells)
+                if (distance <= spell.range + enemy.moveRange)
                 {
-                    if (spell == null) continue;
-                    
+                    List<Vector2Int> Locations = new List<Vector2Int>();
+                    Locations = GetPositionsWithinManhattanDistance(playerFunctionality.gridPosition, spell.range, widthGrid, heightGrid);
+                    foreach (Vector2Int location in Locations)
+                    {
+                        int moveDistance = ManhattanDistance(location, enemy.gridPosition);
+                        if (moveDistance <= enemy.moveRange)
+                        {
+                            float Damage = spell.damage * (spell.accuracy / 100);
+                            float KillBonus = (playerStats.health - Damage) <= 0 ? 1 : 0;
+                            float supportTarget = (playerStats.type == Stats.Type.Support) ? 1 : 0;
+                            float distanceBonus = (enemy.moveRange - moveDistance) / enemy.moveRange;
+                            float resourceBonus = (Damage / spell.resourceCost) * 0.01f;
+                            float Threat = threatGrid[location.x, location.y];
+
+                            float currentScore = WD * Damage + WK * KillBonus + WA * supportTarget + WDb * distanceBonus +
+                                WR * resourceBonus - WTh * Threat;
+                            currentScore = Math.Clamp(score, 0, 100);
+                            if (currentScore > score)
+                            {
+                                score = currentScore;
+                                result["Location"] = location;
+                                result["target"] = player;
+                                result["sepll"] = spell;
+                            }
+                        }
+
+                    }
                 }
             }
         }
+
+        if (score != 0)
+            return result;
+        else
+        {
+            Vector2Int finalLocation = new Vector2Int(0,0);
+            result["Location"] = finalLocation;
+            return result;
+        }
+            
     }
+
+    public static List<Vector2Int> GetPositionsWithinManhattanDistance(
+        Vector2Int origin, int distance, int gridWidth, int gridHeight)
+    {
+        List<Vector2Int> positions = new List<Vector2Int>();
+
+        for (int dx = -distance; dx <= distance; dx++)
+        {
+            for (int dy = -distance; dy <= distance; dy++)
+            {
+   
+                if (Mathf.Abs(dx) + Mathf.Abs(dy) <= distance)
+                {
+                    int newX = origin.x + dx;
+                    int newY = origin.y + dy;
+
+                    if (newX >= 0 && newX < gridWidth && newY >= 0 && newY < gridHeight)
+                    {
+                        positions.Add(new Vector2Int(newX, newY));
+                    }
+                }
+            }
+        }
+
+        return positions;
+    }
+    public static int ManhattanDistance(Vector2Int a, Vector2Int b)
+    {
+        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
+    }
+
 }
