@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.Rendering.Universal;
 
 public class Enemy : MonoBehaviour
 {
@@ -16,6 +18,16 @@ public class Enemy : MonoBehaviour
 
     public Spell[] spells = new Spell[4];
     public int preffered = 0;
+
+    public bool debugMode = true;
+
+    private void Update()
+    {
+        if(Input.GetKeyDown(KeyCode.Escape) && debugMode)
+        {
+            EnemyManager.Instance.ClearScoreDebug();
+        }
+    }
 
     public void Initialize(Vector2Int startPos, GridManager grid, GameObject playerRef)
     {
@@ -34,8 +46,6 @@ public class Enemy : MonoBehaviour
 
     public IEnumerator TakeTurn(System.Action onComplete)
     {
-
-        
 
         EnemyManager.Instance.calculateThreatGrid();
         Dictionary<String, object> result = new Dictionary<String, object>();
@@ -181,4 +191,15 @@ public class Enemy : MonoBehaviour
         Debug.Log("Attacking Player with " + spell.name);
         ActionManager.Instance.UseSpell(spell, this.gameObject, target);
     }
+
+    private void OnMouseDown()
+    {
+        if(debugMode)
+        {
+            EnemyManager.Instance.ClearScoreDebug();
+            EnemyManager.Instance.ShowScoreGrid(this);
+        }
+    }
+
+    
 }

@@ -1,7 +1,8 @@
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using TMPro;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -9,7 +10,6 @@ using UnityEngine.TestTools;
 public class EnemyManager : MonoBehaviour
 {
     public List<Enemy> enemies = new List<Enemy>();
-    private Player[] players;
     
     float[,] threatGrid;
     private bool isTakingTurn;
@@ -18,7 +18,7 @@ public class EnemyManager : MonoBehaviour
     private GridManager gridManager;
     private int widthGrid;
     private int heightGrid;
-
+    
     public static EnemyManager Instance { get; private set; }
 
 
@@ -37,6 +37,9 @@ public class EnemyManager : MonoBehaviour
     public float oorWeightCloseTarget = 2.0f;    // prefer closer targets
     public float oorWeightThreat = 0.8f;  // Threat avoidance if target is not within range
 
+    
+    
+
 
     private void Awake()
     {
@@ -53,36 +56,6 @@ public class EnemyManager : MonoBehaviour
     public void AddEnemy(Enemy enemy)
     {
         enemies.Add(enemy);
-    }
-
-    public void StartEnemyTurns()
-    {
-        if (!isTakingTurn)
-            StartCoroutine(EnemyTurnRoutine());
-    }
-
-    public IEnumerator StartEnemyTurnsCoroutine()
-    {
-        if (isTakingTurn)
-            yield break;
-
-        isTakingTurn = true;
-        yield return StartCoroutine(EnemyTurnRoutine());
-        isTakingTurn = false;
-    }
-    private IEnumerator EnemyTurnRoutine()
-    {
-        isTakingTurn = true;
-
-        foreach (var enemy in enemies)
-        {
-            enemy.GetComponent<Stats>().TakeStatusDamage();
-            yield return enemy.TakeTurn(() => { });
-            yield return new WaitForSeconds(0.25f);
-        }
-
-        isTakingTurn = false;
-        Debug.Log("All enemies finished their turns!");
     }
 
     public void initializeThreatGrid(int height, int width)
@@ -291,6 +264,73 @@ public class EnemyManager : MonoBehaviour
     public static int ManhattanDistance(Vector2Int a, Vector2Int b)
     {
         return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
+    }
+
+    public void ShowScoreGrid(Enemy enemy)
+    {
+        // Clear previous debug text
+        ClearScoreDebug();
+
+        if (gridManager == null) gridManager = GridManager.Instance;
+        if (gridManager == null) return;
+
+        // Get enemy's best score data
+        var result = CalculateScore(enemy);
+        if (result == null || !result.ContainsKey("score")) return;
+
+        Vector2Int bestLoc = (Vector2Int)result["location"];
+        float bestScore = (float)result["score"];
+
+        for (int x = 0; x < widthGrid; x++)
+        {
+            for (int y = 0; y < heightGrid; y++)
+            {
+                Tile tile = gridManager.grid[x, y];
+                if (tile == null) continue;
+
+                // Example dummy scoring for visualization
+                float tileScore = UnityEngine.Random.Range(0f, 1f); // Replace this with real AI score if needed
+
+                GameObject textObj = new GameObject($"ScoreDebug_{x}_{y}");
+                textObj.transform.SetParent(gridManager.map.transform);
+                textObj.transform.position = tile.transform.position + Vector3.up * 1.5f;
+
+                TextMeshPro tmp = textObj.AddComponent<TextMeshPro>();
+                tmp.fontSize = 2;
+                tmp.alignment = TextAlignmentOptions.Center;
+                tmp.text = tileScore.ToString("F2");
+                tmp.color = Color.Lerp(Color.red, Color.green, tileScore);
+
+#if UNITY_EDITOR
+                // Make text always face Scene camera in the Editor
+                textObj.AddComponent<SceneBillboard>();
+#endif
+            }
+        }
+
+        // Highlight best location
+        Tile bestTile = gridManager.GetTile(bestLoc);
+        if (bestTile != null)
+        {
+            GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            marker.name = "ScoreDebug_BestTile";
+            marker.transform.SetParent(gridManager.map.transform);
+            marker.transform.position = bestTile.transform.position + Vector3.up * 1.2f;
+            marker.transform.localScale = Vector3.one * 0.3f;
+            marker.GetComponent<Renderer>().material.color = Color.yellow;
+            Destroy(marker.GetComponent<Collider>());
+        }
+
+        Debug.Log($"[EnemyManager] Best score: {bestScore:F2} at {bestLoc}");
+    }
+
+    public void ClearScoreDebug()
+    {
+        foreach (Transform child in gridManager.map.transform)
+        {
+            if (child.name.StartsWith("ScoreDebug_") || child.name == "ScoreDebug_BestTile")
+                Destroy(child.gameObject);
+        }
     }
 
 }

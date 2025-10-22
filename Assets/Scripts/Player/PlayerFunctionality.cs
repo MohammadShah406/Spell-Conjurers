@@ -94,12 +94,12 @@ public class PlayerFunctionality : MonoBehaviour
         }
 
         // If it's player turn and not moved yet, show reachable tiles
-        if (!hasMoved && selectedSpell == null)
+        if (!hasMoved && TurnManager.Instance.currentState == TurnManager.TurnState.PlayerTurn && !hasMoved && selectedSpell == null)
         {
             HandleTileHighlights();
         }
-        
-        if(selectedSpell == null)
+
+        if (selectedSpell == null)
         {
             GetEnemyDetails();
         }
@@ -193,7 +193,7 @@ public class PlayerFunctionality : MonoBehaviour
     public void ResetTurn()
     {
         hasMoved = false;
-        selectedSpell = null; // 👈 ensures clean start each turn
+        selectedSpell = null; 
         foreach (Tile tile in highlightedTiles)
             tile.ResetHighlight();
         highlightedTiles.Clear();
@@ -251,19 +251,20 @@ public class PlayerFunctionality : MonoBehaviour
         spellTextHolder.gameObject.SetActive(true);
 
         spellTextHolder.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = "Spell : " + spell.name;
-        spellTextHolder.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "Cost : " + spell.resourceCost.ToString();
-        spellTextHolder.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "Range : " + spell.range.ToString();
+        spellTextHolder.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "Damage : " + spell.damage;
+        spellTextHolder.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "Cost : " + spell.resourceCost.ToString();
+        spellTextHolder.transform.GetChild(3).GetComponent<TextMeshProUGUI>().text = "Range : " + spell.range.ToString();
 
         if (spell.support)
         {
-            spellTextHolder.transform.GetChild(3).GetComponent<TextMeshProUGUI>().text = "Support : " + "Yes";
+            spellTextHolder.transform.GetChild(4).GetComponent<TextMeshProUGUI>().text = "Support : " + "Yes";
         }
         else
         {
-            spellTextHolder.transform.GetChild(3).GetComponent<TextMeshProUGUI>().text = "Support : " + "No";
+            spellTextHolder.transform.GetChild(4).GetComponent<TextMeshProUGUI>().text = "Support : " + "No";
         }
 
-        spellTextHolder.transform.GetChild(4).GetComponent<TextMeshProUGUI>().text = "Description : " + spell.description;
+        spellTextHolder.transform.GetChild(5).GetComponent<TextMeshProUGUI>().text = "Description : " + spell.description;
     }
 
     private void ResetSpellTextHolder()
@@ -448,4 +449,6 @@ public class PlayerFunctionality : MonoBehaviour
             }
         }
     }
+
+    
 }

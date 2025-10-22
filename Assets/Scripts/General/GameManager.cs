@@ -45,13 +45,23 @@ public class GameManager : MonoBehaviour
 
         if (playerDeaths >= players.Count)
         {
-            Debug.Log("Players Lost");
+            OnPlayersLost();
         }
         if (enemyDeaths >= enemies.Count)
         {
-            Debug.Log("Player Won");
+            OnPlayersWon();
         }
         
+    }
+
+    private void OnPlayersLost()
+    {
+        Debug.Log("Players Lost");
+    }
+
+    private void OnPlayersWon()
+    {
+        Debug.Log("Players Won");
     }
 
 }

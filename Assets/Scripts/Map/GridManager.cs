@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using static UnityEditor.Experimental.GraphView.GraphView;
@@ -69,18 +70,50 @@ public class GridManager : MonoBehaviour
 
     public void SpawnEnemies(int count)
     {
-        for (int i = 0; i < count; i++)
+        // Get all tiles in the back row
+        List<Vector2Int> availablePositions = new List<Vector2Int>();
+        int backRowY = height - 1;
+
+        for (int x = 0; x < width; x++)
         {
-            Vector2Int pos = new Vector2Int(i * 2, height - 1); // back row
+            if (grid[x, backRowY].occupant == null)
+                availablePositions.Add(new Vector2Int(x, backRowY));
+        }
+
+        // Safety check
+        if (availablePositions.Count == 0)
+        {
+            Debug.LogWarning("No available tiles in the back row to spawn enemies!");
+            return;
+        }
+
+        // Clamp to avoid spawning more enemies than spaces
+        int spawnCount = Mathf.Min(count, availablePositions.Count);
+
+        for (int i = 0; i < spawnCount; i++)
+        {
+            // Pick a random free tile
+            int randomIndex = Random.Range(0, availablePositions.Count);
+            Vector2Int pos = availablePositions[randomIndex];
+            availablePositions.RemoveAt(randomIndex); // prevent reusing the same tile
+
+            // Spawn enemy
             var enemyObj = Instantiate(enemyPrefab);
             enemyObj.name = "Enemy " + i;
             enemyObj.transform.parent = EnemyHolder.transform;
+            enemyObj.transform.position = new Vector3(pos.x, 1.5f, pos.y);
+
+            // Initialize and register
             var enemy = enemyObj.GetComponent<Enemy>();
             enemy.Initialize(pos, this, playerObj);
             enemyManager.AddEnemy(enemy);
             GameManager.Instance.enemies.Add(enemyObj);
+
+            // Mark the tile as occupied
+            GetTile(pos).occupant = enemyObj;
         }
     }
+
 
     private void SpawnPlayer()
     {
