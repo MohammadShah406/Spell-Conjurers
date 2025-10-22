@@ -1,4 +1,6 @@
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Enemy : MonoBehaviour
@@ -32,105 +34,32 @@ public class Enemy : MonoBehaviour
 
     public IEnumerator TakeTurn(System.Action onComplete)
     {
-        PrioriizeSpell();
-        Player playerScript = player.GetComponent<Player>();
-        Tile playerTile = gridManager.GetTile(new Vector2Int(Mathf.RoundToInt(player.transform.position.x), Mathf.RoundToInt(player.transform.position.z)));
 
-        if (playerTile == null)
-        {
-            Debug.LogWarning("Player tile not found.");
-            onComplete?.Invoke();
-            yield break;
+        
+
+        EnemyManager.Instance.calculateThreatGrid();
+        Dictionary<String, object> result = new Dictionary<String, object>();
+        result = EnemyManager.Instance.CalculateScore(this);
+
+        Vector2Int location = new Vector2Int();
+        GameObject target = null;
+        Spell spell = null;
+
+        location = (Vector2Int)result["location"];
+        yield return MoveTo(location);
+        Debug.Log("Enemy moving to " + location);
+        if (result.ContainsKey("target"))
+        {  
+            target = (GameObject)result["target"];
+            spell = (Spell)result["spell"];
+            Debug.Log("Attempting to hit target " + target.name + " with spell " + spell.name);
+            AttackPlayer(spell, target);
         }
 
-        int distToPlayer = Mathf.Abs(playerTile.gridPosition.x - gridPosition.x) +
-                           Mathf.Abs(playerTile.gridPosition.y - gridPosition.y);
-
-        attackRange = spells[preffered].range;
-
-        //Attack Player if in range
-        if (distToPlayer <= attackRange)
-        {
-            AttackPlayer();
-            onComplete?.Invoke();
-            yield break;
-        }
-
-        // Otherwise, move towards player
-        int steps = Mathf.Min(moveRange, distToPlayer - attackRange);
-        Vector2Int targetPos = gridPosition;
-
-        for (int i = 0; i < steps; i++)
-        {
-            // Determine preferred direction
-            Vector2Int dir = Vector2Int.zero;
-            bool horizontalPriority = Mathf.Abs(playerTile.gridPosition.x - targetPos.x) >=
-                                      Mathf.Abs(playerTile.gridPosition.y - targetPos.y);
-
-            if (horizontalPriority)
-                dir.x = playerTile.gridPosition.x > targetPos.x ? 1 : -1;
-            else
-                dir.y = playerTile.gridPosition.y > targetPos.y ? 1 : -1;
-
-            Vector2Int nextPos = targetPos + dir;
-            Tile nextTile = gridManager.GetTile(nextPos);
-
-            // If main path blocked, try side directions
-            if (nextTile == null || nextTile.IsOccupied || !nextTile.walkable)
-            {
-                Vector2Int[] sideDirs = horizontalPriority
-                    ? new[] { new Vector2Int(0, 1), new Vector2Int(0, -1) } // try up/down
-                    : new[] { new Vector2Int(1, 0), new Vector2Int(-1, 0) }; // try left/right
-
-                bool moved = false;
-                foreach (var s in sideDirs)
-                {
-                    Vector2Int altPos = targetPos + s;
-                    Tile altTile = gridManager.GetTile(altPos);
-                    if (altTile != null && !altTile.IsOccupied && altTile.walkable)
-                    {
-                        yield return MoveTo(altPos);
-                        targetPos = altPos;
-                        moved = true;
-                        break;
-                    }
-                }
-
-                if (!moved)
-                    break; // nowhere to go
-            }
-            else
-            {
-                //Move towards Player
-                yield return FacePlayer();
-                yield return MoveTo(nextPos);
-                targetPos = nextPos;
-            }
-        }
-
-        // Update grid positions
-        gridManager.GetTile(gridPosition).occupant = null;
-        gridPosition = targetPos;
-        gridManager.GetTile(gridPosition).occupant = gameObject;
-
-        // After moving, check if now in attack range
-        distToPlayer = Mathf.Abs(playerTile.gridPosition.x - gridPosition.x) +
-                       Mathf.Abs(playerTile.gridPosition.y - gridPosition.y);
-
-        if (distToPlayer <= attackRange)
-        {
-            AttackPlayer();
-        }
-        else
-        {
-            CheckAnySpellRange(distToPlayer);
-            if (distToPlayer <= attackRange)
-            {
-                AttackPlayer();
-            }
-        }
         SyncGridPosition();
         onComplete?.Invoke();
+
+
     }
 
     private IEnumerator MoveTo(Vector2Int targetPos)
@@ -210,7 +139,7 @@ public class Enemy : MonoBehaviour
 
     public void PrioriizeSpell()
     {
-        int rando = Random.Range(0, spells.Length);
+        int rando = UnityEngine.Random.Range(0, spells.Length);
         preffered = rando;
     }
 
@@ -238,5 +167,18 @@ public class Enemy : MonoBehaviour
         StartCoroutine(FacePlayer());
         Debug.Log("Attacking Player with " + spells[preffered].name);
         ActionManager.Instance.UseSpell(spells[preffered], this.gameObject, player.gameObject);
+    }
+
+    public void AttackPlayer(Spell spell, GameObject target)
+    {
+        if (ActionManager.Instance == null)
+        {
+            Debug.LogError("ActionManager.Instance is null.");
+        }
+
+
+        StartCoroutine(FacePlayer());
+        Debug.Log("Attacking Player with " + spell.name);
+        ActionManager.Instance.UseSpell(spell, this.gameObject, target);
     }
 }

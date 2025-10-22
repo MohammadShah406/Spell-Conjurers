@@ -93,36 +93,6 @@ public class PlayerFunctionality : MonoBehaviour
             OnTurnEnd();
         }
 
-
-        if (Input.GetKeyDown(KeyCode.M))
-        {
-          EnemyManager enemyManager = GameObject.FindAnyObjectByType<EnemyManager>();
-            if (enemyManager != null)
-            {
-                enemyManager.initializeThreatGrid(12, 12);
-                Debug.Log("MMMMM");
-            }
-        }
-        if (Input.GetKeyDown(KeyCode.C))
-        {
-            EnemyManager enemyManager = GameObject.FindAnyObjectByType<EnemyManager>();
-            if (enemyManager != null)
-            {
-                enemyManager.caculateThreatGrid();
-                Debug.Log("CCCCCCC");
-            }
-
-        }
-        if (Input.GetKeyDown(KeyCode.P))
-        {
-            EnemyManager enemyManager = GameObject.FindAnyObjectByType<EnemyManager>();
-            if (enemyManager != null)
-            {
-                enemyManager.showGrid();
-                Debug.Log("PPPPP");
-            }
-        }
-
         // If it's player turn and not moved yet, show reachable tiles
         if (!hasMoved && selectedSpell == null)
         {

@@ -10,6 +10,7 @@ public class EnemyManager : MonoBehaviour
 {
     public List<Enemy> enemies = new List<Enemy>();
     private Player[] players;
+    
     float[,] threatGrid;
     private bool isTakingTurn;
     public Transform player;
@@ -18,22 +19,35 @@ public class EnemyManager : MonoBehaviour
     private int widthGrid;
     private int heightGrid;
 
-    public float WD = 1.0f;    // damage
-    public float WK = 5.0f;    // sure kill
-    public float WA = 2.0f;    // target priority
-    public float WDb = 0.5f;    // proximity
-    public float WR = 1.5f;   // efficiency
-    public float WTh = 0.8f; //Threat avoidance 
+    public static EnemyManager Instance { get; private set; }
 
 
+    [Header("Weight Settings")]
+    public float weightDamage = 1.0f;    // damage
+    public float weightKill = 5.0f;    // sure kill
+    public float weightPriorityRole = 2.0f;    // target priority
+    public float weightProximity = 0.5f;    // proximity
+    public float weightSpellEffeciency = 1.5f;   // efficiency
+    public float weightThreat = 0.8f; //Threat avoidance 
 
-    public float Wp = 1.0f;    // prioritize supports
-    public float Wv = 5.0f;    // target low-HP units
-    public float Wd = 2.0f;    // prefer closer targets
-    public float WTh2 = 0.8f;  // Threat avoidance if target is not within range
+
+    [Header("Out of Range Weight Settings")]
+    public float oorWeightPriorityRole = 1.0f;    // prioritize supports
+    public float oorWeightLowHpUnit = 5.0f;    // target low-HP units
+    public float oorWeightCloseTarget = 2.0f;    // prefer closer targets
+    public float oorWeightThreat = 0.8f;  // Threat avoidance if target is not within range
 
 
-
+    private void Awake()
+    {
+        Instance = this;
+        // Singleton setup
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+    }
 
 
     public void AddEnemy(Enemy enemy)
@@ -75,9 +89,8 @@ public class EnemyManager : MonoBehaviour
     {
         widthGrid = width;
         heightGrid = height;
-        gridManager = GameObject.FindFirstObjectByType<GridManager>();
-        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
-        //eM_PlayerDatas = new EM_PlayerData[4];
+        gridManager = GridManager.Instance;
+        GameObject[] players = GameManager.Instance.players.ToArray();
 
         foreach (GameObject player in players)
         {
@@ -85,34 +98,27 @@ public class EnemyManager : MonoBehaviour
             playerMaxDamageList.Add(player, playerData);
         }
 
-        /* for (int i = 0; i < players.Length; i++)
-         {
-             eM_PlayerDatas[i].player = players[i];
-             eM_PlayerDatas[i].maxDamage = 30;
-             eM_PlayerDatas[i].maxRange = 1;
-         }*/
-
         threatGrid = new float[height, width];
-        for (int i = 0; i < height; i++)
+        for (int i =0; i < height; i++)
         {
-            for (int j = 0; j < width; j++)
-                threatGrid[i, j] = 0;
+            for (int j =0; j < width; j++)
+                threatGrid[i, j] =0;
         }
     }
 
     public void clearThreatGrid()
     {
-        for (int i = 0; i < threatGrid.GetLength(0); i++)
+        for (int i =0; i < threatGrid.GetLength(0); i++)
         {
-            for (int j = 0; j < threatGrid.GetLength(1); j++)
-                threatGrid[i, j] = 0;
+            for (int j =0; j < threatGrid.GetLength(1); j++)
+                threatGrid[i, j] =0;
         }
 
     }
-    public void caculateThreatGrid()
+    public void calculateThreatGrid()
     {
         clearThreatGrid();
-        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        GameObject[] players = GameManager.Instance.players.ToArray();
         foreach (GameObject player in players)
         {
             PlayerFunctionality playerFunctionality = player.GetComponent<PlayerFunctionality>();
@@ -132,27 +138,9 @@ public class EnemyManager : MonoBehaviour
                 }
             }
         }
-        /* for (int i = 0; i <= players.Length; i++)
-         {
-             PlayerFunctionality playerFunctionality = players[i].GetComponent<PlayerFunctionality>();
-             if (playerFunctionality != null)
-             {
-                 foreach (Tile tile in gridManager.grid)
-                 {
-                     if (tile == null) continue;
-
-                     int distance = Mathf.Abs(tile.gridPosition.x - playerFunctionality.gridPosition.x) + Mathf.Abs(tile.gridPosition.y - playerFunctionality.gridPosition.y);
-                     if (distance <= playerFunctionality.moveRange + eM_PlayerDatas[i].maxRange && tile.occupant == null)
-                     {
-                         threatGrid[tile.gridPosition.x, tile.gridPosition.y] = threatGrid[tile.gridPosition.x, tile.gridPosition.y] + eM_PlayerDatas[i].maxDamage;
-                     }
-                 }
-             }
-
-         }*/
     }
 
-    public void UpdateMaxDamage(GameObject player, int damage, int range = 1)
+    public void UpdateMaxDamage(GameObject player, int damage, int range =1)
     {
         if (playerMaxDamageList.ContainsKey(player))
         {
@@ -166,10 +154,10 @@ public class EnemyManager : MonoBehaviour
         int rows = threatGrid.GetLength(0);
         int cols = threatGrid.GetLength(1);
 
-        for (int i = 0; i < rows; i++)
+        for (int i =0; i < rows; i++)
         {
             string rowStr = "";
-            for (int j = 0; j < cols; j++)
+            for (int j =0; j < cols; j++)
             {
                 rowStr += threatGrid[i, j].ToString("F2") + "\t";
             }
@@ -180,9 +168,15 @@ public class EnemyManager : MonoBehaviour
     public Dictionary<String, object> CalculateScore(Enemy enemy)
     {
         Dictionary<String, object> result = new Dictionary<String, object>();
-        float score = 0;
-        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
-        Player nearestPlayer = null;
+        float score =0;
+        GameObject[] players = GameManager.Instance.players.ToArray();
+
+        // Track the best overall values while iterating
+        float bestScore = float.MinValue;
+        Vector2Int bestLocation = enemy.gridPosition;
+        GameObject bestTarget = null;
+        Spell bestSpell = null;
+
         foreach (GameObject player in players)
         {
             Stats playerStats = player.GetComponent<Stats>();
@@ -196,26 +190,28 @@ public class EnemyManager : MonoBehaviour
                     Locations = GetPositionsWithinManhattanDistance(playerFunctionality.gridPosition, spell.range, widthGrid, heightGrid);
                     foreach (Vector2Int location in Locations)
                     {
-                        
                         int moveDistance = ManhattanDistance(location, enemy.gridPosition);
                         if (moveDistance <= enemy.moveRange && gridManager.grid[location.x,location.y].occupant == null)
                         {
-                            float Damage = spell.damage * (spell.accuracy / 100);
-                            float KillBonus = (playerStats.health - Damage) <= 0 ? 1 : 0;
-                            float supportTarget = (playerStats.type == Stats.Type.Support) ? 1 : 0;
-                            float distanceBonus = (enemy.moveRange - moveDistance) / enemy.moveRange;
-                            float resourceBonus = (Damage / spell.resourceCost) * 0.01f;
+                            // Ensure float division for accuracy
+                            float Damage = spell.damage * (spell.accuracy /100f);
+                            float KillBonus = (playerStats.health - Damage) <=0 ?1f :0f;
+                            float supportTarget = (playerStats.type == Stats.Type.Support) ?1f :0f;
+                            float distanceBonus = (enemy.moveRange - moveDistance) / (float)enemy.moveRange;
+                            float resourceBonus = (Damage / (float)spell.resourceCost) *0.01f;
                             float Threat = threatGrid[location.x, location.y];
 
-                            float currentScore = WD * Damage + WK * KillBonus + WA * supportTarget + WDb * distanceBonus +
-                                WR * resourceBonus - WTh * Threat;
-                            currentScore = Math.Clamp(score, 0, 100);
-                            if (currentScore > score)
+                            float currentScore = weightDamage * Damage + weightKill * KillBonus + weightPriorityRole * supportTarget + weightProximity * distanceBonus +
+                                weightSpellEffeciency * resourceBonus - weightThreat * Threat;
+
+                            currentScore = Mathf.Clamp(currentScore,0f,100f);
+
+                            if (currentScore > bestScore)
                             {
-                                score = currentScore;
-                                result["Location"] = location;
-                                result["target"] = player;
-                                result["sepll"] = spell;
+                                bestScore = currentScore;
+                                bestLocation = location;
+                                bestTarget = player;
+                                bestSpell = spell;
                             }
                         }
 
@@ -224,34 +220,42 @@ public class EnemyManager : MonoBehaviour
             }
         }
 
-        if (score != 0)
+        if (bestScore > float.MinValue)
+        {
+            // Store consistent keys
+            result["location"] = bestLocation;
+            result["target"] = bestTarget;
+            result["spell"] = bestSpell;
+            result["score"] = bestScore;
             return result;
+        }
         else
         {
             List<Vector2Int> Locations = new List<Vector2Int>();
             Locations = GetPositionsWithinManhattanDistance(enemy.gridPosition, enemy.moveRange, widthGrid, heightGrid);
             foreach (Vector2Int location in Locations)
             {
-                float tileScore = 0;
+                float tileScore =0;
                 if (gridManager.grid[location.x, location.y].occupant != null) continue;
                 foreach (GameObject player in players)
                 {
                     Stats playerStats = player.GetComponent<Stats>();
                     PlayerFunctionality playerFunctionality = player.GetComponent<PlayerFunctionality>();
 
-                    float supportTarget = (playerStats.type == Stats.Type.Support) ? 1 : 0;
-                    float Vulnerability = 1 - (playerStats.health / playerStats.maxHealth);
-                    float distanceFactor = 1 / (1 + ManhattanDistance(location, playerFunctionality.gridPosition));
-                    //float KillBonus = (playerStats.health - Damage) <= 0 ? 1 : 0;
+                    float supportTarget = (playerStats.type == Stats.Type.Support) ?1f :0f;
+                    float Vulnerability =1f - (playerStats.health / playerStats.maxHealth);
+                    float distanceFactor =1f / (1f + ManhattanDistance(location, playerFunctionality.gridPosition));
+                    //float KillBonus = (playerStats.health - Damage) <=0 ?1 :0;
                     float Threat = threatGrid[location.x, location.y];
 
-                    float tempTileScore = supportTarget * Wp + Vulnerability * Wv + distanceFactor* Wd - Threat*WTh2;
+                    float tempTileScore = supportTarget * oorWeightPriorityRole + Vulnerability * oorWeightLowHpUnit + distanceFactor* oorWeightCloseTarget - Threat*oorWeightThreat;
                     if (tempTileScore > tileScore) tileScore = tempTileScore;
                 }
                 if (tileScore > score)
                 {
                     score = tileScore;
                     result["location"] = location;
+                    result["score"] = score;
                 }
             }
             return result;
@@ -274,7 +278,7 @@ public class EnemyManager : MonoBehaviour
                     int newX = origin.x + dx;
                     int newY = origin.y + dy;
 
-                    if (newX >= 0 && newX < gridWidth && newY >= 0 && newY < gridHeight)
+                    if (newX >=0 && newX < gridWidth && newY >=0 && newY < gridHeight)
                     {
                         positions.Add(new Vector2Int(newX, newY));
                     }

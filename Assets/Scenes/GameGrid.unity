@@ -2218,7 +2218,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9660183b471d6e34fac3157f716b53d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: []
+  players: []
   enemies: []
 --- !u!1 &1727973347
 GameObject:
@@ -2605,6 +2605,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemies: []
   player: {fileID: 0}
+  WD: 1
+  WK: 5
+  WA: 2
+  WDb: 0.5
+  WR: 1.5
+  WTh: 0.1
+  Wp: 1
+  Wv: 5
+  Wd: 2
+  WTh2: 0.1
 --- !u!1 &2013295176
 GameObject:
   m_ObjectHideFlags: 0

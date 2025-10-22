@@ -21,8 +21,19 @@ public class GridManager : MonoBehaviour
     public GameObject playerPrefab;
     private GameObject playerObj;
 
+    public static GridManager Instance { get; private set; }
+
     void Awake()
     {
+        Instance = this;
+        // Singleton setup
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+
         grid = new Tile[width, height];
 
         for (int x = 0; x < width; x++)
@@ -44,6 +55,8 @@ public class GridManager : MonoBehaviour
     public void Start()
     {
         SpawnEnemies(enemyCount);
+
+        enemyManager.initializeThreatGrid(height, width);   
     }
 
     public Tile GetTile(Vector2Int pos)
