@@ -38,9 +38,6 @@ public class EnemyManager : MonoBehaviour
     public float oorWeightThreat = 0.8f;  // Threat avoidance if target is not within range
 
     
-    
-
-
     private void Awake()
     {
         Instance = this;
@@ -65,17 +62,20 @@ public class EnemyManager : MonoBehaviour
         gridManager = GridManager.Instance;
         GameObject[] players = GameManager.Instance.players.ToArray();
 
+        playerMaxDamageList.Clear();
         foreach (GameObject player in players)
         {
             int[] playerData = { 30, 1 };
-            playerMaxDamageList.Add(player, playerData);
+            playerMaxDamageList[player] = playerData;
         }
 
-        threatGrid = new float[height, width];
-        for (int i =0; i < height; i++)
+        // Use [width, height] so indexing is threatGrid[x,y] to match grid[x,y]
+        threatGrid = new float[widthGrid, heightGrid];
+
+        for (int x = 0; x < widthGrid; x++)
         {
-            for (int j =0; j < width; j++)
-                threatGrid[i, j] =0;
+            for (int y = 0; y < heightGrid; y++)
+                threatGrid[x, y] = 0f;
         }
     }
 
@@ -218,7 +218,7 @@ public class EnemyManager : MonoBehaviour
                     float supportTarget = (playerStats.type == Stats.Type.Support) ?1f :0f;
                     float Vulnerability =1f - (playerStats.health / playerStats.maxHealth);
                     float distanceFactor =1f / (1f + ManhattanDistance(location, playerFunctionality.gridPosition));
-                    //float KillBonus = (playerStats.health - Damage) <=0 ?1 :0;
+                    
                     float Threat = threatGrid[location.x, location.y];
 
                     float tempTileScore = supportTarget * oorWeightPriorityRole + Vulnerability * oorWeightLowHpUnit + distanceFactor* oorWeightCloseTarget - Threat*oorWeightThreat;
@@ -266,30 +266,61 @@ public class EnemyManager : MonoBehaviour
         return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
     }
 
+
+
     public void ShowScoreGrid(Enemy enemy)
     {
         // Clear previous debug text
         ClearScoreDebug();
+        Debug.Log("[EnemyManager] Generating score grid visualization...");
 
         if (gridManager == null) gridManager = GridManager.Instance;
         if (gridManager == null) return;
 
-        // Get enemy's best score data
-        var result = CalculateScore(enemy);
-        if (result == null || !result.ContainsKey("score")) return;
+        int w = widthGrid;
+        int h = heightGrid;
 
-        Vector2Int bestLoc = (Vector2Int)result["location"];
-        float bestScore = (float)result["score"];
+        float[,] tileScores = new float[w, h];
+        float minScore = float.MaxValue;
+        float maxScore = float.MinValue;
 
-        for (int x = 0; x < widthGrid; x++)
+        // Compute score for each tile
+        for (int x = 0; x < w; x++)
         {
-            for (int y = 0; y < heightGrid; y++)
+            for (int y = 0; y < h; y++)
+            {
+                Tile tile = gridManager.grid[x, y];
+                if (tile == null)
+                {
+                    tileScores[x, y] = float.NegativeInfinity;
+                    continue;
+                }
+
+                // Compute the AI score for this tile using the same formulas as CalculateScore
+                Vector2Int loc = new Vector2Int(x, y);
+                float score = ComputeTileScoreForEnemy(enemy, loc);
+
+                // Normalize undefined/occupied to zero for visualization
+                if (float.IsNegativeInfinity(score) || float.IsNaN(score))
+                    score = 0f;
+
+                tileScores[x, y] = score;
+                if (score < minScore) minScore = score;
+                if (score > maxScore) maxScore = score;
+            }
+        }
+
+        bool singleValue = Mathf.Approximately(minScore, maxScore);
+
+        // Create text labels for visualization
+        for (int x = 0; x < w; x++)
+        {
+            for (int y = 0; y < h; y++)
             {
                 Tile tile = gridManager.grid[x, y];
                 if (tile == null) continue;
 
-                // Example dummy scoring for visualization
-                float tileScore = UnityEngine.Random.Range(0f, 1f); // Replace this with real AI score if needed
+                float tileScore = tileScores[x, y];
 
                 GameObject textObj = new GameObject($"ScoreDebug_{x}_{y}");
                 textObj.transform.SetParent(gridManager.map.transform);
@@ -299,38 +330,179 @@ public class EnemyManager : MonoBehaviour
                 tmp.fontSize = 2;
                 tmp.alignment = TextAlignmentOptions.Center;
                 tmp.text = tileScore.ToString("F2");
-                tmp.color = Color.Lerp(Color.red, Color.green, tileScore);
 
-#if UNITY_EDITOR
+                float t = singleValue ? 0.5f : Mathf.InverseLerp(minScore, maxScore, tileScore);
+                tmp.color = Color.Lerp(Color.red, Color.green, t);
+
+    #if UNITY_EDITOR
                 // Make text always face Scene camera in the Editor
                 textObj.AddComponent<SceneBillboard>();
-#endif
+    #endif
             }
         }
 
-        // Highlight best location
-        Tile bestTile = gridManager.GetTile(bestLoc);
-        if (bestTile != null)
+        // Find & mark best reachable tile (the yellow sphere should be achievable this turn)
+        Vector2Int bestReachableLoc = new Vector2Int(-1, -1);
+        float bestReachableVal = float.MinValue;
+        for (int x = 0; x < w; x++)
         {
-            GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            marker.name = "ScoreDebug_BestTile";
-            marker.transform.SetParent(gridManager.map.transform);
-            marker.transform.position = bestTile.transform.position + Vector3.up * 1.2f;
-            marker.transform.localScale = Vector3.one * 0.3f;
-            marker.GetComponent<Renderer>().material.color = Color.yellow;
-            Destroy(marker.GetComponent<Collider>());
+            for (int y = 0; y < h; y++)
+            {
+                // skip invalid/empty display cells
+                if (float.IsNegativeInfinity(tileScores[x, y])) continue;
+
+                Vector2Int loc = new Vector2Int(x, y);
+                int moveDistance = ManhattanDistance(loc, enemy.gridPosition);
+                if (moveDistance <= enemy.moveRange)
+                {
+                    // tile must be empty and reachable (ComputeTileScoreForEnemy already returns -Inf for occupied)
+                    float val = tileScores[x, y];
+                    if (val > bestReachableVal)
+                    {
+                        bestReachableVal = val;
+                        bestReachableLoc = loc;
+                    }
+                }
+            }
         }
 
-        Debug.Log($"[EnemyManager] Best score: {bestScore:F2} at {bestLoc}");
+        // Place yellow marker only if a reachable tile exists
+        if (bestReachableLoc.x >= 0)
+        {
+            Tile bestTile = gridManager.GetTile(bestReachableLoc);
+            if (bestTile != null)
+            {
+                GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                marker.name = "ScoreDebug_BestTile";
+                marker.transform.SetParent(gridManager.map.transform);
+                marker.transform.position = bestTile.transform.position + Vector3.up * 1.2f;
+                marker.transform.localScale = Vector3.one * 0.3f;
+                marker.GetComponent<Renderer>().material.color = Color.yellow;
+                Destroy(marker.GetComponent<Collider>());
+            }
+
+            Debug.Log($"[EnemyManager] Best reachable tile score: {bestReachableVal:F2} at {bestReachableLoc}");
+        }
+        else
+        {
+            Debug.Log($"[EnemyManager] No reachable scored tile for this enemy this turn. (Best overall shown but not reachable)");
+        }
     }
+
+    private float ComputeTileScoreForEnemy(Enemy enemy, Vector2Int loc)
+    {
+        if (gridManager == null) gridManager = GridManager.Instance;
+        if (gridManager == null) return float.NegativeInfinity;
+
+        // bounds check
+        if (loc.x < 0 || loc.x >= widthGrid || loc.y < 0 || loc.y >= heightGrid)
+            return float.NegativeInfinity;
+
+        Tile tile = gridManager.grid[loc.x, loc.y];
+        if (tile == null) return float.NegativeInfinity;
+        if (tile.occupant != null) return float.NegativeInfinity;
+
+        GameObject[] players = GameManager.Instance.players.ToArray();
+
+        // 1) Attack-based scoring
+        float bestAttackScore = float.MinValue;
+        int moveDistance = ManhattanDistance(loc, enemy.gridPosition);
+
+        if (moveDistance > enemy.moveRange)
+            return float.NegativeInfinity; // mark as unreachable
+
+        if (enemy.moveRange >= 0 && moveDistance <= enemy.moveRange)
+        {
+            foreach (GameObject playerObj in players)
+            {
+                if (playerObj == null) continue;
+                Stats playerStats = playerObj.GetComponent<Stats>();
+                PlayerFunctionality playerFunc = playerObj.GetComponent<PlayerFunctionality>();
+                if (playerStats == null || playerFunc == null) continue;
+
+                int distToPlayerFromTile = ManhattanDistance(loc, playerFunc.gridPosition);
+
+                foreach (Spell spell in enemy.spells)
+                {
+                    if (spell == null) continue;
+                    if (distToPlayerFromTile <= spell.range)
+                    {
+                        float Damage = spell.damage * (spell.accuracy / 100f);
+                        float KillBonus = (playerStats.health - Damage) <= 0f ? 1f : 0f;
+                        float supportTarget = (playerStats.type == Stats.Type.Support) ? 1f : 0f;
+                        float distanceBonus = enemy.moveRange > 0 ? (enemy.moveRange - moveDistance) / (float)enemy.moveRange : 0f;
+                        float resourceBonus = (spell.resourceCost != 0) ? (Damage / (float)spell.resourceCost) * 0.01f : 0f;
+                        float Threat = threatGrid[loc.x, loc.y];
+
+                        float currentScore = weightDamage * Damage
+                                           + weightKill * KillBonus
+                                           + weightPriorityRole * supportTarget
+                                           + weightProximity * distanceBonus
+                                           + weightSpellEffeciency * resourceBonus
+                                           - weightThreat * Threat;
+
+                       
+                        currentScore = Mathf.Clamp(currentScore, 0f, 100f);
+
+                        if (currentScore > bestAttackScore)
+                            bestAttackScore = currentScore;
+                    }
+                }
+            }
+        }
+
+        // 2) Positional/out-of-range heuristic
+        float bestPositional = float.MinValue;
+        foreach (GameObject playerObj in players)
+        {
+            if (playerObj == null) continue;
+            Stats playerStats = playerObj.GetComponent<Stats>();
+            PlayerFunctionality playerFunc = playerObj.GetComponent<PlayerFunctionality>();
+            if (playerStats == null || playerFunc == null) continue;
+
+            float supportTarget = (playerStats.type == Stats.Type.Support) ? 1f : 0f;
+            float Vulnerability = 1f - (playerStats.health / (float)playerStats.maxHealth);
+            float distanceFactor = 1f / (1f + ManhattanDistance(loc, playerFunc.gridPosition));
+            float Threat = threatGrid[loc.x, loc.y];
+
+            float tempTileScore = supportTarget * oorWeightPriorityRole
+                                + Vulnerability * oorWeightLowHpUnit
+                                + distanceFactor * oorWeightCloseTarget
+                                - Threat * oorWeightThreat;
+
+            // clamp positional to a reasonable range
+            tempTileScore = Mathf.Clamp(tempTileScore, -100f, 100f);
+
+            if (tempTileScore > bestPositional) bestPositional = tempTileScore;
+        }
+
+        float finalScore = Mathf.Max(bestAttackScore, bestPositional);
+
+        // If both remained unset, indicate invalid/unscored tile
+        if (finalScore == float.MinValue)
+            return float.NegativeInfinity;
+
+        return finalScore;
+    }
+
 
     public void ClearScoreDebug()
     {
+        if (gridManager == null) gridManager = GridManager.Instance;
+        if (gridManager == null) return;
+
+        // Remove previously created debug objects (ScoreDebug_* and marker)
+        List<GameObject> toRemove = new List<GameObject>();
         foreach (Transform child in gridManager.map.transform)
         {
+            if (child == null) continue;
             if (child.name.StartsWith("ScoreDebug_") || child.name == "ScoreDebug_BestTile")
-                Destroy(child.gameObject);
+                toRemove.Add(child.gameObject);
         }
+
+        // Destroy outside of the transform enumeration
+        foreach (var go in toRemove)
+            DestroyImmediate(go);
     }
 
 }
