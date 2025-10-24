@@ -25,4 +25,8 @@ public class GeneratedSpellView : MonoBehaviour
         Debug.Log("Skill are now set");
     }
 
+    public void GoToShop()
+    {
+        UIController.Instance.SwitchUI(UIIndex.Shop);
+    }
 }

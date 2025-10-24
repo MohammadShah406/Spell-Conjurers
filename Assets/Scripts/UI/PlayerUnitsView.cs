@@ -28,9 +28,9 @@ public class PlayerUnitsView : MonoBehaviour
         UIController.Instance.SwitchUI(UIIndex.PresetCharacterSelection);
     }
 
-    public void ChangeCharacterSelectionImage()
+    public void GoToMainMenu()
     {
-
+        UIController.Instance.SwitchUI(UIIndex.MainMenu);
     }
     public void ChangeImage(Image targetImage, Sprite newSprite)
     {

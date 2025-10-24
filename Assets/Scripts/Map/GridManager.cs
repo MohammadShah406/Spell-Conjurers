@@ -33,10 +33,23 @@ public class GridManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+        
+    }
 
+    public void ResetGame()
+    {
+        Debug.Log("[GridManager] Resetting game...");
 
+        // --- 0. Destroy all existing tiles ---
+        foreach (Transform child in map.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // Clear grid reference
         grid = new Tile[width, height];
 
+        // --- 1. Recreate the tile grid ---
         for (int x = 0; x < width; x++)
         {
             for (int z = 0; z < height; z++)
@@ -49,15 +62,60 @@ public class GridManager : MonoBehaviour
                 grid[x, z] = tile;
             }
         }
+
+        // --- 2. Clear all tiles' occupants ---
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                if (grid[x, y] != null)
+                    grid[x, y].occupant = null;
+            }
+        }
+
+        // --- 3. Destroy existing enemies and player ---
+        // Destroy enemies
+        foreach (Transform child in EnemyHolder.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // Destroy player
+        if (playerObj != null)
+        {
+            Destroy(playerObj);
+            playerObj = null;
+        }
+
+        // --- 4. Clear manager lists ---
+        if (enemyManager != null)
+            enemyManager.enemies.Clear();
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.players.Clear();
+            GameManager.Instance.enemies.Clear();
+        }
+
+        // --- 5. Respawn everything ---
         SpawnPlayer();
-        
+        SpawnEnemies(enemyCount);
+
+        // --- 6. Reinitialize threat grid ---
+        if (enemyManager != null)
+        {
+            enemyManager.initializeThreatGrid(height, width);
+        }
+
+        Debug.Log("[GridManager] Game reset complete.");
     }
+
 
     public void Start()
     {
-        SpawnEnemies(enemyCount);
+        //SpawnEnemies(enemyCount);
 
-        enemyManager.initializeThreatGrid(height, width);   
+        //enemyManager.initializeThreatGrid(height, width);   
     }
 
     public Tile GetTile(Vector2Int pos)
@@ -93,6 +151,10 @@ public class GridManager : MonoBehaviour
         for (int i = 0; i < spawnCount; i++)
         {
             // Pick a random free tile
+            if(availablePositions == null)
+            {
+                return;
+            }
             int randomIndex = Random.Range(0, availablePositions.Count);
             Vector2Int pos = availablePositions[randomIndex];
             availablePositions.RemoveAt(randomIndex); // prevent reusing the same tile

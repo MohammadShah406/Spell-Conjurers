@@ -13,4 +13,19 @@ public class ShopView : MonoBehaviour
     {
         
     }
+
+    public void GoToGeneratedSpell()
+    {
+        UIController.Instance.SwitchUI(UIIndex.GeneratedSpell);
+    }
+
+    public void GoToMainMenu()
+    {
+        UIController.Instance.SwitchUI(UIIndex.MainMenu);
+    }
+    public void GoToPlayerUnits()
+    {
+        UIController.Instance.SwitchUI(UIIndex.PlayerUnits);
+    }
 }
+
