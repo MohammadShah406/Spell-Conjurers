@@ -1,0 +1,15 @@
+{
+    "damage": 15,
+    "accuracy": 85,
+    "resourceCost": 20,
+    "range": 3,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Earthquake",
+    "description": "Unleashes a shockwave that damages enemies in a radius.",
+    "code": "string actionLog = \"\";\r\n\r\nforeach (var enemy in Physics.OverlapSphere(transform.position, spell.range)) {\r\n    if (enemy.CompareTag(\"Enemy\")) {\r\n        enemy.GetComponent<Stats>().takeDamage(spell.damage);\r\n        actionLog += from.name + \" caused an earthquake affecting \" + enemy.name + \", dealing \" + spell.damage + \" damage. \";\r\n    }\r\n}\r\n",
+    "spellVisualType": "Shockwave",
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}

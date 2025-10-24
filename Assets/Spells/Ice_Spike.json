@@ -1,0 +1,15 @@
+{
+    "damage": 15,
+    "accuracy": 85,
+    "resourceCost": 20,
+    "range": 3,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Ice Spike",
+    "description": "Launches a sharp ice spike at the target, dealing damage and slowing them.",
+    "code": "string actionLog = \"\";\r\n\r\nto.GetComponent<Stats>().takeDamage(spell.damage);\r\nactionLog += from.name + \" launched an Ice Spike at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\nto.GetComponent<Stats>().StatusDamage(\"Slow\", 2, 5);\r\n",
+    "spellVisualType": "IceSpike",
+    "status": "Slow",
+    "statusDuration": 2,
+    "statusDamagePerTurn": 5
+}

@@ -22,7 +22,9 @@ public class LLMController : MonoBehaviour
     private bool isGenerating = false;
     public string promptFileName = "LLMTrainer";
     private string loadedPrompt;
-    
+
+    public List<GeneratedSkillData> generatedSkills = new List<GeneratedSkillData>();
+
 
     private void Awake()
     {
@@ -62,7 +64,7 @@ public class LLMController : MonoBehaviour
     private IEnumerator GenerateAllSkills()
     {
         isGenerating = true;
-
+        generatedSkills.Clear();
         // Make sure the Skills folder exists
         string skillsPath = Path.Combine(Application.dataPath, "Spells");
         if (!Directory.Exists(skillsPath))
@@ -123,6 +125,12 @@ public class LLMController : MonoBehaviour
             savePath = Path.Combine(Application.dataPath, "Spells", fileName);
             File.WriteAllText(savePath, skillJson);
             UnityEditor.AssetDatabase.Refresh();
+            generatedSkills.Add(new GeneratedSkillData
+            {
+                filePath = savePath,
+                jsonContent = skillJson,
+                spellData = spell
+            });
             Debug.Log($"Skill {skillIndex} saved to {savePath}");
         }
         catch (Exception ex)
@@ -254,12 +262,22 @@ public class LLMController : MonoBehaviour
 
     
         string allScripts = sb.ToString();
-        if (allScripts.Length > 100000)//characters is 1000000 for token limit change it if we need to increase the char
+        if (allScripts.Length > 200000)//characters is 1000000 for token limit change it if we need to increase the char
         {
-            allScripts = allScripts.Substring(0, 50000);
+            allScripts = allScripts.Substring(0, 200000);
             Debug.LogWarning("Script context truncated to fit within token limits.");
         }
 
         return allScripts;
+    }
+
+    public void ShowGeneratedSpell()
+    {
+        for(int i = 0; i < generatedSkills.Count; i++)
+        {
+            UIController.Instance.generatedSpellView.SetGeneratedSpellInfo(i, generatedSkills[i].spellData);
+            Debug.Log("Showing Skill");
+        }
+        
     }
 }

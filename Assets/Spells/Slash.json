@@ -1,14 +1,14 @@
 {
     "damage": 15,
     "accuracy": 85,
-    "resourceCost": 15,
+    "resourceCost": 5,
     "range": 1,
     "selfDamage": 0,
     "support": false,
     "name": "Slash",
-    "description": "A powerful slash that deals damage to a single target.",
-    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" slashed \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n        \r\n        ",
-    "spellVisualType": "Blade",
+    "description": "A quick slash that deals damage to an enemy in range.",
+    "code": "string actionLog = \"\";\r\n\r\nto.GetComponent<Stats>().takeDamage(spell.damage);\r\nactionLog += from.name + \" slashed \" + to.name + \", dealing \" + spell.damage + \" damage.\";\r\n",
+    "spellVisualType": "Sword",
     "status": "None",
     "statusDuration": 0,
     "statusDamagePerTurn": 0
