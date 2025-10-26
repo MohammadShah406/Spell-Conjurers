@@ -3220,8 +3220,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c93df5d4b2bfd9e48b1c2e125e3c9973, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 12
-  height: 12
+  width: 24
+  height: 24
   tilePrefab: {fileID: 3302588247465112586, guid: 63f9be8374ec34a4faa56fd0fc4f63a9, type: 3}
   map: {fileID: 273676328}
   EnemyHolder: {fileID: 1753473955}

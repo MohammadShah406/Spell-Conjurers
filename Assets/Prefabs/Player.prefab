@@ -4034,7 +4034,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3257743558117634062
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5085,11 +5085,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e993916f1466c3b4bbff0ccbdd6b79b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 10
+  maxHealth: 100
   maxResource: 100
   isDead: 0
   health: 10
-  armor: 0
+  armor: 200
   resource: 100
   statuses: []
   floatingTextPrefab: {fileID: 7453728233935770986, guid: bba6f4ff8db24d24081c4ecda64671e6, type: 3}
@@ -5233,7 +5233,7 @@ RectTransform:
   m_Father: {fileID: 2734726205647766838}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}

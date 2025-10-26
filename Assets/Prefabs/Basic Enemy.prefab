@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 4304294238587302398}
   m_Layer: 0
   m_Name: Basic Enemy
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -184,6 +184,7 @@ MonoBehaviour:
     statusDuration: 0
     statusDamagePerTurn: 0
   preffered: 0
+  debugMode: 1
 --- !u!114 &4304294238587302398
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -196,10 +197,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e993916f1466c3b4bbff0ccbdd6b79b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxHealth: 60
+  maxResource: 100
+  isDead: 0
   health: 10
   armor: 0
+  resource: 100
   statuses: []
   floatingTextPrefab: {fileID: 7453728233935770986, guid: bba6f4ff8db24d24081c4ecda64671e6, type: 3}
+  uiStatsHolder: {fileID: 0}
+  type: 0
 --- !u!1 &3671256503806757496
 GameObject:
   m_ObjectHideFlags: 0

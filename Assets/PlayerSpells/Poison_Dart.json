@@ -1,15 +1,15 @@
 {
-    "damage": 5,
+    "damage": 10,
     "accuracy": 85,
     "resourceCost": 15,
-    "range": 1,
+    "range": 3,
     "selfDamage": 0,
     "support": false,
     "name": "Poison Dart",
-    "description": "Launches a dart that poisons the target over time.",
-    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" shot a Poison Dart at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(\"Poison\", 3, 2);\r\n        \r\n        ",
+    "description": "Launches a dart that inflicts minor damage and applies moderate poison on the target.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" shot a Poison Dart at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(spell.status, spell.statusDuration, spell.statusDamagePerTurn);\r\n        \r\n        ",
     "spellVisualType": "Dart",
     "status": "Poison",
     "statusDuration": 3,
-    "statusDamagePerTurn": 2
+    "statusDamagePerTurn": 30
 }

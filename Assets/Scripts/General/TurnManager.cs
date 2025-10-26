@@ -122,6 +122,10 @@ public class TurnManager : MonoBehaviour
 
         foreach (var enemy in EnemyManager.Instance.enemies)
         {
+            if (!enemy.gameObject.activeSelf)
+            {
+                continue;
+            }
             enemy.GetComponent<Stats>().TakeStatusDamage();
             yield return enemy.TakeTurn(() => { });
 

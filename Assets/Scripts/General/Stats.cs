@@ -46,8 +46,9 @@ public class Stats : MonoBehaviour
         
     }
 
-    public void takeDamage(int damage)
+    public void takeSelfDamage(int damage)
     {
+        Debug.Log("Damage after armor calculation: " + damage);
         health -= damage;
         if (damage >= 0)
         {
@@ -62,6 +63,7 @@ public class Stats : MonoBehaviour
         {
             Debug.Log("Gameobject " + gameObject.name + " died");
             isDead = true;
+            OnDead();
         }
 
         if(gameObject.tag == "Player")
@@ -72,7 +74,37 @@ public class Stats : MonoBehaviour
 
     }
 
-    public void takeDamage(int damage, Color color)
+    public void takeDamage(int damage)
+    {
+        //finalDamage = baseDamage * (100f / (100f + defense)); 
+        damage = Mathf.FloorToInt(damage * (100f / (100f + armor)));
+        Debug.Log("Damage after armor calculation: " + damage);
+        health -= damage;
+        if (damage >= 0)
+        {
+            ShowFloatingText(damage.ToString(), Color.red);
+        }
+        else
+        {
+            ShowFloatingText((damage * -1).ToString(), Color.green);
+        }
+
+        if (health <= 0)
+        {
+            Debug.Log("Gameobject " + gameObject.name + " died");
+            isDead = true;
+            OnDead();
+        }
+
+        if (gameObject.tag == "Player")
+        {
+            UpdateStatsHolder();
+        }
+
+
+    }
+
+    public void takeTrueDamage(int damage, Color color)
     {
         health -= damage;
         ShowFloatingText(damage.ToString(), Color.yellow);
@@ -83,6 +115,8 @@ public class Stats : MonoBehaviour
         }
 
     }
+
+
 
     public void StatusDamage(string name, int duration, int dot)
     {
@@ -114,7 +148,7 @@ public class Stats : MonoBehaviour
         {
             if (s.turnsLeft > 0)
             {
-                takeDamage(s.dotDamage, Color.yellow);
+                takeTrueDamage(s.dotDamage, Color.yellow);
                 s.turnsLeft--;
                 Debug.Log($"{gameObject.name} takes {s.dotDamage} {s.name} damage ({health} HP left)");
 
@@ -149,6 +183,48 @@ public class Stats : MonoBehaviour
             uiStatsHolder.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = "Health : " + health + "/" + maxHealth;
             uiStatsHolder.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "Resource : " + resource + "/" + maxResource;
         }
+    }
+
+    public void OnDead()
+    {
+        // Prevent multiple calls if already dead
+        if (!isDead)
+            return;
+
+        Debug.Log($"[Stats] {gameObject.name} died. Removing from grid and updating managers.");
+
+        // --- 1. Remove from GridManager ---
+        GridManager gridManager = GridManager.Instance;
+        if (gridManager != null)
+        {
+            // Clear this unit's tile occupant if found
+            foreach (Tile tile in gridManager.grid)
+            {
+                if (tile != null && tile.occupant == gameObject)
+                {
+                    tile.occupant = null;
+                    break;
+                }
+            }
+        }
+
+        // --- 2. Remove from GameManager lists ---
+        if (GameManager.Instance != null)
+        {
+            if (gameObject.CompareTag("Enemy"))
+            {
+                gameObject.SetActive(false);
+            }
+            else if (gameObject.CompareTag("Player"))
+            {
+                Debug.Log("Player dead lul");
+            }
+
+            // Check game win/loss state
+            GameManager.Instance.CheckGameState();
+        }
+
+
     }
 
 }

@@ -72,36 +72,35 @@ public class PlayerFunctionality : MonoBehaviour
             playerSpellPanel.SetActive(true);
             playerStatsHolder.SetActive(true);
         }
-        if(TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
+
+        // Always allow clicking to view enemy details
+        GetEnemyDetails();
+
+        // Handle turn transitions
+        if (TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
         {
-            if (!turnStarted)
+            if (turnStarted)
             {
-                return;
+                // Only run this once when the turn actually ends
+                ResetSpellTextHolder();
+                selectedSpell = null;
+                foreach (Tile tile in highlightedTiles)
+                    tile.ResetHighlight();
+                highlightedTiles.Clear();
+
+                ui_SelectedEnemy.SetActive(false);
+                playerSpellPanel.SetActive(true);
+                playerStatsHolder.SetActive(true);
+                OnTurnEnd();
             }
 
-            ResetSpellTextHolder();
-            selectedSpell = null;
-            Debug.Log("Selected spell cleared by escape");
-
-            foreach (Tile tile in highlightedTiles)
-                tile.ResetHighlight();
-            highlightedTiles.Clear();
-
-            ui_SelectedEnemy.SetActive(false);
-            playerSpellPanel.SetActive(true);
-            playerStatsHolder.SetActive(true);
-            OnTurnEnd();
+            return; // Don’t process movement or spells during enemy turn
         }
 
         // If it's player turn and not moved yet, show reachable tiles
-        if (!hasMoved && TurnManager.Instance.currentState == TurnManager.TurnState.PlayerTurn && !hasMoved && selectedSpell == null)
+        if (!hasMoved && TurnManager.Instance.currentState == TurnManager.TurnState.PlayerTurn && selectedSpell == null)
         {
             HandleTileHighlights();
-        }
-
-        if (selectedSpell == null)
-        {
-            GetEnemyDetails();
         }
 
         if (selectedSpell != null) 
@@ -413,8 +412,13 @@ public class PlayerFunctionality : MonoBehaviour
 
     public void GetEnemyDetails()
     {
-        if (Input.GetMouseButtonDown(0) && TurnManager.Instance.currentState == TurnManager.TurnState.PlayerTurn) // Left click on target
+        // Only intercept clicks for details when NOT in the middle of casting a spell on your turn.
+        if (Input.GetMouseButtonDown(0))
         {
+            // If player is casting a spell this turn, keep the click for UseSpell
+            if (selectedSpell != null && TurnManager.Instance.currentState == TurnManager.TurnState.PlayerTurn)
+                return;
+
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
@@ -422,6 +426,7 @@ public class PlayerFunctionality : MonoBehaviour
                 if (enemy != null)
                 {
                     selectedEnemy = enemy.gameObject;
+                    Debug.Log("Selected Enemy: " + selectedEnemy.name);
                     SetSelectedEnemyDetails(selectedEnemy);
                     ui_SelectedEnemy.SetActive(true);
                     playerSpellPanel.SetActive(false);
