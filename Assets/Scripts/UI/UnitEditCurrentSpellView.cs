@@ -30,7 +30,7 @@ public class UnitEditCurrentSpellView : MonoBehaviour
     {
         for (int i = 0; i < spells.Length; i++)
         {
-            spells[i] = JsonManager.Instance.ReturnPlayerSpell(i);
+            spells[i] = GameManager.Instance.LLMController.generatedSkills[i].spellData;
             Debug.Log("spell is : " + spells[i].name);
             SetGeneratedSpellInfo(i, spells[i]);
         }

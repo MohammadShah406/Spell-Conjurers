@@ -1,11 +1,14 @@
 using System.Collections.Generic;
 using TMPro;
+using System.Collections;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class EditSingleSpellView : MonoBehaviour
 {
     public TMP_InputField skillInputs;
     public int spellIndex;
+    public GameObject insufficientText;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -35,7 +38,16 @@ public class EditSingleSpellView : MonoBehaviour
 
         if (llm != null)
         {
-            llm.StartCoroutine(llm.GenerateAndReplaceSpell(newPrompt, spellIndex));
+            if(GameManager.Instance.getcurrencyData.manaStone >= 1)
+            {
+                llm.StartCoroutine(llm.GenerateAndReplaceSpell(newPrompt, spellIndex));
+                GameManager.Instance.getcurrencyData.manaStone--;
+            }
+            else
+            {
+                StartCoroutine(ShowInsufficientText());
+            }
+            
         }
         else
         {
@@ -45,5 +57,12 @@ public class EditSingleSpellView : MonoBehaviour
     public void GoToUnitEditCurrentSpellView()
     {
         UIController.Instance.SwitchUI(UIIndex.UnitEditCurrentSpell);
+    }
+
+    public IEnumerator ShowInsufficientText()
+    {
+        insufficientText.SetActive(true);
+        yield return new WaitForSeconds(1);
+        insufficientText.SetActive(false);
     }
 }

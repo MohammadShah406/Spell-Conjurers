@@ -8,9 +8,10 @@ public class GameManager : MonoBehaviour
     public List<GameObject> players = new List<GameObject>();
     public List<GameObject> enemies = new List<GameObject>();
     [SerializeField] private LLMController llmController;
+    [SerializeField] private CurrencyData currencyData;
 
     public LLMController LLMController { get; private set; }
-
+    public CurrencyData getcurrencyData { get; private set; }
 
     private void Awake()
     {
@@ -24,6 +25,7 @@ public class GameManager : MonoBehaviour
             DontDestroyOnLoad(gameObject);
         }
         LLMController = llmController;
+        getcurrencyData = currencyData;
     }
 
     public void CheckGameState()

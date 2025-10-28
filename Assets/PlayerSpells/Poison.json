@@ -1,0 +1,15 @@
+{
+    "damage": 5,
+    "accuracy": 85,
+    "resourceCost": 15,
+    "range": 3,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Poison",
+    "description": "Inflicts a poison effect, dealing damage over time.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().StatusDamage(\"Poison\", 3, spell.damage);\r\n            actionLog += from.name + \" applied poison to \" + to.name + \", causing \" + spell.damage + \" damage over 3 turns.\";\r\n        \r\n        ",
+    "spellVisualType": "GreenMist",
+    "status": "Poison",
+    "statusDuration": 3,
+    "statusDamagePerTurn": 5
+}
