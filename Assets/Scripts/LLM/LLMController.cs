@@ -111,7 +111,7 @@ public class LLMController : MonoBehaviour
         // Save the JSON file
         Spell spell = new Spell();
         string fileName = $"{prompt.Replace(" ", "_")}.json";
-        string savePath = Path.Combine(Application.dataPath, "Spells", fileName);
+        string savePath = Path.Combine(Application.dataPath, "PlayerSpells", fileName);
 
         try
         {
@@ -122,7 +122,7 @@ public class LLMController : MonoBehaviour
                 yield break;
             }
             fileName = $"{spell.name.Replace(" ", "_")}.json";
-            savePath = Path.Combine(Application.dataPath, "Spells", fileName);
+            savePath = Path.Combine(Application.dataPath, "PlayerSpells", fileName);
             File.WriteAllText(savePath, skillJson);
             UnityEditor.AssetDatabase.Refresh();
             generatedSkills.Add(new GeneratedSkillData
@@ -275,9 +275,91 @@ public class LLMController : MonoBehaviour
     {
         for(int i = 0; i < generatedSkills.Count; i++)
         {
-            UIController.Instance.generatedSpellView.SetGeneratedSpellInfo(i, generatedSkills[i].spellData);
+            UIController.Instance.getGeneratedSpellView.SetGeneratedSpellInfo(i, generatedSkills[i].spellData);
             Debug.Log("Showing Skill");
         }
         
+    }
+    public IEnumerator GenerateAndReplaceSpell(string prompt, int spellIndex)
+    {
+        Debug.Log($"Regenerating spell at index {spellIndex} with prompt: {prompt}");
+
+        Task<string> skillTask = GenerateSkillFromLLM(prompt);
+        yield return new WaitUntil(() => skillTask.IsCompleted);
+
+        if (skillTask.Result == null)
+        {
+            Debug.LogError($"Failed to regenerate spell {spellIndex}.");
+            yield break;
+        }
+
+        string skillJson = ExtractJsonFromResponse(skillTask.Result);
+        if (string.IsNullOrEmpty(skillJson))
+        {
+            Debug.LogError($"No valid JSON returned for spell {spellIndex}.");
+            yield break;
+        }
+
+        try
+        {
+            Spell newSpell = JsonConvert.DeserializeObject<Spell>(skillJson);
+            if (newSpell == null || string.IsNullOrWhiteSpace(newSpell.name))
+            {
+                Debug.LogError($"Invalid JSON when regenerating spell {spellIndex}.");
+                yield break;
+            }
+
+            string playerSpellsPath = Path.Combine(Application.dataPath, "PlayerSpells");
+            string newFileName = $"{newSpell.name.Replace(" ", "_")}.json";
+            string newFilePath = Path.Combine(playerSpellsPath, newFileName);
+
+            // Rename the old file if it exists
+            if (spellIndex < generatedSkills.Count)
+            {
+                string oldFilePath = generatedSkills[spellIndex].filePath;
+
+                if (File.Exists(oldFilePath))
+                {
+                    // Only rename if the old file path is different
+                    if (!oldFilePath.Equals(newFilePath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        File.Move(oldFilePath, newFilePath);
+                        Debug.Log($"Renamed old spell JSON: {oldFilePath} -> {newFilePath}");
+                    }
+                }
+
+                // Update the local generated list
+                generatedSkills[spellIndex] = new GeneratedSkillData
+                {
+                    filePath = newFilePath,
+                    jsonContent = skillJson,
+                    spellData = newSpell
+                };
+            }
+            else
+            {
+                // If index is out of range, just save new file
+                File.WriteAllText(newFilePath, skillJson);
+                Debug.Log($"Saved new spell JSON: {newFilePath}");
+                generatedSkills.Add(new GeneratedSkillData
+                {
+                    filePath = newFilePath,
+                    jsonContent = skillJson,
+                    spellData = newSpell
+                });
+            }
+
+            // Save the new JSON content
+            File.WriteAllText(newFilePath, skillJson);
+            UnityEditor.AssetDatabase.Refresh();
+
+            // Update UI immediately
+            UIController.Instance.getGeneratedSpellView.SetGeneratedSpellInfo(spellIndex, newSpell);
+            Debug.Log($"Spell {spellIndex} successfully regenerated and file updated: {newSpell.name}");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Error regenerating spell {spellIndex}: {ex.Message}");
+        }
     }
 }

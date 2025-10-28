@@ -6,6 +6,8 @@ public class PlayerUnitsView : MonoBehaviour
 {
     [SerializeField] private List<Image> targetImage;
     [SerializeField] private List<Sprite> characterSprites;
+    [SerializeField] private List<GameObject> createCharButton;
+    [SerializeField] private List<GameObject> editCharButton;
     public int targetSlot;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -54,10 +56,19 @@ public class PlayerUnitsView : MonoBehaviour
         Debug.Log("target index Slot is " + targetSlot);
         ChangeImage(targetImage[targetSlot], characterSprites[targetSlot]);
     }
+
+    public void ChangeButton()
+    {
+        createCharButton[targetSlot].SetActive(false);
+        editCharButton[targetSlot].SetActive(true);
+    }
     public void TargetSlot(int index)
     {
         targetSlot = index;
     }
-
+    public void GoToUnitEditCurrentSpellView()
+    {
+        UIController.Instance.SwitchUI(UIIndex.UnitEditCurrentSpell);
+    }
 
 }

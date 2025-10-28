@@ -1,9 +1,5 @@
 fileFormatVersion: 2
-<<<<<<<< Updated upstream:Assets/Spells/Healing_Light.json.meta
 guid: 8247f4e28f55e8f4b9e74cc6f7710d95
-========
-guid: 44e94578362d21843846a2cbe80e207a
->>>>>>>> Stashed changes:Assets/PlayerPool/Fireball.json.meta
 TextScriptImporter:
   externalObjects: {}
   userData: 

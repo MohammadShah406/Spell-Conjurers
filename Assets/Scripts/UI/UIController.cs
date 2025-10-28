@@ -11,6 +11,8 @@ public enum UIIndex
     Setting = 5,
     Shop = 6,
     GeneratedSpell = 7,
+    UnitEditCurrentSpell = 8,
+    editSingleSpell = 9,
 }
 
 
@@ -24,7 +26,20 @@ public class UIController : MonoBehaviour
     [SerializeField] PresetCharacterSelectionView presetCharacterSelectionView;
     [SerializeField] SettingView settingView;
     [SerializeField] ShopView shopView;
-    public GeneratedSpellView generatedSpellView;
+    [SerializeField] GeneratedSpellView generatedSpellView;
+    [SerializeField] UnitEditCurrentSpellView unitEditCurrentSpellView;
+    [SerializeField] EditSingleSpellView editSingleSpellView;
+
+    public GameView getGameView { get; private set; }
+    public GameOverView getGameOverView { get; private set; }
+    public MainMenuView getMainMenuView { get; private set; }
+    public PlayerUnitsView getPlayerUnitsView { get; private set; }
+    public PresetCharacterSelectionView getPresetCharacterSelectionView { get; private set; }
+    public SettingView getSettingView { get; private set; }
+    public ShopView getShopView { get; private set; }
+    public GeneratedSpellView getGeneratedSpellView { get; private set; }
+    public UnitEditCurrentSpellView getUnitEditCurrentSpellView { get; private set; }
+    public EditSingleSpellView getEditSingleSpellView { get; private set; }
 
     [SerializeField] List<GameObject> uiList = new List<GameObject>();
     private void Awake()
@@ -38,6 +53,16 @@ public class UIController : MonoBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject);
         }
+        getGameView = gameView;
+        getGameOverView = gameOverView;
+        getMainMenuView = mainMenuView;
+        getPlayerUnitsView = playerUnitsView;
+        getPresetCharacterSelectionView = presetCharacterSelectionView;
+        getSettingView = settingView;
+        getShopView = shopView;
+        getGeneratedSpellView = generatedSpellView;
+        getUnitEditCurrentSpellView = unitEditCurrentSpellView;
+        getEditSingleSpellView = editSingleSpellView;
     }
     void Start()
     {

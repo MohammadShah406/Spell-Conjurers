@@ -7,8 +7,9 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance;
     public List<GameObject> players = new List<GameObject>();
     public List<GameObject> enemies = new List<GameObject>();
+    [SerializeField] private LLMController llmController;
 
-
+    public LLMController LLMController { get; private set; }
 
 
     private void Awake()
@@ -21,7 +22,8 @@ public class GameManager : MonoBehaviour
         {
             Instance = this;          
             DontDestroyOnLoad(gameObject);
-        }      
+        }
+        LLMController = llmController;
     }
 
     public void CheckGameState()
