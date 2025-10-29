@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+    public int roundNo;
     public static GameManager Instance;
     public List<GameObject> players = new List<GameObject>();
     public List<GameObject> enemies = new List<GameObject>();
@@ -66,6 +67,15 @@ public class GameManager : MonoBehaviour
     private void OnPlayersWon()
     {
         Debug.Log("Players Won");
+        ChangeCurrency(100 + 100 * roundNo, true);
+    }
+
+    public void ChangeCurrency(int amount, bool gold)
+    {
+        if (gold)
+            getcurrencyData.gold = getcurrencyData.gold + amount;
+        else
+            getcurrencyData.manaStone = getcurrencyData.manaStone + amount;
     }
 
 }

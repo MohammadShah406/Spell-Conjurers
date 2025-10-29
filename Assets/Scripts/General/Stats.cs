@@ -214,6 +214,12 @@ public class Stats : MonoBehaviour
             if (gameObject.CompareTag("Enemy"))
             {
                 gameObject.SetActive(false);
+                //for adding gold//
+                GameManager gameManager = GameManager.Instance;
+                gameManager.ChangeCurrency(50 + Random.Range(50 , 50 + 20 * gameManager.roundNo), true);
+                if (Random.Range(0,300) == 0) gameManager.ChangeCurrency(1,false);
+                Debug.Log("Added Currency ");
+
             }
             else if (gameObject.CompareTag("Player"))
             {

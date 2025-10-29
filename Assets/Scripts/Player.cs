@@ -3,6 +3,7 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
     private ICustomBehavior behavior;
+    private Currency currency;
 
     void Start()
     {
@@ -19,4 +20,5 @@ public class Player : MonoBehaviour
         behavior = newBehavior;
         behavior?.Start(this);
     }
+
 }
