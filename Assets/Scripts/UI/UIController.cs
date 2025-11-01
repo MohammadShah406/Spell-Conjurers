@@ -13,6 +13,8 @@ public enum UIIndex
     GeneratedSpell = 7,
     UnitEditCurrentSpell = 8,
     editSingleSpell = 9,
+    DeathPanel = 10,
+    RoundFinished = 11,
 }
 
 
@@ -29,6 +31,8 @@ public class UIController : MonoBehaviour
     [SerializeField] GeneratedSpellView generatedSpellView;
     [SerializeField] UnitEditCurrentSpellView unitEditCurrentSpellView;
     [SerializeField] EditSingleSpellView editSingleSpellView;
+    [SerializeField] DeathPanelView deathPanelView;
+    [SerializeField] RoundFinishedView roundFinishedView;
 
     public GameView getGameView { get; private set; }
     public GameOverView getGameOverView { get; private set; }
@@ -40,6 +44,9 @@ public class UIController : MonoBehaviour
     public GeneratedSpellView getGeneratedSpellView { get; private set; }
     public UnitEditCurrentSpellView getUnitEditCurrentSpellView { get; private set; }
     public EditSingleSpellView getEditSingleSpellView { get; private set; }
+
+    public DeathPanelView GetDeathPanelView { get; private set; }
+    public RoundFinishedView GetRoundFinishedView { get; private set; }
 
     [SerializeField] List<GameObject> uiList = new List<GameObject>();
     private void Awake()
@@ -63,6 +70,8 @@ public class UIController : MonoBehaviour
         getGeneratedSpellView = generatedSpellView;
         getUnitEditCurrentSpellView = unitEditCurrentSpellView;
         getEditSingleSpellView = editSingleSpellView;
+        GetDeathPanelView = deathPanelView;
+        GetRoundFinishedView = roundFinishedView;
     }
     void Start()
     {

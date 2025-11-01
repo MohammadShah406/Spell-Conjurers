@@ -49,7 +49,10 @@ public class TurnManager : MonoBehaviour
         // Force switch turn
         if (Input.GetKeyDown(KeyCode.T))
         {
-            WaitButtonPressed();
+            if (GameManager.Instance.players.Count > 0)
+            {
+                WaitButtonPressed();
+            }
         }
     }
 

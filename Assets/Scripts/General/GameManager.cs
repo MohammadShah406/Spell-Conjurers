@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -62,12 +63,20 @@ public class GameManager : MonoBehaviour
     private void OnPlayersLost()
     {
         Debug.Log("Players Lost");
+        players[0].SetActive(false);
+        Destroy(players[0]);
+        players.Clear();
+
+        UIController.Instance.SwitchUI(UIIndex.DeathPanel);
     }
 
     private void OnPlayersWon()
     {
         Debug.Log("Players Won");
         ChangeCurrency(100 + 100 * roundNo, true);
+        players[0].SetActive(false);
+
+        UIController.Instance.SwitchUI(UIIndex.RoundFinished);
     }
 
     public void ChangeCurrency(int amount, bool gold)
