@@ -21,6 +21,8 @@ public class Enemy : MonoBehaviour
 
     public bool debugMode = true;
 
+    public float dmgMultiplier = 1.0f;
+
     private void Update()
     {
         if(Input.GetKeyDown(KeyCode.Escape) && debugMode)
@@ -145,6 +147,11 @@ public class Enemy : MonoBehaviour
         {
             spells[i] = JsonManager.Instance.ReturnRandomSpell();
         }
+
+        for (int i = 0; i < spells.Length; i++)
+        {
+            spells[i].damage = (int)(spells[i].damage * dmgMultiplier);
+        }
     }
 
     public void PrioriizeSpell()
@@ -201,5 +208,9 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    private void SetMulitplier(float multiplier)
+    {
+        dmgMultiplier = multiplier;
+    }
     
 }

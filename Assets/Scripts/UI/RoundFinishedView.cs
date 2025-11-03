@@ -18,4 +18,11 @@ public class RoundFinishedView : MonoBehaviour
     {
         UIController.Instance.SwitchUI(UIIndex.Shop);
     }
+
+    public void NextRound()
+    {
+        GameManager.Instance.roundNo += 1;
+        GameManager.Instance.CleanUpPlayer();
+        UIController.Instance.SwitchUI(UIIndex.Game);
+    }
 }

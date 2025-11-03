@@ -505,4 +505,12 @@ public class EnemyManager : MonoBehaviour
             DestroyImmediate(go);
     }
 
+    public void SetEnemyMultipliers(float multiplier)
+    {
+        foreach (Enemy enemy in enemies)
+        {
+            enemy.dmgMultiplier = multiplier;
+        }
+    }
+
 }

@@ -2,7 +2,7 @@
 using NUnit.Framework;
 using System.Collections.Generic;
 using TMPro;
-
+using System;
 using UnityEngine;
 
 public class Stats : MonoBehaviour
@@ -28,8 +28,6 @@ public class Stats : MonoBehaviour
     }
     public Type type = Type.Attack;
 
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         health = maxHealth;
@@ -40,43 +38,13 @@ public class Stats : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
         
     }
 
-    public void takeSelfDamage(int damage)
-    {
-        Debug.Log("Damage after armor calculation: " + damage);
-        health -= damage;
-        if (damage >= 0)
-        {
-            ShowFloatingText(damage.ToString(), Color.red);
-        }
-        else
-        {
-            ShowFloatingText((damage * -1).ToString(), Color.green);
-        }
-
-        if (health <= 0)
-        {
-            Debug.Log("Gameobject " + gameObject.name + " died");
-            isDead = true;
-            OnDead();
-        }
-
-        if(gameObject.tag == "Player")
-        {
-            UpdateStatsHolder();
-        }
-        
-
-    }
-
     public void takeDamage(int damage)
     {
-        //finalDamage = baseDamage * (100f / (100f + defense)); 
         damage = Mathf.FloorToInt(damage * (100f / (100f + armor)));
         Debug.Log("Damage after armor calculation: " + damage);
         health -= damage;
@@ -89,44 +57,39 @@ public class Stats : MonoBehaviour
             ShowFloatingText((damage * -1).ToString(), Color.green);
         }
 
-        if (health <= 0)
+        if (health <= 0 && !isDead)
         {
             Debug.Log("Gameobject " + gameObject.name + " died");
             isDead = true;
             OnDead();
         }
 
-        if (gameObject.tag == "Player")
+        if(gameObject.tag == "Player")
         {
             UpdateStatsHolder();
         }
-
-
     }
 
-    public void takeTrueDamage(int damage, Color color)
+    public void takeDamage(int damage, Color color)
     {
         health -= damage;
         ShowFloatingText(damage.ToString(), Color.yellow);
 
-        if (health <= 0)
+        if (health <= 0 && !isDead)
         {
             Debug.Log("Gameobject " + gameObject.name + " died");
+            isDead = true;
+            OnDead();
         }
-
     }
-
-
 
     public void StatusDamage(string name, int duration, int dot)
     {
         if (dot <=0)
-        {
             return;
-        }
+
         Debug.Log($"Applying status {name} ({duration} turns, {dot} dmg per turn) to {gameObject.name}");
 
-        // Check if the same status already exists → refresh it
         Status existing = statuses.Find(s => s.name == name);
         if (existing != null)
         {
@@ -148,7 +111,7 @@ public class Stats : MonoBehaviour
         {
             if (s.turnsLeft > 0)
             {
-                takeTrueDamage(s.dotDamage, Color.yellow);
+                takeDamage(s.dotDamage, Color.yellow);
                 s.turnsLeft--;
                 Debug.Log($"{gameObject.name} takes {s.dotDamage} {s.name} damage ({health} HP left)");
 
@@ -159,7 +122,6 @@ public class Stats : MonoBehaviour
             }
         }
 
-        // Remove expired statuses
         foreach (Status s in expired)
         {
             Debug.Log($"{s.name} expired on {gameObject.name}");
@@ -187,52 +149,63 @@ public class Stats : MonoBehaviour
 
     public void OnDead()
     {
-        // Prevent multiple calls if already dead
-        if (!isDead)
+        // prevent repeated execution
+        isDead = true;
+
+        // If this is an enemy, remove it from EnemyManager and GameManager lists,
+        // clear its tile occupant and destroy the GameObject.
+        Enemy enemyComp = GetComponent<Enemy>();
+        if (enemyComp != null)
+        {
+            if (EnemyManager.Instance != null)
+            {
+                EnemyManager.Instance.enemies.Remove(enemyComp);
+            }
+
+            if (GameManager.Instance != null && GameManager.Instance.enemies.Contains(gameObject))
+            {
+                GameManager.Instance.enemies.Remove(gameObject);
+            }
+
+            GridManager gm = GridManager.Instance;
+            if (gm != null)
+            {
+                Tile t = gm.GetTile(enemyComp.gridPosition);
+                if (t != null && t.occupant == gameObject)
+                    t.occupant = null;
+            }
+
+            GameManager.Instance?.CheckGameState();
+
+            Destroy(gameObject);
             return;
-
-        Debug.Log($"[Stats] {gameObject.name} died. Removing from grid and updating managers.");
-
-        // --- 1. Remove from GridManager ---
-        GridManager gridManager = GridManager.Instance;
-        if (gridManager != null)
-        {
-            // Clear this unit's tile occupant if found
-            foreach (Tile tile in gridManager.grid)
-            {
-                if (tile != null && tile.occupant == gameObject)
-                {
-                    tile.occupant = null;
-                    break;
-                }
-            }
         }
 
-        // --- 2. Remove from GameManager lists ---
-        if (GameManager.Instance != null)
+        // If this is a player, move their spells to the main spells folder,
+        // disable player functionality and update UI/state.
+        if (gameObject.CompareTag("Player"))
         {
-            if (gameObject.CompareTag("Enemy"))
+            // Move player spells into the main Spells folder (overwrite if necessary)
+            try
             {
-                gameObject.SetActive(false);
-                //for adding gold//
-                GameManager gameManager = GameManager.Instance;
-                gameManager.ChangeCurrency(50 + Random.Range(50 , 50 + 20 * gameManager.roundNo), true);
-                if (Random.Range(0,300) == 0) gameManager.ChangeCurrency(1,false);
-                Debug.Log("Added Currency ");
-
+                JsonManager.Instance?.MovePlayerSpellsToSpells(true);
             }
-            else if (gameObject.CompareTag("Player"))
+            catch (Exception ex)
             {
-                Debug.Log("Player dead lul");
+                Debug.LogWarning($"Failed to move player spells on death: {ex.Message}");
             }
 
-            // Check game win/loss state
-            GameManager.Instance.CheckGameState();
+            // disable player control component to avoid further input
+            PlayerFunctionality pf = GetComponent<PlayerFunctionality>();
+            if (pf != null)
+            {
+                pf.enabled = false;
+            }
+
+            UpdateStatsHolder();
+            GameManager.Instance?.CheckGameState();
         }
-
-
     }
-
 }
 
 [System.Serializable]
@@ -248,5 +221,4 @@ public class Status
         this.turnsLeft = duration;
         this.dotDamage = dot;
     }
-
 }

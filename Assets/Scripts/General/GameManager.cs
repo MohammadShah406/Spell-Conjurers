@@ -74,7 +74,6 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("Players Won");
         ChangeCurrency(100 + 100 * roundNo, true);
-        players[0].SetActive(false);
 
         UIController.Instance.SwitchUI(UIIndex.RoundFinished);
     }
@@ -85,6 +84,15 @@ public class GameManager : MonoBehaviour
             getcurrencyData.gold = getcurrencyData.gold + amount;
         else
             getcurrencyData.manaStone = getcurrencyData.manaStone + amount;
+    }
+
+    public void CleanUpPlayer()
+    {
+        foreach (GameObject player in players)
+        {
+            Destroy(player);
+        }
+        players.Clear();
     }
 
 }

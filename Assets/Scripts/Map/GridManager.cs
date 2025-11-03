@@ -36,9 +36,10 @@ public class GridManager : MonoBehaviour
         
     }
 
-    public void ResetGame()
+    public void ResetGame(int enemyCount = 3, float dmgMultiplier = 1)
     {
         Debug.Log("[GridManager] Resetting game...");
+        this.enemyCount = enemyCount;
 
         // --- 0. Destroy all existing tiles ---
         foreach (Transform child in map.transform)
@@ -105,9 +106,15 @@ public class GridManager : MonoBehaviour
         if (enemyManager != null)
         {
             enemyManager.initializeThreatGrid(height, width);
+            enemyManager.SetEnemyMultipliers(dmgMultiplier);
         }
 
         Debug.Log("[GridManager] Game reset complete.");
+    }
+
+    public void NextRound()
+    {
+
     }
 
 
