@@ -154,7 +154,8 @@ public class LLMController : MonoBehaviour
              "}\n" +
             $"Output only valid JSON without code blocks or explanations.";
         skillPrompt += loadedPrompt;
-        string allScripts = LoadAllProjectScripts();
+        string allScripts = LoadAllProjectScripts("Scripts");
+        string spellsRef = LoadAllProjectScripts("SpellReference");
         Debug.Log("scripts are " + allScripts);
         // Build the OpenAI chat request
         ChatRequest requestData = new ChatRequest
@@ -168,6 +169,7 @@ public class LLMController : MonoBehaviour
                 content = "You are a helpful assistant that outputs only clean JSON data for Unity games. " +
                           allScripts +
                           "Never include code fences, markdown, or explanations — just valid JSON."+
+                          $"Balance the spell with this values: {spellsRef}. " +
                           loadedPrompt
             },
             new ChatMessage
@@ -233,9 +235,9 @@ public class LLMController : MonoBehaviour
         return null;
     }
 
-    private string LoadAllProjectScripts()
+    private string LoadAllProjectScripts(string FolderName)
     {
-        string scriptsPath = Path.Combine(Application.dataPath, "Scripts");
+        string scriptsPath = Path.Combine(Application.dataPath, FolderName);
         if (!Directory.Exists(scriptsPath))
         {
             Debug.LogWarning($"Scripts folder not found: {scriptsPath}");

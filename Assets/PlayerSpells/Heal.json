@@ -1,0 +1,15 @@
+{
+    "damage": 0,
+    "accuracy": 100,
+    "resourceCost": 15,
+    "range": 5,
+    "selfDamage": 0,
+    "support": true,
+    "name": "Heal",
+    "description": "Restores health to a target ally.",
+    "code": "string actionLog = \"\";\r\n        \r\n            int healAmount = spell.damage;\r\n            to.GetComponent<Stats>().health = Mathf.Clamp(to.GetComponent<Stats>().health + healAmount, 0, 100);\r\n            actionLog += from.name + \" healed \" + to.name + \" for \" + healAmount + \" health.\";\r\n            from.GetComponent<Stats>().resource -= spell.resourceCost;\r\n        \r\n        ",
+    "spellVisualType": "Light",
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}
