@@ -1,16 +1,26 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using Unity.VisualScripting;
 using UnityEngine;
+using Newtonsoft.Json;
+using static GridManager;
 using static UnityEditor.Experimental.GraphView.GraphView;
-
+[System.Serializable]
+public class MapData
+{
+    public int[][] mapData;
+}
 public class GridManager : MonoBehaviour
 {
     [Header("Grid Settings")]
     public int width = 10; 
     public int height = 10;
     public GameObject tilePrefab;
+    public GameObject obstaclePrefab;
     public GameObject map;
     public Tile[,] grid;
+
 
     [Header("Enemy Settings")]
     public GameObject EnemyHolder;
@@ -23,6 +33,9 @@ public class GridManager : MonoBehaviour
     private GameObject playerObj;
 
     public static GridManager Instance { get; private set; }
+
+
+    public int[][] mapDetails;
 
     void Awake()
     {
@@ -48,10 +61,10 @@ public class GridManager : MonoBehaviour
         }
 
         // Clear grid reference
-        grid = new Tile[width, height];
+        //grid = new Tile[width, height];
 
         // --- 1. Recreate the tile grid ---
-        for (int x = 0; x < width; x++)
+        /*for (int x = 0; x < width; x++)
         {
             for (int z = 0; z < height; z++)
             {
@@ -62,7 +75,9 @@ public class GridManager : MonoBehaviour
                 tile.gridPosition = new Vector2Int(x, z);
                 grid[x, z] = tile;
             }
-        }
+        }*/
+        mapDetails = LoadRoundMap(GameManager.Instance.roundNo);
+        BuildMapFromData();
 
         // --- 2. Clear all tiles' occupants ---
         for (int x = 0; x < width; x++)
@@ -162,7 +177,7 @@ public class GridManager : MonoBehaviour
             {
                 return;
             }
-            int randomIndex = Random.Range(0, availablePositions.Count);
+            int randomIndex = UnityEngine.Random.Range(0, availablePositions.Count);
             Vector2Int pos = availablePositions[randomIndex];
             availablePositions.RemoveAt(randomIndex); // prevent reusing the same tile
 
@@ -197,5 +212,107 @@ public class GridManager : MonoBehaviour
         {
             playerScript.Initialize(playerStartPos, this);
         }
+    }
+
+    public static int[][] LoadRoundMap(int roundNumber)
+    {
+        string fileName = $"Round_{roundNumber}";
+        string path = Path.Combine(Application.dataPath, "Resources", "Rounds", fileName + ".json");
+
+        if (!File.Exists(path))
+        {
+            Debug.LogError($"JSON file not found: {path}");
+            return null;
+        }
+
+        try
+        {
+            string jsonText = File.ReadAllText(path);
+            //MapData data = JsonUtility.FromJson<MapData>(jsonText);
+            MapData data = JsonConvert.DeserializeObject<MapData>(jsonText);
+
+
+            if (data == null || data.mapData == null)
+            {
+                Debug.LogError($"Invalid or empty map data in {fileName}.json");
+                return null;
+            }
+
+            return data.mapData;
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"Failed to load {fileName}.json: {ex.Message}");
+            return null;
+        }
+    }
+
+    public void BuildMapFromData()
+    {
+        if (mapDetails == null || mapDetails.Length == 0)
+        {
+            Debug.LogError("Map details are empty");
+            return;
+        }
+
+        height = mapDetails.Length;
+        width = mapDetails[0].Length;
+        grid = new Tile[width, height];
+
+        // Clear previous map
+        foreach (Transform child in map.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // Clear previous enemies
+        foreach (Transform child in EnemyHolder.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // Create Grid
+        for (int z = 0; z < height; z++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                Vector3 tilePos = new Vector3(x, 0, z);
+                var tileObj = Instantiate(tilePrefab, tilePos, Quaternion.identity);
+                tileObj.transform.parent = map.transform;
+
+                var tile = tileObj.GetComponent<Tile>();
+                tile.gridPosition = new Vector2Int(x, z);
+                grid[x, z] = tile;
+
+                int cell = mapDetails[z][x];
+
+                switch (cell)
+                {
+                    case 0: 
+                        break;
+
+                    case 1: 
+                        SpawnObstacle(tileObj.transform, tile);
+                        break;
+
+                    case 2: 
+                        //SpawnEnemy(tilePos);
+                        break;
+
+                    case 3: 
+                        //SpawnPlayer(tilePos);
+                        break;
+                }
+            }
+        }
+
+        Debug.Log("Map built successfully.");
+    }
+
+    private void SpawnObstacle(Transform tileTransform , Tile tile)
+    {
+        var obstacle = Instantiate(obstaclePrefab, tileTransform.position + Vector3.up, Quaternion.identity, tileTransform);
+        tile.occupant = obstacle;
+        tile.walkable = false;
     }
 }
