@@ -15,6 +15,7 @@ public enum UIIndex
     editSingleSpell = 9,
     DeathPanel = 10,
     RoundFinished = 11,
+    Loading = 12,
 }
 
 
@@ -33,6 +34,7 @@ public class UIController : MonoBehaviour
     [SerializeField] EditSingleSpellView editSingleSpellView;
     [SerializeField] DeathPanelView deathPanelView;
     [SerializeField] RoundFinishedView roundFinishedView;
+    [SerializeField] LoadingView loadingView;
 
     public GameView getGameView { get; private set; }
     public GameOverView getGameOverView { get; private set; }
@@ -47,6 +49,8 @@ public class UIController : MonoBehaviour
 
     public DeathPanelView GetDeathPanelView { get; private set; }
     public RoundFinishedView GetRoundFinishedView { get; private set; }
+
+    public LoadingView GetLoadingView { get; private set; }
 
     [SerializeField] List<GameObject> uiList = new List<GameObject>();
     private void Awake()
@@ -72,6 +76,7 @@ public class UIController : MonoBehaviour
         getEditSingleSpellView = editSingleSpellView;
         GetDeathPanelView = deathPanelView;
         GetRoundFinishedView = roundFinishedView;
+        GetLoadingView = loadingView;
     }
     void Start()
     {

@@ -29,4 +29,9 @@ public class GeneratedSpellView : MonoBehaviour
     {
         UIController.Instance.SwitchUI(UIIndex.Shop);
     }
+
+    public void GotoPlayerUnits()
+    {
+        UIController.Instance.SwitchUI(UIIndex.PlayerUnits);
+    }
 }

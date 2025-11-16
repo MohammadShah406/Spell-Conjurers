@@ -27,5 +27,10 @@ public class ShopView : MonoBehaviour
     {
         UIController.Instance.SwitchUI(UIIndex.PlayerUnits);
     }
+
+    public void GotoLoading()
+    {
+        UIController.Instance.SwitchUI(UIIndex.Loading);
+    }
 }
 
