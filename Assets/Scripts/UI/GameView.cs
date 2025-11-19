@@ -2,6 +2,10 @@ using UnityEngine;
 
 public class GameView : MonoBehaviour
 {
+    public GameObject playerSpellPanel;
+    public GameObject spellTextHolder;
+    public GameObject playerStatsHolder;
+    public GameObject ui_SelectedEnemy;
     private void Awake()
     {
         

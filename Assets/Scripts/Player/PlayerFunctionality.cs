@@ -36,6 +36,14 @@ public class PlayerFunctionality : MonoBehaviour
     public bool turnStarted = true;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
+
+    private void OnEnable()
+    {
+        playerSpellPanel = UIController.Instance.getGameView.playerSpellPanel;
+        spellTextHolder = UIController.Instance.getGameView.spellTextHolder;
+        playerStatsHolder = UIController.Instance.getGameView.playerStatsHolder;
+        ui_SelectedEnemy = UIController.Instance.getGameView.ui_SelectedEnemy;
+    }
     void Start()
     {
         if(playerStats == null)
