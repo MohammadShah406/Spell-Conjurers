@@ -205,6 +205,7 @@ public class GridManager : MonoBehaviour
         var instantiatedPlayerObj = Instantiate(playerPrefab, new Vector3(playerStartPos.x, 1.5f, playerStartPos.y), Quaternion.identity);
         playerObj = instantiatedPlayerObj;
         GameManager.Instance.players.Add(playerObj);
+        GameManager.Instance.playerFunctionality.Add(playerObj.GetComponent<PlayerFunctionality>());
         GetTile(playerStartPos).occupant = instantiatedPlayerObj;
 
         var playerScript = instantiatedPlayerObj.GetComponent<PlayerFunctionality>();

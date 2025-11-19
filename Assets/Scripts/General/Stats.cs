@@ -21,6 +21,11 @@ public class Stats : MonoBehaviour
 
     public GameObject uiStatsHolder;
 
+
+    private void OnEnable()
+    {
+        uiStatsHolder = UIController.Instance.getGameView.playerStatsHolder;
+    }
     public enum Type
     {
         Attack,

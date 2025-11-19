@@ -11,7 +11,7 @@ public class GameManager : MonoBehaviour
     public List<GameObject> enemies = new List<GameObject>();
     [SerializeField] private LLMController llmController;
     [SerializeField] private CurrencyData currencyData;
-
+    public List<PlayerFunctionality> playerFunctionality;
     public LLMController LLMController { get; private set; }
     public CurrencyData getcurrencyData { get; private set; }
 
@@ -28,6 +28,25 @@ public class GameManager : MonoBehaviour
         }
         LLMController = llmController;
         getcurrencyData = currencyData;
+    }
+
+    public void CallSetSpellFrom(string tragetName)
+    {
+        for (int i = 0; i < playerFunctionality.Count; i++)
+        {
+            Debug.Log("Setting spell from " + tragetName + " for player " + i + "player is :" + playerFunctionality[i]);
+            playerFunctionality[i].setSpellFrom(tragetName);
+        }
+
+    }
+
+    public void CallSetSelectedSpell(int index)
+    {
+        for (int i = 0; i < playerFunctionality.Count; i++)
+        {
+            Debug.Log("selecting spell from index " + index + " for player " + i + "player is :" + playerFunctionality[i]);
+            playerFunctionality[i].SetSelectedSpell(index);
+        }
     }
 
     public void CheckGameState()

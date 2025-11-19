@@ -1560,6 +1560,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 46210618085697054, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_text
+      value: "Enter Spell...\u200B"
+      objectReference: {fileID: 0}
     - target: {fileID: 572166835384522974, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -1639,6 +1643,18 @@ PrefabInstance:
     - target: {fileID: 572166835384522974, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 859196379411244962, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_text
+      value: Enter Spell...
+      objectReference: {fileID: 0}
+    - target: {fileID: 859196379411244962, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1083413483856538527, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_Text
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 1184839727136019404, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_UiScaleMode
@@ -1728,6 +1744,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3039716893675716423, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_Text
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 3257090111863579359, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 4
@@ -1784,6 +1804,26 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[3].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
+    - target: {fileID: 3412095678308799535, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_Text
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 3561321821364328967, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_text
+      value: Enter Spell...
+      objectReference: {fileID: 0}
+    - target: {fileID: 3561321821364328967, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3619819619410404508, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_text
+      value: Enter Spell...
+      objectReference: {fileID: 0}
+    - target: {fileID: 3619819619410404508, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4141444732862762390, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -1820,6 +1860,14 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -50
       objectReference: {fileID: 0}
+    - target: {fileID: 4457806098549367390, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_text
+      value: Enter Spell...
+      objectReference: {fileID: 0}
+    - target: {fileID: 4457806098549367390, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4841641387904902431, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 1
@@ -1839,6 +1887,10 @@ PrefabInstance:
     - target: {fileID: 4922046177267369457, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4971145139165598455, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_text
+      value: "Enter Spell...\u200B"
       objectReference: {fileID: 0}
     - target: {fileID: 5014736397685239714, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: loadingView
@@ -1923,7 +1975,7 @@ PrefabInstance:
     - target: {fileID: 6426551381447928589, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: spellTextHolder
       value: 
-      objectReference: {fileID: 3890189739372019602}
+      objectReference: {fileID: 6497230864106339740}
     - target: {fileID: 6426551381447928589, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: playerSpellPanel
       value: 
@@ -1984,6 +2036,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6873413938593331081, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_text
+      value: "Enter Spell...\u200B"
+      objectReference: {fileID: 0}
     - target: {fileID: 7126334349942638379, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -1991,6 +2047,10 @@ PrefabInstance:
     - target: {fileID: 7619015279431217084, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7939627093770051214, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: GotoEditPlayerUnits
       objectReference: {fileID: 0}
     - target: {fileID: 8304058186847947198, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
@@ -2011,6 +2071,14 @@ PrefabInstance:
     - target: {fileID: 8494748846879069826, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
       value: GoToShop
+      objectReference: {fileID: 0}
+    - target: {fileID: 8590313477850868235, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_text
+      value: "Enter Spell...\u200B"
+      objectReference: {fileID: 0}
+    - target: {fileID: 8649995119819243491, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_Text
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 8979205391876422194, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_IsActive
@@ -7007,6 +7075,7 @@ MonoBehaviour:
   enemies: []
   llmController: {fileID: 341758073}
   currencyData: {fileID: 11400000, guid: 62004c7955a9af44c823d05e708a9512, type: 2}
+  playerFunctionality: []
 --- !u!1 &1727973347
 GameObject:
   m_ObjectHideFlags: 0
@@ -10919,28 +10988,28 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: PlayerFunctionality, Assembly-CSharp
-        m_MethodName: setSpellFrom
+      - m_Target: {fileID: 1702397874}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: CallSetSpellFrom
         m_Mode: 5
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
+          m_IntArgument: 3
           m_FloatArgument: 0
           m_StringArgument: Player
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: PlayerFunctionality, Assembly-CSharp
-        m_MethodName: SetSelectedSpell
+      - m_Target: {fileID: 1702397874}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: CallSetSelectedSpell
         m_Mode: 3
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 2
           m_FloatArgument: 0
-          m_StringArgument: 
+          m_StringArgument: Player
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!224 &3861529052428452245
@@ -11858,28 +11927,28 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: PlayerFunctionality, Assembly-CSharp
-        m_MethodName: setSpellFrom
+      - m_Target: {fileID: 1702397874}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: CallSetSpellFrom
         m_Mode: 5
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
+          m_IntArgument: 3
           m_FloatArgument: 0
           m_StringArgument: Player
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: PlayerFunctionality, Assembly-CSharp
-        m_MethodName: SetSelectedSpell
+      - m_Target: {fileID: 1702397874}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: CallSetSelectedSpell
         m_Mode: 3
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 3
           m_FloatArgument: 0
-          m_StringArgument: 
+          m_StringArgument: Player
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &5123811067026418324
@@ -13226,28 +13295,28 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: PlayerFunctionality, Assembly-CSharp
-        m_MethodName: setSpellFrom
+      - m_Target: {fileID: 1702397874}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: CallSetSpellFrom
         m_Mode: 5
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
+          m_IntArgument: 3
           m_FloatArgument: 0
           m_StringArgument: Player
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: PlayerFunctionality, Assembly-CSharp
-        m_MethodName: SetSelectedSpell
+      - m_Target: {fileID: 1702397874}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: CallSetSelectedSpell
         m_Mode: 3
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 1
           m_FloatArgument: 0
-          m_StringArgument: 
+          m_StringArgument: Player
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!224 &7294880161146430225
@@ -13729,28 +13798,28 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: PlayerFunctionality, Assembly-CSharp
-        m_MethodName: setSpellFrom
+      - m_Target: {fileID: 1702397874}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: CallSetSpellFrom
         m_Mode: 5
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
+          m_IntArgument: 3
           m_FloatArgument: 0
           m_StringArgument: Player
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: PlayerFunctionality, Assembly-CSharp
-        m_MethodName: SetSelectedSpell
+      - m_Target: {fileID: 1702397874}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: CallSetSelectedSpell
         m_Mode: 3
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: 
+          m_StringArgument: Player
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!1 &8109375128596697857
