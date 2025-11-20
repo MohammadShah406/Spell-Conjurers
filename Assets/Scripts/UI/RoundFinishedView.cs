@@ -16,7 +16,7 @@ public class RoundFinishedView : MonoBehaviour
 
     public void GoToShop()
     {
-        UIController.Instance.SwitchUI(UIIndex.Shop);
+        UIController.Instance.SwitchUI(UIIndex.UnitEditCurrentSpell);
     }
 
     public void NextRound()

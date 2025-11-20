@@ -76,18 +76,22 @@ public class GridManager : MonoBehaviour
                 grid[x, z] = tile;
             }
         }*/
+
+      
+
         mapDetails = LoadRoundMap(GameManager.Instance.roundNo);
         BuildMapFromData();
 
-        // --- 2. Clear all tiles' occupants ---
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                if (grid[x, y] != null)
-                    grid[x, y].occupant = null;
-            }
-        }
+        //// --- 2. Clear all tiles' occupants ---
+        //for (int x = 0; x < width; x++)
+        //{
+        //    for (int y = 0; y < height; y++)
+        //    {
+        //        if (grid[x, y] != null)
+        //            grid[x, y].occupant = null;
+        //    }
+        //}
+
 
         // --- 3. Destroy existing enemies and player ---
         // Destroy enemies

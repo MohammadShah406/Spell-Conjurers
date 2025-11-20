@@ -26,6 +26,9 @@ public class PlayerFunctionality : MonoBehaviour
     private List<Tile> highlightedTiles = new List<Tile>();
     private bool hasMoved = false;
 
+    // Cache reachable tiles (distance) each turn to avoid recomputation until movement
+    private Dictionary<Tile, int> reachableTileDistances = new Dictionary<Tile, int>();
+
     public GameObject playerSpellPanel;
     public GameObject spellTextHolder;
     public GameObject playerStatsHolder;
@@ -34,8 +37,6 @@ public class PlayerFunctionality : MonoBehaviour
     public Stats playerStats;
 
     public bool turnStarted = true;
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
 
     private void OnEnable()
     {
@@ -62,10 +63,8 @@ public class PlayerFunctionality : MonoBehaviour
         selectedSpell = null;
     }
 
-    // Update is called once per frame
     void Update()
     {
-        //Unselect spell and Enemy Details
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             ResetSpellTextHolder();
@@ -75,26 +74,25 @@ public class PlayerFunctionality : MonoBehaviour
             foreach (Tile tile in highlightedTiles)
                 tile.ResetHighlight();
             highlightedTiles.Clear();
+            reachableTileDistances.Clear();
 
             ui_SelectedEnemy.SetActive(false);
             playerSpellPanel.SetActive(true);
             playerStatsHolder.SetActive(true);
         }
 
-        // Always allow clicking to view enemy details
         GetEnemyDetails();
 
-        // Handle turn transitions
         if (TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
         {
             if (turnStarted)
             {
-                // Only run this once when the turn actually ends
                 ResetSpellTextHolder();
                 selectedSpell = null;
                 foreach (Tile tile in highlightedTiles)
                     tile.ResetHighlight();
                 highlightedTiles.Clear();
+                reachableTileDistances.Clear();
 
                 ui_SelectedEnemy.SetActive(false);
                 playerSpellPanel.SetActive(true);
@@ -102,10 +100,9 @@ public class PlayerFunctionality : MonoBehaviour
                 OnTurnEnd();
             }
 
-            return; // Don’t process movement or spells during enemy turn
+            return;
         }
 
-        // If it's player turn and not moved yet, show reachable tiles
         if (!hasMoved && TurnManager.Instance.currentState == TurnManager.TurnState.PlayerTurn && selectedSpell == null)
         {
             HandleTileHighlights();
@@ -127,26 +124,30 @@ public class PlayerFunctionality : MonoBehaviour
     {
         if (highlightedTiles.Count > 0) return;
 
-        foreach (Tile tile in gridManager.grid)
+        // Compute reachable tiles via BFS considering obstacles
+        reachableTileDistances = ComputeReachableTiles(gridPosition, moveRange);
+
+        foreach (var kvp in reachableTileDistances)
         {
+            Tile tile = kvp.Key;
             if (tile == null) continue;
 
-            int distance = Mathf.Abs(tile.gridPosition.x - gridPosition.x) + Mathf.Abs(tile.gridPosition.y - gridPosition.y);
-            if (distance <= moveRange && tile.occupant == null)
-            {
-                tile.Highlight(new Color(0.3f, 0.5f, 1f, 1f)); // soft blue
-                highlightedTiles.Add(tile);
-            }
-            else if(distance <= moveRange && tile.occupant == gameObject)
+            // Occupant logic
+            if (tile.gridPosition == gridPosition)
             {
                 tile.Highlight(Color.green);
-                highlightedTiles.Add(tile);
             }
-            else if (distance <= moveRange && tile.occupant != null)
+            else if (tile.occupant == null)
             {
-                tile.Highlight(Color.red);
-                highlightedTiles.Add(tile);
+                tile.Highlight(new Color(0.3f, 0.5f, 1f, 1f)); // reachable & free
             }
+            else
+            {
+                // Occupied but reachable (show as red)
+                tile.Highlight(Color.red);
+            }
+
+            highlightedTiles.Add(tile);
         }
     }
 
@@ -160,42 +161,155 @@ public class PlayerFunctionality : MonoBehaviour
                 Tile clickedTile = hit.collider.GetComponent<Tile>();
                 if (clickedTile != null && highlightedTiles.Contains(clickedTile))
                 {
-                    if(clickedTile.occupant == null)
+                    // Only move to empty, walkable tiles that were computed reachable
+                    if (clickedTile.occupant == null && reachableTileDistances.ContainsKey(clickedTile))
                     {
-                        StartCoroutine(MoveToTile(clickedTile));
+                        StartCoroutine(MoveAlongPath(clickedTile));
                     }
-                    
                 }
             }
         }
     }
 
-    private IEnumerator MoveToTile(Tile targetTile)
+    //  BFS pathfinding movement
+    private IEnumerator MoveAlongPath(Tile targetTile)
     {
         hasMoved = true;
 
-        // Clear highlights
         foreach (Tile tile in highlightedTiles)
             tile.ResetHighlight();
         highlightedTiles.Clear();
+        reachableTileDistances.Clear();
 
-        // Free old tile
-        gridManager.GetTile(gridPosition).occupant = null;
-
-        // Move smoothly
-        Vector3 targetPos = new Vector3(targetTile.gridPosition.x, yPos, targetTile.gridPosition.y);
-        while (Vector3.Distance(transform.position, targetPos) > 0.01f)
+        // Get path (list of grid positions excluding current)
+        List<Vector2Int> path = FindPath(gridPosition, targetTile.gridPosition);
+        if (path == null || path.Count == 0)
         {
-            transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * Time.deltaTime);
-            yield return null;
+            Debug.Log("No path found to target tile.");
+            hasMoved = false; // allow retry
+            yield break;
         }
 
-        transform.position = targetPos;
+        // Free old tile
+        Tile currentTile = gridManager.GetTile(gridPosition);
+        if (currentTile != null && currentTile.occupant == gameObject)
+            currentTile.occupant = null;
+
+        // Step through path
+        for (int i = 0; i < path.Count; i++)
+        {
+            Vector3 targetPos = new Vector3(path[i].x, yPos, path[i].y);
+            while (Vector3.Distance(transform.position, targetPos) > 0.01f)
+            {
+                transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * Time.deltaTime);
+                yield return null;
+            }
+            transform.position = targetPos;
+        }
+
         gridPosition = targetTile.gridPosition;
         targetTile.occupant = gameObject;
 
         yield return null;
     }
+
+    // BFS to compute reachable tiles within range
+    private Dictionary<Tile, int> ComputeReachableTiles(Vector2Int start, int range)
+    {
+        Dictionary<Tile, int> result = new Dictionary<Tile, int>();
+        Queue<Vector2Int> q = new Queue<Vector2Int>();
+        Dictionary<Vector2Int, int> dist = new Dictionary<Vector2Int, int>();
+
+        q.Enqueue(start);
+        dist[start] = 0;
+
+        while (q.Count > 0)
+        {
+            Vector2Int current = q.Dequeue();
+            int currentDist = dist[current];
+            Tile currentTile = gridManager.GetTile(current);
+            if (currentTile != null && currentDist <= range)
+            {
+                result[currentTile] = currentDist;
+            }
+
+            if (currentDist == range) continue;
+
+            foreach (Vector2Int dir in fourDirs)
+            {
+                Vector2Int next = new Vector2Int(current.x + dir.x, current.y + dir.y);
+                if (dist.ContainsKey(next)) continue;
+
+                Tile nextTile = gridManager.GetTile(next);
+                if (nextTile == null) continue;
+                if (!nextTile.walkable) continue;
+                // Treat other units as blocking for traversal
+                if (nextTile.occupant != null && nextTile.occupant != gameObject) continue;
+
+                dist[next] = currentDist + 1;
+                q.Enqueue(next);
+            }
+        }
+
+        return result;
+    }
+
+    // Path reconstruction using BFS (uniform cost grid)
+    private List<Vector2Int> FindPath(Vector2Int start, Vector2Int goal)
+    {
+        if (start == goal) return new List<Vector2Int>();
+
+        Queue<Vector2Int> q = new Queue<Vector2Int>();
+        Dictionary<Vector2Int, Vector2Int> cameFrom = new Dictionary<Vector2Int, Vector2Int>();
+        q.Enqueue(start);
+        cameFrom[start] = start;
+
+        while (q.Count > 0)
+        {
+            Vector2Int current = q.Dequeue();
+            if (current == goal) break;
+
+            foreach (Vector2Int dir in fourDirs)
+            {
+                Vector2Int next = new Vector2Int(current.x + dir.x, current.y + dir.y);
+                if (cameFrom.ContainsKey(next)) continue;
+
+                Tile nextTile = gridManager.GetTile(next);
+                if (nextTile == null) continue;
+                if (!nextTile.walkable) continue;
+                // Can't traverse through other occupants
+                if (nextTile.occupant != null && next != goal) continue;
+                // Allow goal if empty (already verified before calling)
+
+                cameFrom[next] = current;
+                q.Enqueue(next);
+            }
+        }
+
+        if (!cameFrom.ContainsKey(goal))
+        {
+            return null; // unreachable
+        }
+
+        // Reconstruct path (reverse)
+        List<Vector2Int> path = new List<Vector2Int>();
+        Vector2Int cur = goal;
+        while (cur != start)
+        {
+            path.Add(cur);
+            cur = cameFrom[cur];
+        }
+        path.Reverse();
+        return path;
+    }
+
+    private static readonly Vector2Int[] fourDirs = new[]
+    {
+        new Vector2Int(1,0),
+        new Vector2Int(-1,0),
+        new Vector2Int(0,1),
+        new Vector2Int(0,-1)
+    };
 
     public void ResetTurn()
     {
@@ -204,6 +318,7 @@ public class PlayerFunctionality : MonoBehaviour
         foreach (Tile tile in highlightedTiles)
             tile.ResetHighlight();
         highlightedTiles.Clear();
+        reachableTileDistances.Clear();
     }
 
     public void Initialize(Vector2Int startPos, GridManager grid)
@@ -284,13 +399,11 @@ public class PlayerFunctionality : MonoBehaviour
         if (gridManager == null || gridManager.grid == null)
             return;
 
-        // Calculate nearest grid coordinates
         Vector2Int newPos = new Vector2Int(
             Mathf.RoundToInt(transform.position.x),
             Mathf.RoundToInt(transform.position.z)
         );
 
-        // If position changed, clear the old tile
         if (newPos != gridPosition)
         {
             Tile oldTile = gridManager.GetTile(gridPosition);
@@ -298,7 +411,6 @@ public class PlayerFunctionality : MonoBehaviour
                 oldTile.occupant = null;
         }
 
-        // Update to new position
         Tile newTile = gridManager.GetTile(newPos);
         if (newTile != null)
         {
@@ -315,7 +427,7 @@ public class PlayerFunctionality : MonoBehaviour
         if (selectedSpell == null)
             return;
 
-        if (Input.GetMouseButtonDown(0)) // Left click on target
+        if (Input.GetMouseButtonDown(0))
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out RaycastHit hit))
@@ -323,7 +435,6 @@ public class PlayerFunctionality : MonoBehaviour
                 Enemy enemy = hit.collider.GetComponent<Enemy>();
                 if (enemy != null)
                 {
-                    // Check if within spell range
                     int distance = Mathf.Abs(enemy.gridPosition.x - gridPosition.x) + Mathf.Abs(enemy.gridPosition.y - gridPosition.y);
                     if (distance <= selectedSpell.range)
                     {
@@ -340,14 +451,13 @@ public class PlayerFunctionality : MonoBehaviour
 
                         Debug.Log($"Casted {selectedSpell.name} on {enemy.name}");
 
-                        // Example spell effects
                         ActionManager.Instance.UseSpell(selectedSpell, this.gameObject, enemy.gameObject);
 
-                        // End player turn after casting
                         TurnManager.Instance.EndPlayerTurn();
                         foreach (Tile tile in highlightedTiles)
                             tile.ResetHighlight();
                         highlightedTiles.Clear();
+                        reachableTileDistances.Clear();
                         selectedSpell = null;
                         hasMoved = true;
 
@@ -363,10 +473,10 @@ public class PlayerFunctionality : MonoBehaviour
 
     private void HighlightEnemiesInRange()
     {
-        // Clear old highlights first
         foreach (Tile tile in highlightedTiles)
             tile.ResetHighlight();
         highlightedTiles.Clear();
+        reachableTileDistances.Clear();
 
         if (selectedSpell == null || gridManager == null)
             return;
@@ -377,10 +487,8 @@ public class PlayerFunctionality : MonoBehaviour
 
             int distance = Mathf.Abs(tile.gridPosition.x - gridPosition.x) + Mathf.Abs(tile.gridPosition.y - gridPosition.y);
 
-            // Highlight all tiles within spell range
             if (distance <= selectedSpell.range)
             {
-                // Default spell range color (light red/orange)
                 Color baseColor = new Color(1f, 0.5f, 0.4f, 0.5f);
                 tile.Highlight(baseColor);
                 highlightedTiles.Add(tile);
@@ -388,28 +496,23 @@ public class PlayerFunctionality : MonoBehaviour
                 if (tile.occupant == gameObject)
                 {
                     tile.Highlight(Color.green);
-                    highlightedTiles.Add(tile);
                 }
-                // If occupant is an enemy, make it a stronger red
                 else if (tile.occupant != null)
                 {
                     Enemy enemy = tile.occupant.GetComponent<Enemy>();
                     if (enemy != null)
                     {
-                        tile.Highlight(new Color(1f, 0f, 0f, 0.9f)); // strong red for enemies
+                        tile.Highlight(new Color(1f, 0f, 0f, 0.9f));
                     }
                 }
-                
             }
         }
     }
 
     public void OnTurnStart()
     {
-        //10% of max resource is added every turn
         playerStats.resource = Mathf.Clamp((int)(playerStats.resource + (playerStats.maxResource * 0.1)), 0, playerStats.maxResource);
         playerStats.UpdateStatsHolder();
-
         turnStarted = true;
     }
 
@@ -420,10 +523,8 @@ public class PlayerFunctionality : MonoBehaviour
 
     public void GetEnemyDetails()
     {
-        // Only intercept clicks for details when NOT in the middle of casting a spell on your turn.
         if (Input.GetMouseButtonDown(0))
         {
-            // If player is casting a spell this turn, keep the click for UseSpell
             if (selectedSpell != null && TurnManager.Instance.currentState == TurnManager.TurnState.PlayerTurn)
                 return;
 
