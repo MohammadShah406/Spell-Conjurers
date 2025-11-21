@@ -281,7 +281,7 @@ public class GridManager : MonoBehaviour
         {
             for (int x = 0; x < width; x++)
             {
-                Vector3 tilePos = new Vector3(x, 0, z);
+                Vector3 tilePos = new Vector3(x, 0.5f, z);
                 var tileObj = Instantiate(tilePrefab, tilePos, Quaternion.identity);
                 tileObj.transform.parent = map.transform;
 
