@@ -1,0 +1,15 @@
+{
+    "damage": 15,
+    "accuracy": 85,
+    "resourceCost": 12,
+    "range": 3,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Frost Bolt",
+    "description": "Launches a bolt of frost at the enemy, dealing damage and slowing them down.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" launched a Frost Bolt at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(\"Freeze\", 2, 5);\r\n        \r\n        ",
+    "spellVisualType": "Bolt",
+    "status": "Freeze",
+    "statusDuration": 2,
+    "statusDamagePerTurn": 5
+}

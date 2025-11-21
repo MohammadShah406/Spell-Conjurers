@@ -1,15 +1,15 @@
 {
-    "damage": 15,
+    "damage": 12,
     "accuracy": 85,
-    "resourceCost": 5,
-    "range": 5,
+    "resourceCost": 8,
+    "range": 1,
     "selfDamage": 0,
     "support": false,
     "name": "Firebolt",
-    "description": "Launches a bolt of fire to scorch the enemy",
-    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" launched a Firebolt at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n        \r\n        ",
+    "description": "A small bolt of fire that ignites the target.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" cast a Firebolt at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n        \r\n        ",
     "spellVisualType": "Sphere",
     "status": "Burn",
     "statusDuration": 2,
-    "statusDamagePerTurn": 5
+    "statusDamagePerTurn": 3
 }

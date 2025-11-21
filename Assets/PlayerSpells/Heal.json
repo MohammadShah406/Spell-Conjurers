@@ -1,0 +1,15 @@
+{
+    "damage": 0,
+    "accuracy": 100,
+    "resourceCost": 15,
+    "range": 1,
+    "selfDamage": 0,
+    "support": true,
+    "name": "Heal",
+    "description": "Restores a small amount of health to a target ally.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().health += spell.damage;\r\n            if (to.GetComponent<Stats>().health > 100) { to.GetComponent<Stats>().health = 100; }\r\n            actionLog += from.name + \" healed \" + to.name + \", restoring \" + spell.damage + \" health.\";\r\n        \r\n        ",
+    "spellVisualType": "Light",
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}

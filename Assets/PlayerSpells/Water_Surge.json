@@ -1,0 +1,15 @@
+{
+    "damage": 2,
+    "accuracy": 85,
+    "resourceCost": 8,
+    "range": 5,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Water Surge",
+    "description": "Unleashes a powerful surge of water to damage enemies.",
+    "code": "string actionLog = \"\";\r\n\r\nto.GetComponent<Stats>().takeDamage(spell.damage);\r\nactionLog += from.name + \" unleashed a Water Surge on \" + to.name + \", dealing \" + spell.damage + \" damage.\";\r\n",
+    "spellVisualType": "WaterBlast",
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}
