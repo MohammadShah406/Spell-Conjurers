@@ -65,6 +65,15 @@ public class UnitEditCurrentSpellView : MonoBehaviour
     {
         UIController.Instance.SwitchUI(UIIndex.PlayerUnits);
     }
+
+    public void GoToGameplayView()
+    {
+        UIController.Instance.SwitchUI(UIIndex.Game);
+    }
+    public void GoToRoundFinishView()
+    {
+        UIController.Instance.SwitchUI(UIIndex.RoundFinished);
+    }
 }
 
 
