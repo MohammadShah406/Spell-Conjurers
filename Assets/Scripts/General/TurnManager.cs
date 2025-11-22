@@ -93,6 +93,10 @@ public class TurnManager : MonoBehaviour
         currentState = TurnState.PlayerTurn;
         GameManager.Instance.players[0].GetComponent<PlayerFunctionality>().OnTurnStart();
 
+        foreach (var enemy in EnemyManager.Instance.enemies)
+        {
+            enemy.GetComponent<Enemy>().virtualCamera.Priority = 9; 
+        }
 
         // Reset player movement for next turn
         var player = FindAnyObjectByType<PlayerFunctionality>();

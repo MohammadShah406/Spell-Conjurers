@@ -7,21 +7,28 @@ using UnityEngine.Rendering.Universal;
 
 public class Enemy : MonoBehaviour
 {
+    [Header("Enemy Virtual Camera")]
+    public Cinemachine.CinemachineVirtualCamera virtualCamera;
+
+    [Header("Enemy Settings")]
     public float yPos = 1.5f;
     public Vector2Int gridPosition;
     public int moveRange = 3;
     public int attackRange = 1;
     public float moveSpeed = 5f;
+    public float dmgMultiplier = 1.0f;
 
     private GridManager gridManager;
     private GameObject player;
 
+    [Header("Enemy Spells")]
     public Spell[] spells = new Spell[4];
     public int preffered = 0;
 
     public bool debugMode = true;
 
-    public float dmgMultiplier = 1.0f;
+
+    
 
     private void Update()
     {
@@ -44,10 +51,27 @@ public class Enemy : MonoBehaviour
 
         InitializeSpells();
         PrioriizeSpell();
+
+        // Set the camera to look at the player
+        foreach (var player in GameManager.Instance.players)
+        {
+            if (player != null)
+            {
+                virtualCamera.LookAt = player.transform;
+                break;
+            }
+        }
+
+        
+
     }
 
     public IEnumerator TakeTurn(System.Action onComplete)
     {
+        virtualCamera.Priority = 11; // Activate enemy camera
+
+        yield return new WaitForSeconds(TurnManager.Instance.waitDuration);
+
         EnemyManager.Instance.calculateThreatGrid();
         Dictionary<String, object> result = EnemyManager.Instance.CalculateScore(this);
 
@@ -69,19 +93,28 @@ public class Enemy : MonoBehaviour
 
         Debug.Log("Enemy moving to " + gridPosition);
 
+        
+
         if (result.ContainsKey("target"))
         {
             GameObject target = (GameObject)result["target"];
             Spell spell = (Spell)result["spell"];
             Debug.Log("Attempting to hit target " + target.name + " with spell " + spell.name);
+
+            yield return new WaitForSeconds(0.5f);
             AttackPlayer(spell, target);
+
+            // Set camera to look at target during/after attack
+            virtualCamera.LookAt = target.transform;    
+
         }
 
         SyncGridPosition();
         onComplete?.Invoke();
+
     }
 
-    // OLD single segment movement retained for fallback
+    // single segment movement retained for fallback
     private IEnumerator MoveTo(Vector2Int targetPos)
     {
         Vector3 start = transform.position;
@@ -99,7 +132,7 @@ public class Enemy : MonoBehaviour
         SyncGridPosition();
     }
 
-    // NEW: Move along a computed path step-by-step (respecting obstacles).
+    //  Move along a computed path step-by-step (respecting obstacles).
     private IEnumerator MoveAlongPath(List<Vector2Int> path, int maxSteps)
     {
         // path includes start; skip index 0
@@ -134,7 +167,7 @@ public class Enemy : MonoBehaviour
         SyncGridPosition();
     }
 
-    // NEW: BFS shortest path avoiding non-walkable / occupied tiles.
+    //  BFS shortest path avoiding non-walkable / occupied tiles.
     private List<Vector2Int> FindPath(Vector2Int start, Vector2Int goal)
     {
         if (gridManager == null || gridManager.grid == null)

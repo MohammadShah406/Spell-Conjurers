@@ -2690,6 +2690,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 480609432}
   m_CullTransparentMesh: 1
+--- !u!1 &523971986
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 523971987}
+  m_Layer: 0
+  m_Name: ProjectileContainer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &523971987
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 523971986}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 617360265}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &546293348
 GameObject:
   m_ObjectHideFlags: 0
@@ -3130,7 +3161,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 523971987}
   m_Father: {fileID: 125494047}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &617360266
@@ -3145,6 +3177,42 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd9b7a3b77e6ef84d9bb094c2d285fb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  onSpellUsed:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 617360266}
+        m_TargetAssemblyTypeName: ActionManager, Assembly-CSharp
+        m_MethodName: spawnProjectile
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  projectileSpeed: 12
+  projectileLifetimeAfterImpact: 1.5
+  spawnOffset: {x: 0, y: 1, z: 0}
+  projectileContainer: {fileID: 523971987}
+  projectilePrefab: {fileID: 7720250524112897052, guid: 10a2f10791db5d84a9feda03b5a30162, type: 3}
+  currentSpell:
+    damage: 0
+    accuracy: 0
+    resourceCost: 0
+    range: 0
+    selfDamage: 0
+    support: 0
+    name: 
+    description: 
+    code: 
+    spellVisualType: 
+    status: 
+    statusDuration: 0
+    statusDamagePerTurn: 0
+  currentFrom: {fileID: 0}
+  currentTo: {fileID: 0}
 --- !u!114 &617360267
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4005,8 +4073,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 812325885}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.2855523, y: 0.36079013, z: -0.117243305, w: 0.880082}
-  m_LocalPosition: {x: -53.34572, y: 39.765846, z: -28.490059}
+  m_LocalRotation: {x: 0.18059652, y: 0.07281417, z: -0.013407862, w: 0.9807667}
+  m_LocalPosition: {x: -1, y: 3.75, z: -4.75}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4076,7 +4144,7 @@ MonoBehaviour:
   m_BlendUpdateMethod: 1
   m_DefaultBlend:
     m_Style: 1
-    m_Time: 2
+    m_Time: 1
     m_CustomCurve:
       serializedVersion: 2
       m_Curve: []
@@ -9219,9 +9287,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyManager: {fileID: 1901604358}
   currentState: 0
-  waitButton: 0
+  waitButton: 1
   waitTurn: 1
-  waitDuration: 1
+  waitDuration: 1.5
 --- !u!224 &2035391029 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 572166835384522974, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}

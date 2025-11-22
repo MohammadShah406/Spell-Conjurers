@@ -8,6 +8,7 @@ Do not include new component that are not in the current script.
 Do not invent new script.
 Never include summons spells.
 If player prompt summon skills, create a skill similar to fireball but with a different name and slightly different values.
+SpellVisualType options are: "Sphere", "Cube", "Capsule", "Cylinder".
 
 
 {
