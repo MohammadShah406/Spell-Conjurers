@@ -8,7 +8,8 @@ Do not include new component that are not in the current script.
 Do not invent new script.
 Never include summons spells.
 If player prompt summon skills, create a skill similar to fireball but with a different name and slightly different values.
-SpellVisualType options are: "Sphere", "Cube", "Capsule", "Cylinder".
+ColorR, ColorG, and ColorB should be integers between 0 and 255 representing RGB color values.
+No AOE spells. No for each enemy in code.
 
 
 {
@@ -21,7 +22,9 @@ SpellVisualType options are: "Sphere", "Cube", "Capsule", "Cylinder".
     "name": "Ice Lance",
     "description": "Hurls an ice lance at surprising accuracy",
     "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" hurled a Fireball at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n            to.GetComponent<Stats>().StatusDamage(spell.status, spell.statusDuration, spell.statusDamagePerTurn);\r\n        \r\n        ",
-    "spellVisualType": "Sphere",
+    "ColorR": 0,
+    "ColorG": 0,
+    "ColorB": 255,
     "status": "None",
     "statusDuration": 0,
     "statusDamagePerTurn": 0

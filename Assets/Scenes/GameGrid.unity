@@ -2103,7 +2103,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3831619174685883359, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4141444732862762390, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_IsActive
@@ -3193,10 +3193,12 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   projectileSpeed: 12
-  projectileLifetimeAfterImpact: 1.5
+  projectileLifetimeAfterImpact: 0.5
   spawnOffset: {x: 0, y: 1, z: 0}
+  projectileSlamSpeed: 30
+  slamPause: 0.5
   projectileContainer: {fileID: 523971987}
-  projectilePrefab: {fileID: 7720250524112897052, guid: 10a2f10791db5d84a9feda03b5a30162, type: 3}
+  projectilePrefab: {fileID: 2977390179563072956, guid: 39651ead677f4924e8993dcf16275adc, type: 3}
   currentSpell:
     damage: 0
     accuracy: 0
@@ -3207,7 +3209,9 @@ MonoBehaviour:
     name: 
     description: 
     code: 
-    spellVisualType: 
+    ColorR: 0
+    ColorG: 0
+    ColorB: 0
     status: 
     statusDuration: 0
     statusDamagePerTurn: 0
@@ -3235,7 +3239,9 @@ MonoBehaviour:
     name: 
     description: 
     code: 
-    spellVisualType: 
+    ColorR: 0
+    ColorG: 0
+    ColorB: 0
     status: 
     statusDuration: 0
     statusDamagePerTurn: 0
@@ -6207,7 +6213,9 @@ MonoBehaviour:
     name: 
     description: 
     code: 
-    spellVisualType: 
+    ColorR: 0
+    ColorG: 0
+    ColorB: 0
     status: 
     statusDuration: 0
     statusDamagePerTurn: 0
@@ -9415,7 +9423,9 @@ MonoBehaviour:
     name: 
     description: 
     code: 
-    spellVisualType: 
+    ColorR: 0
+    ColorG: 0
+    ColorB: 0
     status: 
     statusDuration: 0
     statusDamagePerTurn: 0
@@ -9428,7 +9438,9 @@ MonoBehaviour:
     name: 
     description: 
     code: 
-    spellVisualType: 
+    ColorR: 0
+    ColorG: 0
+    ColorB: 0
     status: 
     statusDuration: 0
     statusDamagePerTurn: 0
@@ -9441,7 +9453,9 @@ MonoBehaviour:
     name: 
     description: 
     code: 
-    spellVisualType: 
+    ColorR: 0
+    ColorG: 0
+    ColorB: 0
     status: 
     statusDuration: 0
     statusDamagePerTurn: 0
@@ -9454,7 +9468,9 @@ MonoBehaviour:
     name: 
     description: 
     code: 
-    spellVisualType: 
+    ColorR: 0
+    ColorG: 0
+    ColorB: 0
     status: 
     statusDuration: 0
     statusDamagePerTurn: 0

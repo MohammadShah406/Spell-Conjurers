@@ -8,7 +8,9 @@
     "name": "Poison",
     "description": "Inflicts a poison effect, dealing damage over time.",
     "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().StatusDamage(\"Poison\", 3, spell.damage);\r\n            actionLog += from.name + \" applied poison to \" + to.name + \", causing \" + spell.damage + \" damage over 3 turns.\";\r\n        \r\n        ",
-    "spellVisualType": "GreenMist",
+    "ColorR": 150,
+    "ColorG": 30,
+    "ColorB": 150,
     "status": "Poison",
     "statusDuration": 3,
     "statusDamagePerTurn": 5

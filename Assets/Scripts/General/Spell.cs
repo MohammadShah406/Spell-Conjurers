@@ -13,7 +13,9 @@ public class Spell
     public string description;
     public string code;
 
-    public string spellVisualType;
+    public float ColorR;
+    public float ColorG;
+    public float ColorB;
     public string status;
     public int statusDuration;
     public int statusDamagePerTurn;

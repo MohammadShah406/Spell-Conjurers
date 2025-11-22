@@ -8,7 +8,9 @@
     "name": "Fireball",
     "description": "Unleashes a fiery projectile that explodes on impact, dealing damage to the target.",
     "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" cast a Fireball at \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n        \r\n        ",
-    "spellVisualType": "Fireball",
+    "ColorR": 255,
+    "ColorG": 0,
+    "ColorB": 0,
     "status": "Burn",
     "statusDuration": 3,
     "statusDamagePerTurn": 5

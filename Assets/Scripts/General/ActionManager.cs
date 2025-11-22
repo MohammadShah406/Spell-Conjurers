@@ -12,18 +12,21 @@ public class ActionManager : MonoBehaviour
     [Header("Projectile Settings")]
     public float projectileSpeed = 12f;
     public float projectileLifetimeAfterImpact = 1.5f;
-    public Vector3 spawnOffset = new Vector3(0f, 1f, 0f);
+    public Vector3 spawnOffset = new Vector3(0f, 0.5f, 0f); // Horizontal travel will ignore Y so this only affects initial slight lift (set to 0 if not desired)
+
+    [Header("Projectile Slam Settings")]
+    [Tooltip("Speed used when the projectile slams downward at the end.")]
+    public float projectileSlamSpeed = 30f;
+    [Tooltip("Optional pause (seconds) after reaching above target before slamming down.")]
+    public float slamPause = 0.05f;
 
     [Tooltip("Optional container to keep the hierarchy clean.")]
     public Transform projectileContainer;
     public GameObject projectilePrefab;
 
-
     public Spell currentSpell;
     public GameObject currentFrom;
     public GameObject currentTo;
-
-
 
     private void Awake()
     {
@@ -45,19 +48,6 @@ public class ActionManager : MonoBehaviour
             return;
         }
 
-
-        //string actionLog = "";
-        //if (spell.damage > 0)
-        //{
-        //    to.GetComponent<Stats>().takeDamage(spell.damage);
-        //    actionLog += from.name + " dealt " + spell.damage + " to " + to.name + ". ";
-        //}
-        //if (spell.selfDamage > 0)
-        //{
-        //    from.GetComponent<Stats>().takeDamage(spell.selfDamage);
-        //    actionLog += from.name + " dealt " + spell.selfDamage + " to itself. ";
-        //}
-
         SpellFunction.Instance.SetVariables(spell, from, to);
         SpellFunction.Instance.CustomSpellFunction();
         setCurrentValues();
@@ -76,25 +66,22 @@ public class ActionManager : MonoBehaviour
         GameObject from = currentFrom;
         GameObject to = currentTo;
 
-
         if (from == null || to == null)
         {
             Debug.LogWarning("spawnProjectile aborted: from or to is null.");
             return;
         }
 
-        // Determine grid positions (fallback to world rounded positions)
         Vector2Int fromGrid = TryGetGridPosition(from);
         Vector2Int toGrid = TryGetGridPosition(to);
 
-        // BFS path (list includes start -> end). If none, fallback to straight line.
         List<Vector2Int> path = FindPath(fromGrid, toGrid);
 
-        // Create projectile object
         GameObject proj;
         if (projectilePrefab != null)
         {
             proj = Instantiate(projectilePrefab);
+            proj.GetComponent<Renderer>().material.color = new Color(currentSpell.ColorR, currentSpell.ColorG, currentSpell.ColorB);
         }
         else
         {
@@ -106,40 +93,58 @@ public class ActionManager : MonoBehaviour
         if (projectileContainer != null)
             proj.transform.parent = projectileContainer;
 
-        Vector3 startWorld = new Vector3(fromGrid.x, from.transform.position.y, fromGrid.y) + spawnOffset;
+        // Travel Y height: lock to the 'from' tile ground level (ignore spawnOffset.y for travel; only apply if you still want initial lift)
+        float travelY = currentFrom.transform.position.y; // Ground / tile Y
+        Vector3 startWorld = new Vector3(fromGrid.x, travelY, fromGrid.y) + new Vector3(spawnOffset.x, 0f, spawnOffset.z);
         proj.transform.position = startWorld;
 
-        // Start movement coroutine
-        StartCoroutine(MoveProjectileAlongPath(proj, path, to, currentSpell));
+        StartCoroutine(MoveProjectileAlongPath(proj, path, to, currentSpell, travelY));
     }
 
-    private IEnumerator MoveProjectileAlongPath(GameObject projectile, List<Vector2Int> path, GameObject target, Spell spell)
+    private IEnumerator MoveProjectileAlongPath(GameObject projectile, List<Vector2Int> path, GameObject target, Spell spell, float travelY)
     {
         if (projectile == null)
             yield break;
 
-        // If we have a path of grid tiles, move through them; else direct line
+        // Horizontal movement only (Y locked to travelY) until directly above target, then vertical slam.
         if (path == null || path.Count < 2)
         {
-            // Direct line fallback
-            Vector3 targetPos = target.transform.position + spawnOffset;
-            while (projectile != null && Vector3.Distance(projectile.transform.position, targetPos) > 0.05f)
+            Vector3 targetFlat = new Vector3(
+                target.transform.position.x,
+                travelY,
+                target.transform.position.z) + new Vector3(spawnOffset.x, 0f, spawnOffset.z);
+
+            while (projectile != null && Vector3.Distance(projectile.transform.position, targetFlat) > 0.05f)
             {
+                // Force Y lock
+                Vector3 current = projectile.transform.position;
+                if (current.y != travelY)
+                {
+                    current.y = travelY;
+                    projectile.transform.position = current;
+                }
+
                 projectile.transform.position = Vector3.MoveTowards(
                     projectile.transform.position,
-                    targetPos,
+                    targetFlat,
                     projectileSpeed * Time.deltaTime);
                 yield return null;
             }
         }
         else
         {
-            // Skip index 0 (start)
             for (int i = 1; i < path.Count; i++)
             {
-                Vector3 waypoint = new Vector3(path[i].x, projectile.transform.position.y, path[i].y) + spawnOffset;
+                Vector3 waypoint = new Vector3(path[i].x, travelY, path[i].y) + new Vector3(spawnOffset.x, 0f, spawnOffset.z);
                 while (projectile != null && Vector3.Distance(projectile.transform.position, waypoint) > 0.02f)
                 {
+                    Vector3 current = projectile.transform.position;
+                    if (current.y != travelY)
+                    {
+                        current.y = travelY;
+                        projectile.transform.position = current;
+                    }
+
                     projectile.transform.position = Vector3.MoveTowards(
                         projectile.transform.position,
                         waypoint,
@@ -150,23 +155,55 @@ public class ActionManager : MonoBehaviour
                     yield break;
             }
 
-            // Final adjust to target anchor (in case target moved slightly)
-            Vector3 finalPos = target.transform.position + spawnOffset;
-            while (projectile != null && Vector3.Distance(projectile.transform.position, finalPos) > 0.05f)
+            if (target == null)
+                yield break;
+
+            Vector3 aboveTarget = new Vector3(
+                target.transform.position.x,
+                travelY,
+                target.transform.position.z) + new Vector3(spawnOffset.x, 0f, spawnOffset.z);
+
+            while (projectile != null && Vector3.Distance(projectile.transform.position, aboveTarget) > 0.05f)
             {
+                Vector3 current = projectile.transform.position;
+                if (current.y != travelY)
+                {
+                    current.y = travelY;
+                    projectile.transform.position = current;
+                }
+
                 projectile.transform.position = Vector3.MoveTowards(
                     projectile.transform.position,
-                    finalPos,
+                    aboveTarget,
                     projectileSpeed * Time.deltaTime);
                 yield return null;
             }
         }
 
-        // Impact (visual only; damage already handled by spell logic)
+        // Small pause before slam (optional)
+        if (slamPause > 0f)
+            yield return new WaitForSeconds(slamPause);
+
+        // Slam down to target's actual Y
+        if (projectile != null && target != null)
+        {
+            float targetY = target.transform.position.y; // Ground / model base
+            Vector3 slamTarget = new Vector3(
+                projectile.transform.position.x,
+                targetY,
+                projectile.transform.position.z);
+
+            while (projectile != null && projectile.transform.position.y > targetY + 0.01f)
+            {
+                Vector3 pos = projectile.transform.position;
+                pos.y = Mathf.MoveTowards(pos.y, targetY, projectileSlamSpeed * Time.deltaTime);
+                projectile.transform.position = pos;
+                yield return null;
+            }
+        }
+
         if (projectile != null)
         {
-            // Optional: simple impact feedback
-            // You can extend: particle effect, sound, etc.
             Destroy(projectile, projectileLifetimeAfterImpact);
         }
     }
@@ -184,13 +221,11 @@ public class ActionManager : MonoBehaviour
         if (enemy != null)
             return enemy.gridPosition;
 
-        // Fallback: approximate from world position
         return new Vector2Int(
             Mathf.RoundToInt(obj.transform.position.x),
             Mathf.RoundToInt(obj.transform.position.z));
     }
 
-    // BFS shortest path avoiding non-walkable / occupied tiles (except target occupant)
     private List<Vector2Int> FindPath(Vector2Int start, Vector2Int goal)
     {
         GridManager gm = GridManager.Instance;
@@ -234,7 +269,6 @@ public class ActionManager : MonoBehaviour
                 if (!t.walkable)
                     continue;
 
-                // Allow stepping onto goal even if it has occupant (projectile should still reach)
                 if (t.occupant != null && next != goal)
                     continue;
 
@@ -246,7 +280,6 @@ public class ActionManager : MonoBehaviour
 
         if (!cameFrom.ContainsKey(goal))
         {
-            // Unreachable -> attempt closest visited to goal
             Vector2Int closest = start;
             int bestDist = int.MaxValue;
             foreach (var v in visited)
@@ -279,7 +312,6 @@ public class ActionManager : MonoBehaviour
         path.Reverse();
         return path;
     }
-
 }
 
 

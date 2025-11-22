@@ -12,6 +12,7 @@ public class Tile : MonoBehaviour
     private Color defaultColor;
     public bool isHighlighted = false;
 
+    
     private void Start()
     {
         rend = GetComponent<Renderer>();
