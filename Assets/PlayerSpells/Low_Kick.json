@@ -1,0 +1,15 @@
+{
+    "damage": 15,
+    "accuracy": 85,
+    "resourceCost": 5,
+    "range": 1,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Low Kick",
+    "description": "Delivers a swift low kick to the target, causing moderate damage.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" executed a Low Kick on \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n        \r\n        ",
+    "spellVisualType": "Swipe",
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}

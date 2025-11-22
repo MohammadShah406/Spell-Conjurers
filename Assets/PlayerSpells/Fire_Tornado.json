@@ -1,0 +1,15 @@
+{
+    "damage": 15,
+    "accuracy": 85,
+    "resourceCost": 20,
+    "range": 5,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Fire Tornado",
+    "description": "Creates a swirling tornado of fire that engulfs enemies in a fiery blaze.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" cast Fire Tornado on \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n        \r\n        ",
+    "spellVisualType": "Tornado",
+    "status": "Burn",
+    "statusDuration": 3,
+    "statusDamagePerTurn": 5
+}

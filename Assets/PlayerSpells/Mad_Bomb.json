@@ -1,0 +1,15 @@
+{
+    "damage": 15,
+    "accuracy": 85,
+    "resourceCost": 15,
+    "range": 1,
+    "selfDamage": 5,
+    "support": false,
+    "name": "Mad Bomb",
+    "description": "Detonates a bomb that deals damage to an enemy at close range and damages the user slightly.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            from.GetComponent<Stats>().takeDamage(spell.selfDamage);\r\n            actionLog += from.name + \" detonated a Mad Bomb at \" + to.name + \", dealing \" + spell.damage + \" damage and taking \" + spell.selfDamage + \" self-damage. \";\r\n        \r\n        ",
+    "spellVisualType": "Explosion",
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}

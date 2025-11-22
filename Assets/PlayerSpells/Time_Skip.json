@@ -1,0 +1,15 @@
+{
+    "damage": 0,
+    "accuracy": 100,
+    "resourceCost": 20,
+    "range": 1,
+    "selfDamage": 0,
+    "support": true,
+    "name": "Time Skip",
+    "description": "Skip the next enemy turn, allowing the player to act again immediately.",
+    "code": "TurnManager.Instance.EndPlayerTurn();\r\n        TurnManager.Instance.currentState = TurnManager.TurnState.PlayerTurn;\r\n        ActionManager.Instance.UseSpell(spell, from, to);",
+    "spellVisualType": "None",
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}
