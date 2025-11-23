@@ -122,7 +122,10 @@ public class JsonManager : MonoBehaviour
         PrecompileSpell(spell);
         return spell;
     }
-
+    public void OnApplicationQuit()
+    {
+        ClearJsonInFolder();
+    }
     public void CreateJsonFile(Spell spell)
     {
         if (string.IsNullOrEmpty(spell.name))
