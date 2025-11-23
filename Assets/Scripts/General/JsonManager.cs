@@ -57,6 +57,7 @@ public class JsonManager : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        ClearJsonInFolder();
         DontDestroyOnLoad(gameObject); // Keep it across scenes
 
         // Ensure the folder exists inside project
@@ -135,6 +136,22 @@ public class JsonManager : MonoBehaviour
         File.WriteAllText(filePath, json);
 
         Debug.Log($"Saved spell '{spell.name}' to {filePath}");
+    }
+    public void ClearJsonInFolder()
+    {
+        try
+        {
+            string[] files = Directory.GetFiles(playerFolderPath, "*.json");
+            foreach (string file in files)
+            {
+                File.Delete(file);
+                Debug.Log($"Deleted spell file: {file}");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error clearing spell files: {e.Message}");
+        }
     }
 
     private void PrecompileSpell(Spell spell)
