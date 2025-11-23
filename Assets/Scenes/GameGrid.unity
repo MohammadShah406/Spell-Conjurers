@@ -1658,6 +1658,17 @@ MonoBehaviour:
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
+--- !u!114 &337867162 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3257090111863579359, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+  m_PrefabInstance: {fileID: 474178171}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &341758073 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 209887098018242089, guid: ead88cddeb2f7ea41bcbb73e6053ab0b, type: 3}
@@ -1831,7 +1842,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 46210618085697054, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_text
-      value: "Enter Spell...\u200B"
+      value: "\u200B"
       objectReference: {fileID: 0}
     - target: {fileID: 572166835384522974, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_Pivot.x
@@ -2017,6 +2028,30 @@ PrefabInstance:
       propertyPath: 'createCharButton.Array.data[3]'
       value: 
       objectReference: {fileID: 284983534}
+    - target: {fileID: 2558243007453602940, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: sendButton
+      value: 
+      objectReference: {fileID: 337867162}
+    - target: {fileID: 2558243007453602940, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: skillInputs.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 2558243007453602940, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: 'skillInputs.Array.data[0]'
+      value: 
+      objectReference: {fileID: 810278732}
+    - target: {fileID: 2558243007453602940, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: 'skillInputs.Array.data[1]'
+      value: 
+      objectReference: {fileID: 1684054170}
+    - target: {fileID: 2558243007453602940, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: 'skillInputs.Array.data[2]'
+      value: 
+      objectReference: {fileID: 1783442283}
+    - target: {fileID: 2558243007453602940, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: 'skillInputs.Array.data[3]'
+      value: 
+      objectReference: {fileID: 396174674}
     - target: {fileID: 2562717259065911608, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_IsActive
       value: 1
@@ -2171,11 +2206,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4922046177267369457, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4971145139165598455, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_text
-      value: "Enter Spell...\u200B"
+      value: "\u200B"
       objectReference: {fileID: 0}
     - target: {fileID: 5014736397685239714, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: loadingView
@@ -2327,7 +2362,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6873413938593331081, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_text
-      value: "Enter Spell...\u200B"
+      value: "\u200B"
       objectReference: {fileID: 0}
     - target: {fileID: 7126334349942638379, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_IsActive
@@ -2407,7 +2442,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8590313477850868235, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_text
-      value: "Enter Spell...\u200B"
+      value: "\u200B"
       objectReference: {fileID: 0}
     - target: {fileID: 8649995119819243491, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_Text
