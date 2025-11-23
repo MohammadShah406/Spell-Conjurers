@@ -81,24 +81,23 @@ public class ActionManager : MonoBehaviour
         if (projectilePrefab != null)
         {
             proj = Instantiate(projectilePrefab);
+            proj.GetComponentInChildren<ParticleSystemRenderer>().material.color = new Color(currentSpell.ColorR, currentSpell.ColorG, currentSpell.ColorB, 0.5f);
             proj.GetComponent<Renderer>().material.color = new Color(currentSpell.ColorR, currentSpell.ColorG, currentSpell.ColorB);
+
+            proj.name = $"{currentSpell.name}_Projectile";
+
+            if (projectileContainer != null)
+                proj.transform.parent = projectileContainer;
+
+            // Travel Y height: lock to the 'from' tile ground level (ignore spawnOffset.y for travel; only apply if you still want initial lift)
+            float travelY = currentFrom.transform.position.y; // Ground / tile Y
+            Vector3 startWorld = new Vector3(fromGrid.x, travelY, fromGrid.y) + new Vector3(spawnOffset.x, 0f, spawnOffset.z);
+            proj.transform.position = startWorld;
+
+            StartCoroutine(MoveProjectileAlongPath(proj, path, to, currentSpell, travelY));
         }
-        else
-        {
-            proj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            proj.transform.localScale = Vector3.one * 0.4f;
-        }
 
-        proj.name = $"{currentSpell.name}_Projectile";
-        if (projectileContainer != null)
-            proj.transform.parent = projectileContainer;
 
-        // Travel Y height: lock to the 'from' tile ground level (ignore spawnOffset.y for travel; only apply if you still want initial lift)
-        float travelY = currentFrom.transform.position.y; // Ground / tile Y
-        Vector3 startWorld = new Vector3(fromGrid.x, travelY, fromGrid.y) + new Vector3(spawnOffset.x, 0f, spawnOffset.z);
-        proj.transform.position = startWorld;
-
-        StartCoroutine(MoveProjectileAlongPath(proj, path, to, currentSpell, travelY));
     }
 
     private IEnumerator MoveProjectileAlongPath(GameObject projectile, List<Vector2Int> path, GameObject target, Spell spell, float travelY)
@@ -206,6 +205,9 @@ public class ActionManager : MonoBehaviour
         {
             Destroy(projectile, projectileLifetimeAfterImpact);
         }
+
+        if(target == null)
+            Destroy(projectile);
     }
 
     private Vector2Int TryGetGridPosition(GameObject obj)
