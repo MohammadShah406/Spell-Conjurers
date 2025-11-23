@@ -1,11 +1,12 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using Unity.VisualScripting;
 using UnityEngine;
-using Newtonsoft.Json;
 using static GridManager;
 using static UnityEditor.Experimental.GraphView.GraphView;
+using static UnityEditor.PlayerSettings;
 [System.Serializable]
 public class MapData
 {
@@ -79,8 +80,6 @@ public class GridManager : MonoBehaviour
 
       
 
-        mapDetails = LoadRoundMap(GameManager.Instance.roundNo);
-        BuildMapFromData();
 
         //// --- 2. Clear all tiles' occupants ---
         //for (int x = 0; x < width; x++)
@@ -117,9 +116,12 @@ public class GridManager : MonoBehaviour
             GameManager.Instance.enemies.Clear();
         }
 
+        mapDetails = LoadRoundMap(GameManager.Instance.roundNo);
+        BuildMapFromData();
+
         // --- 5. Respawn everything ---
-        SpawnPlayer();
-        SpawnEnemies(enemyCount);
+        //SpawnPlayer();
+        //SpawnEnemies(enemyCount);
 
         // --- 6. Reinitialize threat grid ---
         if (enemyManager != null)
@@ -275,8 +277,10 @@ public class GridManager : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
-
+        int count = 0;
         // Create Grid
+        
+        List<Vector2Int> enemyPositions = new List<Vector2Int>();
         for (int z = 0; z < height; z++)
         {
             for (int x = 0; x < width; x++)
@@ -301,7 +305,9 @@ public class GridManager : MonoBehaviour
                         break;
 
                     case 2: 
-                        //SpawnEnemy(tilePos);
+                        enemyPositions.Add(tile.gridPosition);
+                        //SpawnEnemy(tile.gridPosition, count );
+                        count++;
                         break;
 
                     case 3: 
@@ -310,7 +316,8 @@ public class GridManager : MonoBehaviour
                 }
             }
         }
-
+        SpawnPlayer();
+        SpawnEnemy(enemyPositions);
         Debug.Log("Map built successfully.");
     }
 
@@ -319,5 +326,28 @@ public class GridManager : MonoBehaviour
         var obstacle = Instantiate(obstaclePrefab, tileTransform.position + Vector3.up, Quaternion.identity, tileTransform);
         tile.occupant = obstacle;
         tile.walkable = false;
+    }
+
+    private void SpawnEnemy(List<Vector2Int> enemyList)
+    {
+        // Spawn enemy
+        for (int i = 0; i < enemyList.Count; i++)
+        {
+            var enemyObj = Instantiate(enemyPrefab);
+            enemyObj.name = "Enemy " + i;
+            enemyObj.transform.parent = EnemyHolder.transform;
+            enemyObj.transform.position = new Vector3(enemyList[i].x, 1.5f, enemyList[i].y);
+
+            // Initialize and register
+            var enemy = enemyObj.GetComponent<Enemy>();
+            enemy.Initialize(enemyList[i], this, playerObj);
+            enemyManager.AddEnemy(enemy);
+            GameManager.Instance.enemies.Add(enemyObj);
+
+            // Mark the tile as occupied
+            GetTile(enemyList[i]).occupant = enemyObj;
+        }
+
+
     }
 }
