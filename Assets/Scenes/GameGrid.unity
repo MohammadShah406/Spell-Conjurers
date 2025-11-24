@@ -1152,7 +1152,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 685328835535228542, guid: ead88cddeb2f7ea41bcbb73e6053ab0b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 863226539}
   m_SourcePrefab: {fileID: 100100000, guid: ead88cddeb2f7ea41bcbb73e6053ab0b, type: 3}
 --- !u!1 &248073345
 GameObject:
@@ -1674,7 +1677,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 209887098018242089, guid: ead88cddeb2f7ea41bcbb73e6053ab0b, type: 3}
   m_PrefabInstance: {fileID: 245846775}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 863226537}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2a28c0dd5b300f34d94709f05c315719, type: 3}
@@ -4819,6 +4822,32 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 845237661}
   m_CullTransparentMesh: 1
+--- !u!1 &863226537 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 685328835535228542, guid: ead88cddeb2f7ea41bcbb73e6053ab0b, type: 3}
+  m_PrefabInstance: {fileID: 245846775}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &863226539
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 863226537}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5342890dbb8355949b06b604cd81a577, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  apiKey: 
+  model: gpt-4o-mini
+  onJsonGenerated:
+    m_PersistentCalls:
+      m_Calls: []
+  JsonGenerationStarted:
+    m_PersistentCalls:
+      m_Calls: []
+  numberOfRounds: 1
 --- !u!1 &866014747 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6144723300158491604, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}

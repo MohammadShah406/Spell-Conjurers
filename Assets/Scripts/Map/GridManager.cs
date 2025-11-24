@@ -205,19 +205,19 @@ public class GridManager : MonoBehaviour
     }
 
 
-    private void SpawnPlayer()
+    private void SpawnPlayer(Vector2Int pos )
     {
-        Vector2Int playerStartPos = new Vector2Int(width / 2, 0); // center bottom of grid
-        var instantiatedPlayerObj = Instantiate(playerPrefab, new Vector3(playerStartPos.x, 1.5f, playerStartPos.y), Quaternion.identity);
+        //Vector2Int playerStartPos = new Vector2Int(width / 2, 0); // center bottom of grid
+        var instantiatedPlayerObj = Instantiate(playerPrefab, new Vector3(pos.x, 1.5f, pos.y), Quaternion.identity);
         playerObj = instantiatedPlayerObj;
         GameManager.Instance.players.Add(playerObj);
         GameManager.Instance.playerFunctionality.Add(playerObj.GetComponent<PlayerFunctionality>());
-        GetTile(playerStartPos).occupant = instantiatedPlayerObj;
+        GetTile(pos).occupant = instantiatedPlayerObj;
 
         var playerScript = instantiatedPlayerObj.GetComponent<PlayerFunctionality>();
         if (playerScript != null)
         {
-            playerScript.Initialize(playerStartPos, this);
+            playerScript.Initialize(pos, this);
         }
     }
 
@@ -311,12 +311,12 @@ public class GridManager : MonoBehaviour
                         break;
 
                     case 3: 
-                        //SpawnPlayer(tilePos);
+                        SpawnPlayer(tile.gridPosition);
                         break;
                 }
             }
         }
-        SpawnPlayer();
+        //SpawnPlayer();
         SpawnEnemy(enemyPositions);
         Debug.Log("Map built successfully.");
     }

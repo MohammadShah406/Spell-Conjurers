@@ -20,6 +20,7 @@ public class LLMJsonGridCreator : MonoBehaviour
     [Header("Generation Settings")]
     [Tooltip("Number of rounds to generate in one go")]
     public int numberOfRounds = 1;
+    private int currentRound = 1;
 
     private void Awake()
     {
@@ -77,6 +78,7 @@ public class LLMJsonGridCreator : MonoBehaviour
             // Count existing round files to determine the next number
             string[] existingFiles = Directory.GetFiles(GridPath, "Round_*.json");
             int nextRoundNumber = existingFiles.Length + 1;
+            currentRound = existingFiles.Length + 1;
 
             // Format the filename: Round_1.json, Round_2.json, etc.
             string fileName = $"Round_{nextRoundNumber}.json";
@@ -114,13 +116,18 @@ public class LLMJsonGridCreator : MonoBehaviour
                 role = "user",
                 content = @"Generate a JSON object containing a field called ""mapData"". 
                             Rules:
-                            - mapData must be a 12x12 2D array.
-                            - Each row must contain exactly 12 integers.
+                            - current round: " + currentRound + @"
+                            - mapData must be a 12x12 2D array and it will increaase with the current round number to the max of 20x20.
+                            - Each row must contain min of 12 integers and max of 20 integers.
                             - Only use integers:
                               0 = empty
                               1 = wall
                               2 = Enemy
-                            - Include at least Two ""2"".
+                              3 = Player
+                            - Include at least Two ""2"" and it will increaase with the current round number to the max of 6.
+                            - Must include 1 ""3"".
+                            - ""3"" must be placed on a cell that is not adjacent (horizontally, vertically, or diagonally) to any ""2"".
+                            - ""3"" must be at least 3 cell away from each ""2"".
                             - Make sure ""1"" does not block off any section of the map completely.
                             - All ""0""s must be reachable from any other ""0"" (no isolated sections).
                             - Form logical room or corridor structures with clusters of ""1""s.
