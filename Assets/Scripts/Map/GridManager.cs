@@ -109,6 +109,10 @@ public class GridManager : MonoBehaviour
         // --- 4. Clear manager lists ---
         if (enemyManager != null)
             enemyManager.enemies.Clear();
+        if(GameManager.Instance != null)
+        {
+            GameManager.Instance.playerFunctionality.Clear();
+        }
 
         if (GameManager.Instance != null)
         {

@@ -9,6 +9,7 @@ public class EditSingleSpellView : MonoBehaviour
     public TMP_InputField skillInputs;
     public int spellIndex;
     public GameObject insufficientText;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {

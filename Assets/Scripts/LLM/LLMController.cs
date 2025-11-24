@@ -25,6 +25,7 @@ public class LLMController : MonoBehaviour
 
     public List<GeneratedSkillData> generatedSkills = new List<GeneratedSkillData>();
 
+    public UnityEvent onSpellReplaced;
 
     private void Awake()
     {
@@ -358,6 +359,7 @@ public class LLMController : MonoBehaviour
             // Update UI immediately
             UIController.Instance.getGeneratedSpellView.SetGeneratedSpellInfo(spellIndex, newSpell);
             Debug.Log($"Spell {spellIndex} successfully regenerated and file updated: {newSpell.name}");
+            onSpellReplaced.Invoke();
         }
         catch (Exception ex)
         {
