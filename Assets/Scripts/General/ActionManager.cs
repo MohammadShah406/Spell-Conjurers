@@ -11,8 +11,8 @@ public class ActionManager : MonoBehaviour
 
     [Header("Projectile Settings")]
     public float projectileSpeed = 12f;
-    public float projectileLifetimeAfterImpact = 1.5f;
-    public Vector3 spawnOffset = new Vector3(0f, 0.5f, 0f); // Horizontal travel will ignore Y so this only affects initial slight lift (set to 0 if not desired)
+    public float projectileLifetimeAfterImpact = 1.5f; // (Now unused for destruction timing; kept in case you re-enable delayed cleanup)
+    public Vector3 spawnOffset = new Vector3(0f, 0.5f, 0f);
 
     [Header("Projectile Slam Settings")]
     [Tooltip("Speed used when the projectile slams downward at the end.")]
@@ -31,7 +31,6 @@ public class ActionManager : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        // Singleton setup
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -74,38 +73,43 @@ public class ActionManager : MonoBehaviour
 
         Vector2Int fromGrid = TryGetGridPosition(from);
         Vector2Int toGrid = TryGetGridPosition(to);
-
         List<Vector2Int> path = FindPath(fromGrid, toGrid);
 
         GameObject proj;
         if (projectilePrefab != null)
         {
             proj = Instantiate(projectilePrefab);
-            proj.GetComponentInChildren<ParticleSystemRenderer>().material.color = new Color(currentSpell.ColorR, currentSpell.ColorG, currentSpell.ColorB, 0.5f);
-            proj.GetComponent<Renderer>().material.color = new Color(currentSpell.ColorR, currentSpell.ColorG, currentSpell.ColorB);
-
+            var psr = proj.GetComponentInChildren<ParticleSystemRenderer>();
+            if (psr != null)
+                psr.material.color = new Color(currentSpell.ColorR, currentSpell.ColorG, currentSpell.ColorB, 0.5f);
+            var rend = proj.GetComponent<Renderer>();
+            if (rend != null)
+                rend.material.color = new Color(currentSpell.ColorR, currentSpell.ColorG, currentSpell.ColorB);
             proj.name = $"{currentSpell.name}_Projectile";
-
             if (projectileContainer != null)
                 proj.transform.parent = projectileContainer;
 
-            // Travel Y height: lock to the 'from' tile ground level (ignore spawnOffset.y for travel; only apply if you still want initial lift)
-            float travelY = currentFrom.transform.position.y; // Ground / tile Y
+            float travelY = currentFrom.transform.position.y;
             Vector3 startWorld = new Vector3(fromGrid.x, travelY, fromGrid.y) + new Vector3(spawnOffset.x, 0f, spawnOffset.z);
             proj.transform.position = startWorld;
 
             StartCoroutine(MoveProjectileAlongPath(proj, path, to, currentSpell, travelY));
         }
-
-
     }
 
     private IEnumerator MoveProjectileAlongPath(GameObject projectile, List<Vector2Int> path, GameObject target, Spell spell, float travelY)
     {
+        Projectile projComponent = projectile.GetComponent<Projectile>();
+        projComponent.target = target;
+        projComponent.targetStats = target.GetComponent<Stats>();
+        projComponent.targetTransform = target.transform.position;
+
+        if (projComponent != null && projComponent.isDestroyed)
+            yield break;
+
         if (projectile == null)
             yield break;
 
-        // Horizontal movement only (Y locked to travelY) until directly above target, then vertical slam.
         if (path == null || path.Count < 2)
         {
             Vector3 targetFlat = new Vector3(
@@ -115,7 +119,6 @@ public class ActionManager : MonoBehaviour
 
             while (projectile != null && Vector3.Distance(projectile.transform.position, targetFlat) > 0.05f)
             {
-                // Force Y lock
                 Vector3 current = projectile.transform.position;
                 if (current.y != travelY)
                 {
@@ -201,12 +204,11 @@ public class ActionManager : MonoBehaviour
             }
         }
 
+        // Immediate destruction upon reaching destination (changed from delayed Destroy with lifetime).
         if (projectile != null)
-        {
-            Destroy(projectile, projectileLifetimeAfterImpact);
-        }
+            Destroy(projectile);
 
-        if(target == null)
+        if (target == null && projectile != null)
             Destroy(projectile);
     }
 
