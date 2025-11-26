@@ -14,6 +14,8 @@ public class GameManager : MonoBehaviour
     public List<PlayerFunctionality> playerFunctionality;
     public LLMController LLMController { get; private set; }
     public CurrencyData getcurrencyData { get; private set; }
+    public bool lostGame = false;
+
 
     private void Awake()
     {
@@ -81,11 +83,17 @@ public class GameManager : MonoBehaviour
 
     private void OnPlayersLost()
     {
+        if(lostGame)
+            return; 
         Debug.Log("Players Lost");
-        players[0].SetActive(false);
-        Destroy(players[0]);
-        players.Clear();
+        if(players!= null)
+        {
+            players[0].SetActive(false);
+            Destroy(players[0]);
+            players.Clear();
+        }
 
+        lostGame = true;
         UIController.Instance.SwitchUI(UIIndex.DeathPanel);
     }
 

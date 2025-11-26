@@ -1,0 +1,17 @@
+{
+    "damage": 60,
+    "accuracy": 70,
+    "resourceCost": 40,
+    "range": 3,
+    "selfDamage": 10,
+    "support": false,
+    "name": "Screaming Void",
+    "description": "Unleashes a devastating scream that damages the target and inflicts a debuff.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" unleashed a Screaming Void on \" + to.name + \", dealing \" + spell.damage + \" damage and causing self damage of \" + spell.selfDamage + \". \";\r\n            from.GetComponent<Stats>().takeDamage(spell.selfDamage);\r\n        \r\n        ",
+    "ColorR": 128,
+    "ColorG": 0,
+    "ColorB": 128,
+    "status": "Debuff",
+    "statusDuration": 2,
+    "statusDamagePerTurn": 5
+}

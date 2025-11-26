@@ -1,0 +1,17 @@
+{
+    "damage": 80,
+    "accuracy": 70,
+    "resourceCost": 50,
+    "range": 3,
+    "selfDamage": 5,
+    "support": false,
+    "name": "Massive Balls",
+    "description": "Launches a massive ball of energy that deals heavy damage but risks self harm.",
+    "code": "string actionLog = \"\";\r\n\r\nto.GetComponent<Stats>().takeDamage(spell.damage);\r\nactionLog += from.name + \" launched a Massive Ball at \" + to.name + \", dealing \" + spell.damage + \" damage, but took \" + spell.selfDamage + \" damage in the process. \";\r\n",
+    "ColorR": 255,
+    "ColorG": 0,
+    "ColorB": 0,
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}

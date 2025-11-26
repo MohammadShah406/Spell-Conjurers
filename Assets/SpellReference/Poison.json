@@ -2,7 +2,7 @@
     "damage": 5,
     "accuracy": 85,
     "resourceCost": 15,
-    "range": 3,
+    "range": 4,
     "selfDamage": 0,
     "support": false,
     "name": "Poison",
@@ -12,6 +12,6 @@
     "ColorG": 30,
     "ColorB": 150,
     "status": "Poison",
-    "statusDuration": 3,
-    "statusDamagePerTurn": 5
+    "statusDuration": 5,
+    "statusDamagePerTurn": 10
 }

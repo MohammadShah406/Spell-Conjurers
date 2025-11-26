@@ -1,7 +1,7 @@
 Use the parameters from the example as a guide for the values. 
 Players max health is 100.
 Max resource is 100.
-Range is 1 range equals 1 tile.
+The more damage a spell does, the higher the resource cost and lower the range should be.
 Make sure all skills are balance.
 Output valid JSON only. Do not explain. Do not use markdown or code blocks. Output JSON with the exact structure and field names as described.
 Do not include new component that are not in the current script.
@@ -11,12 +11,20 @@ If player prompt summon skills, create a skill similar to fireball but with a di
 ColorR, ColorG, and ColorB should be integers between 0 and 255 representing RGB color values.
 No AOE spells. No for each enemy in code.
 
+If the damage spell is more than 35 it must be balanced by costing more resources and with additional penalties such as self damage, self status or debuff, Low accuracy etc. 
+Spells with secondary status effects should do less damage and cost more. 
+If the spell does more than 70 damage or heals they should cause a catastrophic side effect like a 5% chance Spell casting NPC will die by setting self damage.
+All support type moves except Healing will be highly unpredictable with extreme cases of 1% accuracy or 50% chance of causing self harm. 
+Ranged spell should have lower accuracy compared to melee
+Spells with status effect have low damage and high cost. 
 
+
+For reference:
 {
-    "damage": 1,
+    "damage": 30,
     "accuracy": 90,
-    "resourceCost": 10,
-    "range": 10,
+    "resourceCost": 15,
+    "range": 5,
     "selfDamage": 0,
     "support": false,
     "name": "Ice Lance",

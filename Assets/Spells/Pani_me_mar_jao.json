@@ -1,0 +1,17 @@
+{
+    "damage": 75,
+    "accuracy": 80,
+    "resourceCost": 50,
+    "range": 3,
+    "selfDamage": 5,
+    "support": false,
+    "name": "Pani me mar jao",
+    "description": "A powerful spell that causes significant damage but comes with a risk of self-harm.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" cast Pani me mar jao on \" + to.name + \", dealing \" + spell.damage + \" damage. There is a risk of self-harm!\";\r\n            if (UnityEngine.Random.Range(0, 100) < 5) {\r\n                from.GetComponent<Stats>().takeDamage(spell.selfDamage);\r\n                actionLog += from.name + \" suffers \" + spell.selfDamage + \" self-damage due to the spell's backlash.\";\r\n            }\r\n        \r\n        ",
+    "ColorR": 255,
+    "ColorG": 0,
+    "ColorB": 0,
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}

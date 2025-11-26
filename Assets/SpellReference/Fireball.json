@@ -13,5 +13,5 @@
     "ColorB": 0,
     "status": "Burn",
     "statusDuration": 3,
-    "statusDamagePerTurn": 5
+    "statusDamagePerTurn": 10
 }

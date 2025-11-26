@@ -7,14 +7,11 @@
     "support": true,
     "name": "Heal",
     "description": "Restores a small amount of health to the target.",
-    "code": "string actionLog = \"\";\r\n\r\nto.GetComponent<Stats>().health = Mathf.Min(to.GetComponent<Stats>().health + 10, 100);\r\nactionLog += from.name + \" healed \" + to.name + \", restoring 10 health.\";\r\n",
+    "code": "string actionLog = \"\";\r\n\r\nto.GetComponent<Stats>().health = Mathf.Min(to.GetComponent<Stats>().health + spell.selfdamage, 100);\r\nactionLog += from.name + \" healed \" + to.name + \", restoring 10 health.\";\r\n",
     "ColorR": 0,
     "ColorG": 255,
     "ColorB": 0,
     "status": "None",
     "statusDuration": 0,
-    "statusDamagePerTurn": 0,
-    "target": "Player",
-    "scriptName": "HealBehavior",
-    "script": "using UnityEngine;\r\n\r\npublic class HealBehavior : ICustomBehavior\r\n{\r\n    public void Start(Player player) { }\r\n\r\n    public void Update(Player player) { }\r\n}"
+    "statusDamagePerTurn": 0
 }

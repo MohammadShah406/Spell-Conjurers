@@ -147,12 +147,6 @@ public class LLMController : MonoBehaviour
         string skillPrompt =
             $"Generate a JSON object representing a game skill with the following fields: " +
             $"The skill concept is: {prompt}. " +
-             "If this skill requires a new behavior script, output a JSON object in this exact format:\n" +
-             "{\n" +
-             "  \"target\": \"The GameObject that this script should be attached to (e.g., Player, Projectile, Enemy)\",\n" +
-             "  \"scriptName\": \"The C# class name for the script\",\n" +
-             "  \"script\": \"The full valid Unity C# script code\"\n" +
-             "}\n" +
             $"Output only valid JSON without code blocks or explanations.";
         skillPrompt += loadedPrompt;
         string allScripts = LoadAllProjectScripts("Scripts");
