@@ -221,7 +221,7 @@ public class GridManager : MonoBehaviour
     public static int[][] LoadRoundMap(int roundNumber)
     {
         string fileName = $"Round_{roundNumber}";
-        string path = Path.Combine(Application.dataPath, "Resources", "Rounds", fileName + ".json");
+        string path = Path.Combine(Application.persistentDataPath, "Rounds", fileName + ".json");
 
         if (!File.Exists(path))
         {

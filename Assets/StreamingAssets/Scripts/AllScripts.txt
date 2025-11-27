@@ -1744,11 +1744,8 @@ public class JsonManager : MonoBehaviour
 {
     public static JsonManager Instance { get; private set; }
 
-    [Header("Directory Settings")]
-    public string location = "Assets/Spells";
-    public string playerLocation = "Assets/PlayerPool";
-    private string FolderPath => Path.Combine(Application.dataPath, location.Replace("Assets/", ""));
-    private string playerFolderPath => Path.Combine(Application.dataPath, playerLocation.Replace("Assets/", ""));
+    private string FolderPath => Path.Combine(Application.persistentDataPath, "Spells");
+    private string playerFolderPath => Path.Combine(Application.persistentDataPath, "PlayerSpells");
 
     // Dictionary to store precompiled spell runners
     public Dictionary<Spell, ScriptRunner<object>> compiledSpells = new Dictionary<Spell, ScriptRunner<object>>();
@@ -1765,6 +1762,13 @@ public class JsonManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
+        // Ensure folders exist
+        if (!Directory.Exists(FolderPath))
+            Directory.CreateDirectory(FolderPath);
+
+        if (!Directory.Exists(playerFolderPath))
+            Directory.CreateDirectory(playerFolderPath);
 
         PrecompileAllSpells();
     }
@@ -2710,6 +2714,10 @@ public class LLMController : MonoBehaviour
 
         Debug.Log("OpenAI configuration loaded successfully.");
     }
+    private void Start()
+    {
+        ClearSkillsFolder();
+    }
     public void OnGenerateSkillsButton()
     {
         if (isGenerating)
@@ -2726,7 +2734,7 @@ public class LLMController : MonoBehaviour
         isGenerating = true;
         generatedSkills.Clear();
         // Make sure the Skills folder exists
-        string skillsPath = Path.Combine(Application.dataPath, "Spells");
+        string skillsPath = Path.Combine(Application.persistentDataPath, "Spells");
         if (!Directory.Exists(skillsPath))
             Directory.CreateDirectory(skillsPath);
 
@@ -2768,53 +2776,62 @@ public class LLMController : MonoBehaviour
             yield break;
         }
 
-        // Save the JSON file
-        Spell spell = new Spell();
-        string fileName = $"{prompt.Replace(" ", "_")}.json";
-        string assetFolder = Path.Combine(Application.persistentDataPath, "PlayerSpells");
-        string streamingFolder = Path.Combine(Application.streamingAssetsPath, "PlayerSpells");
-        if (!Directory.Exists(assetFolder))
-            Directory.CreateDirectory(assetFolder);
-        if (!Directory.Exists(streamingFolder)) Directory.CreateDirectory(streamingFolder);
+        // Deserialize the JSON
+        Spell spell = JsonConvert.DeserializeObject<Spell>(skillJson);
+        if (spell == null || string.IsNullOrWhiteSpace(spell.name))
+        {
+            Debug.LogError($"Skill {skillIndex} JSON was invalid or missing skillName.");
+            yield break;
+        }
+
+        // Create the folder in persistentDataPath
+        string spellFolder = Path.Combine(Application.persistentDataPath, "PlayerSpells");
+        if (!Directory.Exists(spellFolder))
+            Directory.CreateDirectory(spellFolder);
+
+        // Clean filename
+        string fileName = $"{spell.name.Replace(" ", "_")}.json";
+        string filePath = Path.Combine(spellFolder, fileName);
+
         try
         {
-            spell = JsonConvert.DeserializeObject<Spell>(skillJson);
-            if (spell == null || string.IsNullOrWhiteSpace(spell.name))
-            {
-                Debug.LogError($"Skill {skillIndex} JSON was invalid or missing skillName.");
-                yield break;
-            }
+            // Save the JSON file
+            File.WriteAllText(filePath, skillJson);
 
-            // Clean filename
-            fileName = $"{spell.name.Replace(" ", "_")}.json";
-
-            // Final paths
-            string assetPath = Path.Combine(assetFolder, fileName);
-            string streamingPath = Path.Combine(streamingFolder, fileName);
-
-            // Save to Assets/PlayerSpells
-            File.WriteAllText(assetPath, skillJson);
-
-            // Save to StreamingAssets/PlayerSpells
-            File.WriteAllText(streamingPath, skillJson);
-
-#if UNITY_EDITOR
-            UnityEditor.AssetDatabase.Refresh();
-#endif
-
+            // Add to generated skills list
             generatedSkills.Add(new GeneratedSkillData
             {
-                filePath = assetPath,
+                filePath = filePath,
                 jsonContent = skillJson,
                 spellData = spell
             });
 
-            Debug.Log($"Skill {skillIndex} saved to:\n{assetPath}\n{streamingPath}");
+            Debug.Log($"Skill {skillIndex} saved to runtime folder:\n{filePath}");
         }
         catch (Exception ex)
         {
             Debug.LogError($"Failed to save skill {skillIndex}: {ex.Message}");
         }
+    }
+    public void ClearSkillsFolder()
+    {
+        generatedSkills.Clear();
+        string spellFolder = Path.Combine(Application.persistentDataPath, "PlayerSpells");
+        if (Directory.Exists(spellFolder))
+        {
+            try
+            {
+                Directory.Delete(spellFolder, true); // true = delete all files & subfolders
+                Debug.Log($"Cleared PlayerSpells folder at: {spellFolder}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to clear PlayerSpells folder: {ex.Message}");
+            }
+        }
+
+        // Recreate the folder so you can save files later
+        Directory.CreateDirectory(spellFolder);
     }
     private async Task<string> GenerateSkillFromLLM(string prompt)
     {
@@ -2829,6 +2846,7 @@ public class LLMController : MonoBehaviour
         string allScripts = LoadAllProjectScripts("Scripts");
         string spellsRef = LoadAllProjectScripts("SpellReference");
         Debug.Log("scripts are " + allScripts);
+        Debug.Log("spellsRef are " + spellsRef);
         // Build the OpenAI chat request
         ChatRequest requestData = new ChatRequest
         {
@@ -2907,26 +2925,38 @@ public class LLMController : MonoBehaviour
         return null;
     }
 
-    private string LoadAllProjectScripts(string FolderName)
+    private string LoadAllProjectScripts(string folderName)
     {
-        string allScriptsPath = Path.Combine(Application.streamingAssetsPath, "Scripts", "AllScripts.txt");
+        string folderPath = Path.Combine(Application.streamingAssetsPath, folderName);
 
-        if (!File.Exists(allScriptsPath))
+        if (!Directory.Exists(folderPath))
         {
-            Debug.LogWarning($"AllScripts.txt not found at {allScriptsPath}");
+            Debug.LogWarning($"Folder not found: {folderPath}");
             return "";
         }
+
+        StringBuilder allScripts = new StringBuilder();
 
         try
         {
-            return File.ReadAllText(allScriptsPath);
+            // Get all .txt files in the folder
+            string[] files = Directory.GetFiles(folderPath, "*.txt", SearchOption.TopDirectoryOnly);
+
+            foreach (string file in files)
+            {
+                string content = File.ReadAllText(file);
+                allScripts.AppendLine(content);
+            }
+
+            return allScripts.ToString();
         }
         catch (Exception ex)
         {
-            Debug.LogError($"Failed to read AllScripts.txt: {ex.Message}");
+            Debug.LogError($"Failed to read scripts from {folderPath}: {ex.Message}");
             return "";
         }
     }
+
 
     public void ShowGeneratedSpell()
     {
@@ -2968,64 +2998,46 @@ public class LLMController : MonoBehaviour
                 yield break;
             }
 
-            // --- FOLDERS ---
-            string assetsFolder = Path.Combine(Application.persistentDataPath, "PlayerSpells");
-            string streamingFolder = Path.Combine(Application.streamingAssetsPath, "PlayerSpells");
+            // --- CREATE RUNTIME FOLDER ---
+            string spellFolder = Path.Combine(Application.persistentDataPath, "PlayerSpells");
+            if (!Directory.Exists(spellFolder))
+                Directory.CreateDirectory(spellFolder);
 
-            if (!Directory.Exists(assetsFolder)) Directory.CreateDirectory(assetsFolder);
-            if (!Directory.Exists(streamingFolder)) Directory.CreateDirectory(streamingFolder);
-
-            // --- FILENAMES ---
+            // --- FILENAME ---
             string fileName = $"{newSpell.name.Replace(" ", "_")}.json";
+            string filePath = Path.Combine(spellFolder, fileName);
 
-            string assetPath = Path.Combine(assetsFolder, fileName);
-            string streamingPath = Path.Combine(streamingFolder, fileName);
-
-            // --- DELETE OLD FILE IF THE NAME CHANGED ---
+            // --- DELETE OLD FILE IF NAME CHANGED ---
             if (spellIndex < generatedSkills.Count)
             {
                 string oldPath = generatedSkills[spellIndex].filePath;
-
-                if (File.Exists(oldPath) &&
-                    !oldPath.Equals(assetPath, StringComparison.OrdinalIgnoreCase))
+                if (File.Exists(oldPath) && !oldPath.Equals(filePath, StringComparison.OrdinalIgnoreCase))
                 {
                     File.Delete(oldPath);
                     Debug.Log("Deleted old spell file: " + oldPath);
                 }
             }
 
-            // --- ALWAYS OVERWRITE (WriteAllText overwrites by default) ---
-            File.WriteAllText(assetPath, skillJson);
-            File.WriteAllText(streamingPath, skillJson);
-
-#if UNITY_EDITOR
-            UnityEditor.AssetDatabase.Refresh();
-#endif
+            // --- SAVE NEW SPELL ---
+            File.WriteAllText(filePath, skillJson);
 
             // --- UPDATE GENERATED SPELL LIST ---
+            GeneratedSkillData data = new GeneratedSkillData
+            {
+                filePath = filePath,
+                jsonContent = skillJson,
+                spellData = newSpell
+            };
+
             if (spellIndex < generatedSkills.Count)
-            {
-                generatedSkills[spellIndex] = new GeneratedSkillData
-                {
-                    filePath = assetPath,
-                    jsonContent = skillJson,
-                    spellData = newSpell
-                };
-            }
+                generatedSkills[spellIndex] = data;
             else
-            {
-                generatedSkills.Add(new GeneratedSkillData
-                {
-                    filePath = assetPath,
-                    jsonContent = skillJson,
-                    spellData = newSpell
-                });
-            }
+                generatedSkills.Add(data);
 
             // --- UPDATE UI ---
             UIController.Instance.getGeneratedSpellView.SetGeneratedSpellInfo(spellIndex, newSpell);
 
-            Debug.Log($"Spell {spellIndex} regenerated and saved at:\n{assetPath}\n{streamingPath}");
+            Debug.Log($"Spell {spellIndex} regenerated and saved at runtime:\n{filePath}");
             onSpellReplaced?.Invoke();
         }
         catch (Exception ex)
@@ -3033,6 +3045,7 @@ public class LLMController : MonoBehaviour
             Debug.LogError($"Error regenerating spell {spellIndex}: {ex.Message}");
         }
     }
+
 
 }
 
@@ -3099,7 +3112,7 @@ public class LLMJsonGridCreator : MonoBehaviour
         isGenerating = true;
 
         // Make sure the Grid folder exists
-        string GridPath = Path.Combine(Application.dataPath, "Resources", "Rounds");
+        string GridPath = Path.Combine(Application.persistentDataPath, "Rounds");
         if (!Directory.Exists(GridPath))
             Directory.CreateDirectory(GridPath);
         for (int i = 0; i < numberOfRounds; i++)
@@ -3549,7 +3562,7 @@ public class GridManager : MonoBehaviour
     public static int[][] LoadRoundMap(int roundNumber)
     {
         string fileName = $"Round_{roundNumber}";
-        string path = Path.Combine(Application.dataPath, "Resources", "Rounds", fileName + ".json");
+        string path = Path.Combine(Application.persistentDataPath, "Rounds", fileName + ".json");
 
         if (!File.Exists(path))
         {

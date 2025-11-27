@@ -10,11 +10,8 @@ public class JsonManager : MonoBehaviour
 {
     public static JsonManager Instance { get; private set; }
 
-    [Header("Directory Settings")]
-    public string location = "Assets/Spells";
-    public string playerLocation = "Assets/PlayerPool";
-    private string FolderPath => Path.Combine(Application.dataPath, location.Replace("Assets/", ""));
-    private string playerFolderPath => Path.Combine(Application.dataPath, playerLocation.Replace("Assets/", ""));
+    private string FolderPath => Path.Combine(Application.persistentDataPath, "Spells");
+    private string playerFolderPath => Path.Combine(Application.persistentDataPath, "PlayerSpells");
 
     // Dictionary to store precompiled spell runners
     public Dictionary<Spell, ScriptRunner<object>> compiledSpells = new Dictionary<Spell, ScriptRunner<object>>();
@@ -31,6 +28,13 @@ public class JsonManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
+        // Ensure folders exist
+        if (!Directory.Exists(FolderPath))
+            Directory.CreateDirectory(FolderPath);
+
+        if (!Directory.Exists(playerFolderPath))
+            Directory.CreateDirectory(playerFolderPath);
 
         PrecompileAllSpells();
     }

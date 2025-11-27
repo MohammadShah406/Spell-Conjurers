@@ -58,7 +58,7 @@ public class LLMJsonGridCreator : MonoBehaviour
         isGenerating = true;
 
         // Make sure the Grid folder exists
-        string GridPath = Path.Combine(Application.dataPath, "Resources", "Rounds");
+        string GridPath = Path.Combine(Application.persistentDataPath, "Rounds");
         if (!Directory.Exists(GridPath))
             Directory.CreateDirectory(GridPath);
         for (int i = 0; i < numberOfRounds; i++)

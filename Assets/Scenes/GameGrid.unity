@@ -1728,7 +1728,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 863226537}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5342890dbb8355949b06b604cd81a577, type: 3}
   m_Name: 
@@ -2365,8 +2365,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2715d8799353e964889b4c9625505808, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  location: Spells
-  playerLocation: Assets/PlayerSpells
   current:
     damage: 0
     accuracy: 0

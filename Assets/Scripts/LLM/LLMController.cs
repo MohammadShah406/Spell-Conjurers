@@ -72,7 +72,7 @@ public class LLMController : MonoBehaviour
         isGenerating = true;
         generatedSkills.Clear();
         // Make sure the Skills folder exists
-        string skillsPath = Path.Combine(Application.dataPath, "Spells");
+        string skillsPath = Path.Combine(Application.persistentDataPath, "Spells");
         if (!Directory.Exists(skillsPath))
             Directory.CreateDirectory(skillsPath);
 
