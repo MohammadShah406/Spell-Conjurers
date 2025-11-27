@@ -9,11 +9,17 @@ public class EditSingleSpellView : MonoBehaviour
     public TMP_InputField skillInputs;
     public int spellIndex;
     public GameObject insufficientText;
+    [SerializeField] private TMP_Text currencyText;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         
+    }
+
+    private void OnEnable()
+    {
+        currencyText.text = GameManager.Instance.getcurrencyData.manaStone.ToString();
     }
 
     // Update is called once per frame
@@ -54,6 +60,7 @@ public class EditSingleSpellView : MonoBehaviour
         {
             Debug.LogError("LLMController not found in the scene!");
         }
+        currencyText.text = GameManager.Instance.getcurrencyData.manaStone.ToString();
     }
     public void GoToUnitEditCurrentSpellView()
     {
