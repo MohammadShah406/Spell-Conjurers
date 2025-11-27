@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System;
 
+
 public class LLMController : MonoBehaviour
 {
     [Header("UI References")]
@@ -50,6 +51,10 @@ public class LLMController : MonoBehaviour
         }
 
         Debug.Log("OpenAI configuration loaded successfully.");
+    }
+    private void Start()
+    {
+        ClearSkillsFolder();
     }
     public void OnGenerateSkillsButton()
     {
@@ -109,35 +114,62 @@ public class LLMController : MonoBehaviour
             yield break;
         }
 
-        // Save the JSON file
-        Spell spell = new Spell();
-        string fileName = $"{prompt.Replace(" ", "_")}.json";
-        string savePath = Path.Combine(Application.dataPath, "PlayerSpells", fileName);
+        // Deserialize the JSON
+        Spell spell = JsonConvert.DeserializeObject<Spell>(skillJson);
+        if (spell == null || string.IsNullOrWhiteSpace(spell.name))
+        {
+            Debug.LogError($"Skill {skillIndex} JSON was invalid or missing skillName.");
+            yield break;
+        }
+
+        // Create the folder in persistentDataPath
+        string spellFolder = Path.Combine(Application.persistentDataPath, "PlayerSpells");
+        if (!Directory.Exists(spellFolder))
+            Directory.CreateDirectory(spellFolder);
+
+        // Clean filename
+        string fileName = $"{spell.name.Replace(" ", "_")}.json";
+        string filePath = Path.Combine(spellFolder, fileName);
 
         try
         {
-            spell = JsonConvert.DeserializeObject<Spell>(skillJson);
-            if (spell == null || string.IsNullOrWhiteSpace(spell.name))
-            {
-                Debug.LogError($"Skill {skillIndex} JSON was invalid or missing skillName.");
-                yield break;
-            }
-            fileName = $"{spell.name.Replace(" ", "_")}.json";
-            savePath = Path.Combine(Application.dataPath, "PlayerSpells", fileName);
-            File.WriteAllText(savePath, skillJson);
-            UnityEditor.AssetDatabase.Refresh();
+            // Save the JSON file
+            File.WriteAllText(filePath, skillJson);
+
+            // Add to generated skills list
             generatedSkills.Add(new GeneratedSkillData
             {
-                filePath = savePath,
+                filePath = filePath,
                 jsonContent = skillJson,
                 spellData = spell
             });
-            Debug.Log($"Skill {skillIndex} saved to {savePath}");
+
+            Debug.Log($"Skill {skillIndex} saved to runtime folder:\n{filePath}");
         }
         catch (Exception ex)
         {
             Debug.LogError($"Failed to save skill {skillIndex}: {ex.Message}");
         }
+    }
+    public void ClearSkillsFolder()
+    {
+        generatedSkills.Clear();
+        string spellFolder = Path.Combine(Application.persistentDataPath, "PlayerSpells");
+        if (Directory.Exists(spellFolder))
+        {
+            try
+            {
+                Directory.Delete(spellFolder, true); // true = delete all files & subfolders
+                Debug.Log($"Cleared PlayerSpells folder at: {spellFolder}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to clear PlayerSpells folder: {ex.Message}");
+            }
+        }
+
+        // Recreate the folder so you can save files later
+        Directory.CreateDirectory(spellFolder);
     }
     private async Task<string> GenerateSkillFromLLM(string prompt)
     {
@@ -152,6 +184,7 @@ public class LLMController : MonoBehaviour
         string allScripts = LoadAllProjectScripts("Scripts");
         string spellsRef = LoadAllProjectScripts("SpellReference");
         Debug.Log("scripts are " + allScripts);
+        Debug.Log("spellsRef are " + spellsRef);
         // Build the OpenAI chat request
         ChatRequest requestData = new ChatRequest
         {
@@ -230,43 +263,38 @@ public class LLMController : MonoBehaviour
         return null;
     }
 
-    private string LoadAllProjectScripts(string FolderName)
+    private string LoadAllProjectScripts(string folderName)
     {
-        string scriptsPath = Path.Combine(Application.dataPath, FolderName);
-        if (!Directory.Exists(scriptsPath))
+        string folderPath = Path.Combine(Application.streamingAssetsPath, folderName);
+
+        if (!Directory.Exists(folderPath))
         {
-            Debug.LogWarning($"Scripts folder not found: {scriptsPath}");
+            Debug.LogWarning($"Folder not found: {folderPath}");
             return "";
         }
 
-        StringBuilder sb = new StringBuilder();
-        string[] files = Directory.GetFiles(scriptsPath, "*.cs", SearchOption.AllDirectories);
+        StringBuilder allScripts = new StringBuilder();
 
-        foreach (string file in files)
+        try
         {
-            try
-            {
-                string code = File.ReadAllText(file);
-                sb.AppendLine($"// FILE: {Path.GetFileName(file)}");
-                sb.AppendLine(code);
-                sb.AppendLine("\n");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"Could not read {file}: {ex.Message}");
-            }
-        }
+            // Get all .txt files in the folder
+            string[] files = Directory.GetFiles(folderPath, "*.txt", SearchOption.TopDirectoryOnly);
 
-    
-        string allScripts = sb.ToString();
-        if (allScripts.Length > 200000)//characters is 1000000 for token limit change it if we need to increase the char
+            foreach (string file in files)
+            {
+                string content = File.ReadAllText(file);
+                allScripts.AppendLine(content);
+            }
+
+            return allScripts.ToString();
+        }
+        catch (Exception ex)
         {
-            allScripts = allScripts.Substring(0, 200000);
-            Debug.LogWarning("Script context truncated to fit within token limits.");
+            Debug.LogError($"Failed to read scripts from {folderPath}: {ex.Message}");
+            return "";
         }
-
-        return allScripts;
     }
+
 
     public void ShowGeneratedSpell()
     {
@@ -281,6 +309,7 @@ public class LLMController : MonoBehaviour
     {
         Debug.Log($"Regenerating spell at index {spellIndex} with prompt: {prompt}");
 
+        // --- RUN LLM REQUEST ---
         Task<string> skillTask = GenerateSkillFromLLM(prompt);
         yield return new WaitUntil(() => skillTask.IsCompleted);
 
@@ -299,6 +328,7 @@ public class LLMController : MonoBehaviour
 
         try
         {
+            // --- DESERIALIZE NEW SPELL ---
             Spell newSpell = JsonConvert.DeserializeObject<Spell>(skillJson);
             if (newSpell == null || string.IsNullOrWhiteSpace(newSpell.name))
             {
@@ -306,58 +336,53 @@ public class LLMController : MonoBehaviour
                 yield break;
             }
 
-            string playerSpellsPath = Path.Combine(Application.dataPath, "PlayerSpells");
-            string newFileName = $"{newSpell.name.Replace(" ", "_")}.json";
-            string newFilePath = Path.Combine(playerSpellsPath, newFileName);
+            // --- CREATE RUNTIME FOLDER ---
+            string spellFolder = Path.Combine(Application.persistentDataPath, "PlayerSpells");
+            if (!Directory.Exists(spellFolder))
+                Directory.CreateDirectory(spellFolder);
 
-            // Rename the old file if it exists
+            // --- FILENAME ---
+            string fileName = $"{newSpell.name.Replace(" ", "_")}.json";
+            string filePath = Path.Combine(spellFolder, fileName);
+
+            // --- DELETE OLD FILE IF NAME CHANGED ---
             if (spellIndex < generatedSkills.Count)
             {
-                string oldFilePath = generatedSkills[spellIndex].filePath;
-
-                if (File.Exists(oldFilePath))
+                string oldPath = generatedSkills[spellIndex].filePath;
+                if (File.Exists(oldPath) && !oldPath.Equals(filePath, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Only rename if the old file path is different
-                    if (!oldFilePath.Equals(newFilePath, StringComparison.OrdinalIgnoreCase))
-                    {
-                        File.Move(oldFilePath, newFilePath);
-                        Debug.Log($"Renamed old spell JSON: {oldFilePath} -> {newFilePath}");
-                    }
+                    File.Delete(oldPath);
+                    Debug.Log("Deleted old spell file: " + oldPath);
                 }
-
-                // Update the local generated list
-                generatedSkills[spellIndex] = new GeneratedSkillData
-                {
-                    filePath = newFilePath,
-                    jsonContent = skillJson,
-                    spellData = newSpell
-                };
             }
-            else
+
+            // --- SAVE NEW SPELL ---
+            File.WriteAllText(filePath, skillJson);
+
+            // --- UPDATE GENERATED SPELL LIST ---
+            GeneratedSkillData data = new GeneratedSkillData
             {
-                // If index is out of range, just save new file
-                File.WriteAllText(newFilePath, skillJson);
-                Debug.Log($"Saved new spell JSON: {newFilePath}");
-                generatedSkills.Add(new GeneratedSkillData
-                {
-                    filePath = newFilePath,
-                    jsonContent = skillJson,
-                    spellData = newSpell
-                });
-            }
+                filePath = filePath,
+                jsonContent = skillJson,
+                spellData = newSpell
+            };
 
-            // Save the new JSON content
-            File.WriteAllText(newFilePath, skillJson);
-            UnityEditor.AssetDatabase.Refresh();
+            if (spellIndex < generatedSkills.Count)
+                generatedSkills[spellIndex] = data;
+            else
+                generatedSkills.Add(data);
 
-            // Update UI immediately
+            // --- UPDATE UI ---
             UIController.Instance.getGeneratedSpellView.SetGeneratedSpellInfo(spellIndex, newSpell);
-            Debug.Log($"Spell {spellIndex} successfully regenerated and file updated: {newSpell.name}");
-            onSpellReplaced.Invoke();
+
+            Debug.Log($"Spell {spellIndex} regenerated and saved at runtime:\n{filePath}");
+            onSpellReplaced?.Invoke();
         }
         catch (Exception ex)
         {
             Debug.LogError($"Error regenerating spell {spellIndex}: {ex.Message}");
         }
     }
+
+
 }

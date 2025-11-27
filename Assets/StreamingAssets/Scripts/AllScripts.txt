@@ -1,0 +1,5451 @@
+// FILE: Scripts\ICustomBehaviour.cs
+public interface ICustomBehavior
+{
+    void Start(Player player);
+    void Update(Player player);
+}
+
+
+
+
+// FILE: Scripts\Player.cs
+using UnityEngine;
+
+public class Player : MonoBehaviour
+{
+    private ICustomBehavior behavior;
+    private Currency currency;
+
+    void Start()
+    {
+        behavior?.Start(this);
+    }
+
+    void Update()
+    {
+        behavior?.Update(this);
+    }
+
+    public void SetBehavior(ICustomBehavior newBehavior)
+    {
+        behavior = newBehavior;
+        behavior?.Start(this);
+    }
+
+}
+
+
+
+// FILE: Scripts\RoslynTest.cs
+using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.Scripting;
+using UnityEngine;
+
+public class RoslynTest : MonoBehaviour
+{
+    async void Start()
+    {
+        var result = await CSharpScript.EvaluateAsync<int>(
+            "1 + 2",
+            ScriptOptions.Default
+                .WithReferences(typeof(GameObject).Assembly)
+                .WithImports("System", "UnityEngine")
+        );
+
+        Debug.Log("Roslyn Result = " + result); // should log "3"
+    }
+}
+
+
+
+// FILE: Scripts\RunTimeCompiler.cs
+using System;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using UnityEngine;
+
+
+public static class RuntimeCompiler
+{
+
+    public static async Task<ICustomBehavior> CompileBehavior(string code)
+    {
+        string wrappedCode = $@"
+using UnityEngine;
+
+public class DynamicBehavior : ICustomBehavior
+{{
+    public void Start(Player player) {{ }}
+    public void Update(Player player)
+    {{
+        {code}
+    }}
+}}";
+
+        var syntaxTree = CSharpSyntaxTree.ParseText(wrappedCode);
+
+        // References: only Unity & basic assemblies
+        var refs = new[]
+        {
+            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(System.Linq.Enumerable).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Player).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Vector3).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(UnityEngine.Input).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(UnityEngine.Time).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(UnityEngine.MonoBehaviour).Assembly.Location)
+        };
+
+        var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+    .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+    .Select(a => MetadataReference.CreateFromFile(a.Location))
+    .ToList();
+
+        var compilation = CSharpCompilation.Create(
+    "DynamicAssembly",
+    new[] { syntaxTree },
+    assemblies,
+    new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+    );
+
+        using var ms = new MemoryStream();
+        var result = compilation.Emit(ms);
+
+        if (!result.Success)
+        {
+            foreach (var d in result.Diagnostics)
+                Debug.LogError(d.ToString());
+            return null;
+        }
+
+        ms.Seek(0, SeekOrigin.Begin);
+        var assembly = Assembly.Load(ms.ToArray());
+        var type = assembly.GetType("DynamicBehavior");
+        return Activator.CreateInstance(type) as ICustomBehavior;
+    }
+}
+
+
+
+// FILE: Scripts\Sandbox.cs
+using TMPro;
+using UnityEngine;
+
+public class Sandbox : MonoBehaviour
+{
+    public Player player;
+    public TextMeshProUGUI textMeshPro;
+
+    async void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            Debug.Log("Injecting new behavior...");
+
+            //string movementCode = @"
+            //    float h = Input.GetAxis(""Horizontal"");
+            //    float v = Input.GetAxis(""Vertical"");
+            //    player.transform.position += new Vector3(h, 0, v) * Time.deltaTime * 5f;
+            //";
+            string movementCode = textMeshPro.text.ToString();
+            Debug.Log($"{movementCode}");
+
+            var behavior = await RuntimeCompiler.CompileBehavior(movementCode);
+            player.SetBehavior(behavior);
+        }
+    }
+}
+
+
+
+// FILE: Scripts\Debugging\SceneBillboard.cs
+using UnityEngine;
+
+#if UNITY_EDITOR
+// UnityEditor types are only referenced inside editor-only blocks
+#endif
+
+[ExecuteAlways]
+public class SceneBillboard : MonoBehaviour
+{
+    [Tooltip("If true the billboard will only rotate around Y so it stays upright.")]
+    public bool lockYAxis = true;
+
+    [Tooltip("Flip 180�; TMP and many quads face -Z by default.")]
+    public bool flipForTMP = true;
+
+    [Tooltip("If true the script will prefer the Editor SceneView camera even during Play mode.")]
+    public bool preferSceneViewCamera = true;
+
+    void LateUpdate()
+    {
+        Camera cam = null;
+
+#if UNITY_EDITOR
+        // Prefer the SceneView camera
+        if (preferSceneViewCamera)
+        {
+            var sceneView = UnityEditor.SceneView.lastActiveSceneView;
+            if (sceneView == null && UnityEditor.SceneView.sceneViews.Count > 0)
+                sceneView = UnityEditor.SceneView.sceneViews[0] as UnityEditor.SceneView;
+
+            if (sceneView != null && sceneView.camera != null)
+            {
+                cam = sceneView.camera;
+            }
+        }
+#endif
+
+        // Fallback to main/current camera at runtime (or if SceneView not found)
+        if (cam == null)
+            cam = Camera.main ?? Camera.current;
+
+        if (cam == null)
+            return;
+
+        Vector3 lookTarget = cam.transform.position;
+
+        if (lockYAxis)
+            lookTarget.y = transform.position.y; // keep upright
+
+        transform.LookAt(lookTarget, Vector3.up);
+
+        if (flipForTMP)
+            transform.Rotate(0f, 180f, 0f);
+    }
+}
+
+
+
+// FILE: Scripts\Enemy\EM_PlayerData.cs
+
+using UnityEngine;
+[System.Serializable]
+
+public class EM_PlayerData : MonoBehaviour
+{
+    public GameObject player;
+    public int maxDamage;
+    public int maxRange;
+
+}
+
+
+
+// FILE: Scripts\Enemy\Enemy.cs
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.Rendering.Universal;
+
+public class Enemy : MonoBehaviour
+{
+    [Header("Enemy Virtual Camera")]
+    public Cinemachine.CinemachineVirtualCamera virtualCamera;
+
+    [Header("Enemy Settings")]
+    public float yPos = 1.5f;
+    public Vector2Int gridPosition;
+    public int moveRange = 3;
+    public int attackRange = 1;
+    public float moveSpeed = 5f;
+    public float dmgMultiplier = 1.0f;
+    public float rotateSpeed = 1000f; // degrees/second
+
+    private GridManager gridManager;
+    private GameObject player;
+
+    [Header("Enemy Spells")]
+    public Spell[] spells = new Spell[4];
+    public int preffered = 0;
+
+    public bool debugMode = true;
+    [SerializeField] private GameObject enemyVisual;
+
+    private void Start()
+    {
+        debugMode = GameManager.Instance.debugMode;
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Escape) && debugMode)
+        {
+            EnemyManager.Instance.ClearScoreDebug();
+        }
+    }
+
+    public void Initialize(Vector2Int startPos, GridManager grid, GameObject playerRef)
+    {
+        gridPosition = startPos;
+        gridManager = grid;
+        player = playerRef;
+
+        transform.position = new Vector3(startPos.x, yPos, startPos.y);
+        grid.GetTile(startPos).occupant = gameObject;
+
+        StartCoroutine(FacePlayer());
+
+        InitializeSpells();
+        PrioriizeSpell();
+
+        // Set the camera to look at the player
+        foreach (var player in GameManager.Instance.players)
+        {
+            if (player != null)
+            {
+                virtualCamera.LookAt = player.transform;
+                break;
+            }
+        }
+
+        
+
+    }
+
+    public IEnumerator TakeTurn(System.Action onComplete)
+    {
+        if(GameManager.Instance.lostGame)
+        {
+             onComplete?.Invoke();
+            yield break;
+        }
+
+        SyncGridPosition();
+        virtualCamera.Priority = 11; // Activate enemy camera
+
+        yield return new WaitForSeconds(TurnManager.Instance.waitDuration);
+
+        EnemyManager.Instance.calculateThreatGrid();
+        Dictionary<String, object> result = EnemyManager.Instance.CalculateScore(this);
+
+        Vector2Int location = (Vector2Int)result["location"];
+
+        // NEW: BFS pathfinding to avoid going "through" obstacles.
+        List<Vector2Int> path = FindPath(gridPosition, location);
+
+        if (path != null && path.Count > 1)
+        {
+            // Move along path, limited by moveRange
+            yield return MoveAlongPath(path, moveRange);
+        }
+        else
+        {
+            // Fallback to original direct move if path not found (should be rare)
+            yield return MoveTo(location);
+        }
+
+        Debug.Log("Enemy moving to " + gridPosition);
+
+        
+
+        if (result.ContainsKey("target"))
+        {
+            GameObject target = (GameObject)result["target"];
+            Spell spell = (Spell)result["spell"];
+            Debug.Log("Attempting to hit target " + target.name + " with spell " + spell.name);
+
+            yield return new WaitForSeconds(0.5f);
+            AttackPlayer(spell, target);
+
+            // Set camera to look at target during/after attack
+            virtualCamera.LookAt = target.transform;    
+
+        }
+
+        SyncGridPosition();
+        onComplete?.Invoke();
+
+    }
+
+    // single segment movement retained for fallback
+    private IEnumerator MoveTo(Vector2Int targetPos)
+    {
+        Vector3 start = transform.position;
+        Vector3 end = new Vector3(targetPos.x, yPos, targetPos.y);
+        float t = 0;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime * moveSpeed;
+
+            // Rotate toward movement direction (Y-axis only)
+            Vector3 flatTarget = new Vector3(end.x, transform.position.y, end.z);
+            Vector3 direction = flatTarget - transform.position;
+            direction.y = 0f;
+
+            if (direction.sqrMagnitude > 0.0001f)
+            {
+                Quaternion lookRot = Quaternion.LookRotation(direction.normalized, Vector3.up);
+
+                // Use the visualObject(fallback to root if visual is not assigned)
+                Transform rotTarget = enemyVisual != null ? enemyVisual.transform : transform;
+                rotTarget.rotation = Quaternion.RotateTowards(rotTarget.rotation, lookRot, rotateSpeed * Time.deltaTime);
+            }
+
+            transform.position = Vector3.Lerp(start, end, t);
+            yield return null;
+        }
+
+        transform.position = end;
+        SyncGridPosition();
+    }
+
+    //  Move along a computed path step-by-step (respecting obstacles).
+    private IEnumerator MoveAlongPath(List<Vector2Int> path, int maxSteps)
+    {
+        // path includes start; skip index 0
+        int stepsToTake = Mathf.Min(maxSteps, path.Count - 1);
+        for (int i = 1; i <= stepsToTake; i++)
+        {
+            Vector2Int nextPos = path[i];
+            // Clear previous tile occupant
+            Tile prevTile = gridManager.GetTile(gridPosition);
+            if (prevTile != null && prevTile.occupant == gameObject)
+                prevTile.occupant = null;
+
+            // Lerp to next tile
+            Vector3 start = transform.position;
+            Vector3 end = new Vector3(nextPos.x, yPos, nextPos.y);
+            float t = 0f;
+            while (t < 1f)
+            {
+                t += Time.deltaTime * moveSpeed;
+
+                // Rotate toward movement direction (Y-axis only)
+                Vector3 flatTarget = new Vector3(end.x, transform.position.y, end.z);
+                Vector3 direction = flatTarget - transform.position;
+                if (direction.sqrMagnitude > 0.0001f)
+                {
+                    Quaternion lookRot = Quaternion.LookRotation(direction.normalized, Vector3.up);
+                    transform.rotation = Quaternion.RotateTowards(transform.rotation, lookRot, rotateSpeed * Time.deltaTime);
+                }
+
+                transform.position = Vector3.Lerp(start, end, t);
+                yield return null;
+            }
+
+            transform.position = end;
+            // Occupy new tile
+            Tile newTile = gridManager.GetTile(nextPos);
+            if (newTile != null)
+                newTile.occupant = gameObject;
+
+            gridPosition = nextPos;
+        }
+        SyncGridPosition();
+    }
+
+    //  BFS shortest path avoiding non-walkable / occupied tiles.
+    private List<Vector2Int> FindPath(Vector2Int start, Vector2Int goal)
+    {
+        if (gridManager == null || gridManager.grid == null)
+            return null;
+
+        // If the goal itself is not passable, we still try to move as close as possible.
+        bool goalPassable = IsPassable(goal) || goal == start;
+
+        Queue<Vector2Int> queue = new Queue<Vector2Int>();
+        Dictionary<Vector2Int, Vector2Int> cameFrom = new Dictionary<Vector2Int, Vector2Int>();
+        HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
+
+        queue.Enqueue(start);
+        visited.Add(start);
+
+        Vector2Int? closestToGoal = null;
+        int closestDist = int.MaxValue;
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+
+            // Track closest reachable if goal not passable/unreachable
+            int distToGoal = EnemyManager.ManhattanDistance(current, goal);
+            if (distToGoal < closestDist)
+            {
+                closestDist = distToGoal;
+                closestToGoal = current;
+            }
+
+            if (current == goal && goalPassable)
+                return ReconstructPath(cameFrom, start, goal);
+
+            foreach (var n in GetNeighbors(current))
+            {
+                if (visited.Contains(n))
+                    continue;
+                if (!IsPassable(n) && n != goal) // allow goal if scoring picked it and it's currently free
+                    continue;
+
+                visited.Add(n);
+                cameFrom[n] = current;
+                queue.Enqueue(n);
+            }
+        }
+
+        // Goal unreachable: use closest visited as fallback (but if it's just start, no movement).
+        if (closestToGoal.HasValue && closestToGoal.Value != start)
+            return ReconstructPath(cameFrom, start, closestToGoal.Value);
+
+        return new List<Vector2Int> { start }; // no movement possible
+    }
+
+    private List<Vector2Int> ReconstructPath(Dictionary<Vector2Int, Vector2Int> cameFrom, Vector2Int start, Vector2Int end)
+    {
+        List<Vector2Int> path = new List<Vector2Int>();
+        Vector2Int current = end;
+        path.Add(current);
+        while (current != start)
+        {
+            current = cameFrom[current];
+            path.Add(current);
+        }
+        path.Reverse();
+        return path;
+    }
+
+    private IEnumerable<Vector2Int> GetNeighbors(Vector2Int pos)
+    {
+        // 4-directional movement
+        Vector2Int[] dirs =
+        {
+            new Vector2Int(1,0),
+            new Vector2Int(-1,0),
+            new Vector2Int(0,1),
+            new Vector2Int(0,-1)
+        };
+
+        foreach (var d in dirs)
+        {
+            Vector2Int np = new Vector2Int(pos.x + d.x, pos.y + d.y);
+            if (np.x >= 0 && np.x < gridManager.width && np.y >= 0 && np.y < gridManager.height)
+                yield return np;
+        }
+    }
+
+    private bool IsPassable(Vector2Int pos)
+    {
+        Tile t = gridManager.GetTile(pos);
+        if (t == null) return false;
+        if (!t.walkable) return false;
+        if (t.occupant != null && t.occupant != gameObject) return false;
+        return true;
+    }
+
+    public void SyncGridPosition()
+    {
+        if (gridManager == null || gridManager.grid == null)
+            return;
+
+        Vector2Int newPos = new Vector2Int(
+            Mathf.RoundToInt(transform.position.x),
+            Mathf.RoundToInt(transform.position.z)
+        );
+
+        if (newPos != gridPosition)
+        {
+            Tile oldTile = gridManager.GetTile(gridPosition);
+            if (oldTile != null && oldTile.occupant == gameObject)
+                oldTile.occupant = null;
+        }
+
+        Tile newTile = gridManager.GetTile(newPos);
+        if (newTile != null)
+        {
+            newTile.occupant = gameObject;
+            gridPosition = newPos;
+        }
+    }
+
+    private IEnumerator FacePlayer()
+    {
+        Vector3 direction = player.transform.position - transform.position;
+        direction.y = 0;
+        if (direction != Vector3.zero)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            float t = 0f;
+            float rotateSpeed = 10f;
+
+            while (t < 1f)
+            {
+                t += Time.deltaTime * rotateSpeed;
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, t);
+                yield return null;
+            }
+
+            transform.rotation = targetRotation;
+        }
+    }
+
+    private void InitializeSpells()
+    {
+        for (int i = 0; i < spells.Length; i++)
+        {
+            spells[i] = JsonManager.Instance.ReturnRandomSpell();
+        }
+
+        for (int i = 0; i < spells.Length; i++)
+        {
+            spells[i].damage = (int)(spells[i].damage * dmgMultiplier);
+        }
+    }
+
+    public void PrioriizeSpell()
+    {
+        int rando = UnityEngine.Random.Range(0, spells.Length);
+        preffered = rando;
+    }
+
+    public void CheckAnySpellRange(int distToPlayer)
+    {
+        for (int i = 0; i < spells.Length; i++)
+        {
+            if (distToPlayer <= spells[i].range)
+            {
+                attackRange = spells[i].range;
+                preffered = i;
+            }
+        }
+    }
+
+    public void AttackPlayer()
+    {
+        if (ActionManager.Instance == null)
+        {
+            Debug.LogError("ActionManager.Instance is null.");
+        }
+
+        StartCoroutine(FacePlayer());
+        Debug.Log("Attacking Player with " + spells[preffered].name);
+        ActionManager.Instance.UseSpell(spells[preffered], this.gameObject, player.gameObject);
+    }
+
+    public void AttackPlayer(Spell spell, GameObject target)
+    {
+        if (ActionManager.Instance == null)
+        {
+            Debug.LogError("ActionManager.Instance is null.");
+        }
+
+        StartCoroutine(FacePlayer());
+        Debug.Log("Attacking Player with " + spell.name);
+        ActionManager.Instance.UseSpell(spell, this.gameObject, target);
+    }
+
+    private void OnMouseDown()
+    {
+        if (debugMode)
+        {
+            EnemyManager.Instance.ClearScoreDebug();
+            EnemyManager.Instance.ShowScoreGrid(this);
+        }
+    }
+
+    private void SetMulitplier(float multiplier)
+    {
+        dmgMultiplier = multiplier;
+    }
+}
+
+
+
+// FILE: Scripts\Enemy\EnemyManager.cs
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+
+
+public class EnemyManager : MonoBehaviour
+{
+    public List<Enemy> enemies = new List<Enemy>();
+    
+    float[,] threatGrid;
+    private bool isTakingTurn;
+    public Transform player;
+    private Dictionary<GameObject, int[]> playerMaxDamageList = new Dictionary<GameObject, int[]>();
+    private GridManager gridManager;
+    private int widthGrid;
+    private int heightGrid;
+    
+    public static EnemyManager Instance { get; private set; }
+
+
+    [Header("Weight Settings")]
+    public float weightDamage = 1.0f;    // damage
+    public float weightKill = 5.0f;    // sure kill
+    public float weightPriorityRole = 2.0f;    // target priority
+    public float weightProximity = 0.5f;    // proximity
+    public float weightSpellEffeciency = 1.5f;   // efficiency
+    public float weightThreat = 0.8f; //Threat avoidance 
+
+
+    [Header("Out of Range Weight Settings")]
+    public float oorWeightPriorityRole = 1.0f;    // prioritize supports
+    public float oorWeightLowHpUnit = 5.0f;    // target low-HP units
+    public float oorWeightCloseTarget = 2.0f;    // prefer closer targets
+    public float oorWeightThreat = 0.8f;  // Threat avoidance if target is not within range
+
+    
+    private void Awake()
+    {
+        Instance = this;
+        // Singleton setup
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+    }
+
+
+    public void AddEnemy(Enemy enemy)
+    {
+        enemies.Add(enemy);
+    }
+
+    public void initializeThreatGrid(int height, int width)
+    {
+        widthGrid = width;
+        heightGrid = height;
+        gridManager = GridManager.Instance;
+        GameObject[] players = GameManager.Instance.players.ToArray();
+
+        playerMaxDamageList.Clear();
+        foreach (GameObject player in players)
+        {
+            int[] playerData = { 30, 1 };
+            playerMaxDamageList[player] = playerData;
+        }
+
+        // Use [width, height] so indexing is threatGrid[x,y] to match grid[x,y]
+        threatGrid = new float[widthGrid, heightGrid];
+
+        for (int x = 0; x < widthGrid; x++)
+        {
+            for (int y = 0; y < heightGrid; y++)
+                threatGrid[x, y] = 0f;
+        }
+    }
+
+    public void clearThreatGrid()
+    {
+        for (int i =0; i < threatGrid.GetLength(0); i++)
+        {
+            for (int j =0; j < threatGrid.GetLength(1); j++)
+                threatGrid[i, j] =0;
+        }
+
+    }
+    public void calculateThreatGrid()
+    {
+        clearThreatGrid();
+        GameObject[] players = GameManager.Instance.players.ToArray();
+        foreach (GameObject player in players)
+        {
+            PlayerFunctionality playerFunctionality = player.GetComponent<PlayerFunctionality>();
+            if (playerFunctionality != null)
+            {
+                foreach (Tile tile in gridManager.grid)
+                {
+                    if (tile == null) continue;
+                    if (playerMaxDamageList.TryGetValue(player, out int[] playerData))
+                    {
+                        int distance = Mathf.Abs(tile.gridPosition.x - playerFunctionality.gridPosition.x) + Mathf.Abs(tile.gridPosition.y - playerFunctionality.gridPosition.y);
+                        if (distance <= playerFunctionality.moveRange + playerData[1] && tile.occupant == null && playerMaxDamageList.ContainsKey(player))
+                        {
+                            threatGrid[tile.gridPosition.x, tile.gridPosition.y] = threatGrid[tile.gridPosition.x, tile.gridPosition.y] + playerData[0];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void UpdateMaxDamage(GameObject player, int damage, int range =1)
+    {
+        if (playerMaxDamageList.ContainsKey(player))
+        {
+            int[] playerData = { damage, range };
+            playerMaxDamageList[player][0] = Mathf.Max(playerMaxDamageList[player][0], damage);
+        }
+    }
+
+    public void showGrid()
+    {
+        int rows = threatGrid.GetLength(0);
+        int cols = threatGrid.GetLength(1);
+
+        for (int i =0; i < rows; i++)
+        {
+            string rowStr = "";
+            for (int j =0; j < cols; j++)
+            {
+                rowStr += threatGrid[i, j].ToString("F2") + "\t";
+            }
+            Debug.Log(rowStr);
+        }
+    }
+
+    public Dictionary<String, object> CalculateScore(Enemy enemy)
+    {
+        Dictionary<String, object> result = new Dictionary<String, object>();
+        float score =0;
+        GameObject[] players = GameManager.Instance.players.ToArray();
+
+        // Track the best overall values while iterating
+        float bestScore = float.MinValue;
+        Vector2Int bestLocation = enemy.gridPosition;
+        GameObject bestTarget = null;
+        Spell bestSpell = null;
+
+        foreach (GameObject player in players)
+        {
+            Stats playerStats = player.GetComponent<Stats>();
+            PlayerFunctionality playerFunctionality = player.GetComponent<PlayerFunctionality>();
+            int distance = ManhattanDistance(enemy.gridPosition, playerFunctionality.gridPosition);
+            foreach (Spell spell in enemy.spells)
+            {
+                if (distance <= spell.range + enemy.moveRange)
+                {
+                    List<Vector2Int> Locations = new List<Vector2Int>();
+                    Locations = GetPositionsWithinManhattanDistance(playerFunctionality.gridPosition, spell.range, widthGrid, heightGrid);
+                    foreach (Vector2Int location in Locations)
+                    {
+                        int moveDistance = ManhattanDistance(location, enemy.gridPosition);
+                        if (moveDistance <= enemy.moveRange && gridManager.grid[location.x,location.y].occupant == null)
+                        {
+                            // Ensure float division for accuracy
+                            float Damage = spell.damage * (spell.accuracy /100f);
+                            float KillBonus = (playerStats.health - Damage) <=0 ?1f :0f;
+                            float supportTarget = (playerStats.type == Stats.Type.Support) ?1f :0f;
+                            float distanceBonus = (enemy.moveRange - moveDistance) / (float)enemy.moveRange;
+                            float resourceBonus = (Damage / (float)spell.resourceCost) *0.01f;
+                            float Threat = threatGrid[location.x, location.y];
+
+                            float currentScore = weightDamage * Damage + weightKill * KillBonus + weightPriorityRole * supportTarget + weightProximity * distanceBonus +
+                                weightSpellEffeciency * resourceBonus - weightThreat * Threat;
+
+                            currentScore = Mathf.Clamp(currentScore,0f,100f);
+
+                            if (currentScore > bestScore)
+                            {
+                                bestScore = currentScore;
+                                bestLocation = location;
+                                bestTarget = player;
+                                bestSpell = spell;
+                            }
+                        }
+
+                    }
+                }
+            }
+        }
+
+        if (bestScore > float.MinValue)
+        {
+            // Store consistent keys
+            result["location"] = bestLocation;
+            result["target"] = bestTarget;
+            result["spell"] = bestSpell;
+            result["score"] = bestScore;
+            return result;
+        }
+        else
+        {
+            List<Vector2Int> Locations = new List<Vector2Int>();
+            Locations = GetPositionsWithinManhattanDistance(enemy.gridPosition, enemy.moveRange, widthGrid, heightGrid);
+            foreach (Vector2Int location in Locations)
+            {
+                float tileScore =0;
+                if (gridManager.grid[location.x, location.y].occupant != null) continue;
+                foreach (GameObject player in players)
+                {
+                    Stats playerStats = player.GetComponent<Stats>();
+                    PlayerFunctionality playerFunctionality = player.GetComponent<PlayerFunctionality>();
+
+                    float supportTarget = (playerStats.type == Stats.Type.Support) ?1f :0f;
+                    float Vulnerability =1f - (playerStats.health / playerStats.maxHealth);
+                    float distanceFactor =1f / (1f + ManhattanDistance(location, playerFunctionality.gridPosition));
+                    
+                    float Threat = threatGrid[location.x, location.y];
+
+                    float tempTileScore = supportTarget * oorWeightPriorityRole + Vulnerability * oorWeightLowHpUnit + distanceFactor* oorWeightCloseTarget - Threat*oorWeightThreat;
+                    if (tempTileScore > tileScore) tileScore = tempTileScore;
+                }
+                if (tileScore > score)
+                {
+                    score = tileScore;
+                    result["location"] = location;
+                    result["score"] = score;
+                }
+            }
+            return result;
+        }
+            
+    }
+
+    public static List<Vector2Int> GetPositionsWithinManhattanDistance(
+        Vector2Int origin, int distance, int gridWidth, int gridHeight)
+    {
+        List<Vector2Int> positions = new List<Vector2Int>();
+
+        for (int dx = -distance; dx <= distance; dx++)
+        {
+            for (int dy = -distance; dy <= distance; dy++)
+            {
+   
+                if (Mathf.Abs(dx) + Mathf.Abs(dy) <= distance)
+                {
+                    int newX = origin.x + dx;
+                    int newY = origin.y + dy;
+
+                    if (newX >=0 && newX < gridWidth && newY >=0 && newY < gridHeight)
+                    {
+                        positions.Add(new Vector2Int(newX, newY));
+                    }
+                }
+            }
+        }
+
+        return positions;
+    }
+    public static int ManhattanDistance(Vector2Int a, Vector2Int b)
+    {
+        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
+    }
+
+
+
+    public void ShowScoreGrid(Enemy enemy)
+    {
+        // Clear previous debug text
+        ClearScoreDebug();
+        Debug.Log("[EnemyManager] Generating score grid visualization...");
+
+        if (gridManager == null) gridManager = GridManager.Instance;
+        if (gridManager == null) return;
+
+        int w = widthGrid;
+        int h = heightGrid;
+
+        float[,] tileScores = new float[w, h];
+        float minScore = float.MaxValue;
+        float maxScore = float.MinValue;
+
+        // Compute score for each tile
+        for (int x = 0; x < w; x++)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                Tile tile = gridManager.grid[x, y];
+                if (tile == null)
+                {
+                    tileScores[x, y] = float.NegativeInfinity;
+                    continue;
+                }
+
+                // Compute the AI score for this tile using the same formulas as CalculateScore
+                Vector2Int loc = new Vector2Int(x, y);
+                float score = ComputeTileScoreForEnemy(enemy, loc);
+
+                // Normalize undefined/occupied to zero for visualization
+                if (float.IsNegativeInfinity(score) || float.IsNaN(score))
+                    score = 0f;
+
+                tileScores[x, y] = score;
+                if (score < minScore) minScore = score;
+                if (score > maxScore) maxScore = score;
+            }
+        }
+
+        bool singleValue = Mathf.Approximately(minScore, maxScore);
+
+        // Create text labels for visualization
+        for (int x = 0; x < w; x++)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                Tile tile = gridManager.grid[x, y];
+                if (tile == null) continue;
+
+                float tileScore = tileScores[x, y];
+
+                GameObject textObj = new GameObject($"ScoreDebug_{x}_{y}");
+                textObj.transform.SetParent(gridManager.map.transform);
+                textObj.transform.position = tile.transform.position + Vector3.up * 1.5f;
+
+                TextMeshPro tmp = textObj.AddComponent<TextMeshPro>();
+                tmp.fontSize = 2;
+                tmp.alignment = TextAlignmentOptions.Center;
+                tmp.text = tileScore.ToString("F2");
+
+                float t = singleValue ? 0.5f : Mathf.InverseLerp(minScore, maxScore, tileScore);
+                tmp.color = Color.Lerp(Color.red, Color.green, t);
+
+    #if UNITY_EDITOR
+                // Make text always face Scene camera in the Editor
+                textObj.AddComponent<SceneBillboard>();
+    #endif
+            }
+        }
+
+        // Find & mark best reachable tile (the yellow sphere should be achievable this turn)
+        Vector2Int bestReachableLoc = new Vector2Int(-1, -1);
+        float bestReachableVal = float.MinValue;
+        for (int x = 0; x < w; x++)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                // skip invalid/empty display cells
+                if (float.IsNegativeInfinity(tileScores[x, y])) continue;
+
+                Vector2Int loc = new Vector2Int(x, y);
+                int moveDistance = ManhattanDistance(loc, enemy.gridPosition);
+                if (moveDistance <= enemy.moveRange)
+                {
+                    // tile must be empty and reachable (ComputeTileScoreForEnemy already returns -Inf for occupied)
+                    float val = tileScores[x, y];
+                    if (val > bestReachableVal)
+                    {
+                        bestReachableVal = val;
+                        bestReachableLoc = loc;
+                    }
+                }
+            }
+        }
+
+        // Place yellow marker only if a reachable tile exists
+        if (bestReachableLoc.x >= 0)
+        {
+            Tile bestTile = gridManager.GetTile(bestReachableLoc);
+            if (bestTile != null)
+            {
+                GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                marker.name = "ScoreDebug_BestTile";
+                marker.transform.SetParent(gridManager.map.transform);
+                marker.transform.position = bestTile.transform.position + Vector3.up * 1.2f;
+                marker.transform.localScale = Vector3.one * 0.3f;
+                marker.GetComponent<Renderer>().material.color = Color.yellow;
+                Destroy(marker.GetComponent<Collider>());
+            }
+
+            Debug.Log($"[EnemyManager] Best reachable tile score: {bestReachableVal:F2} at {bestReachableLoc}");
+        }
+        else
+        {
+            Debug.Log($"[EnemyManager] No reachable scored tile for this enemy this turn. (Best overall shown but not reachable)");
+        }
+    }
+
+    private float ComputeTileScoreForEnemy(Enemy enemy, Vector2Int loc)
+    {
+        if (gridManager == null) gridManager = GridManager.Instance;
+        if (gridManager == null) return float.NegativeInfinity;
+
+        // bounds check
+        if (loc.x < 0 || loc.x >= widthGrid || loc.y < 0 || loc.y >= heightGrid)
+            return float.NegativeInfinity;
+
+        Tile tile = gridManager.grid[loc.x, loc.y];
+        if (tile == null) return float.NegativeInfinity;
+        if (tile.occupant != null) return float.NegativeInfinity;
+
+        GameObject[] players = GameManager.Instance.players.ToArray();
+
+        // 1) Attack-based scoring
+        float bestAttackScore = float.MinValue;
+        int moveDistance = ManhattanDistance(loc, enemy.gridPosition);
+
+        if (moveDistance > enemy.moveRange)
+            return float.NegativeInfinity; // mark as unreachable
+
+        if (enemy.moveRange >= 0 && moveDistance <= enemy.moveRange)
+        {
+            foreach (GameObject playerObj in players)
+            {
+                if (playerObj == null) continue;
+                Stats playerStats = playerObj.GetComponent<Stats>();
+                PlayerFunctionality playerFunc = playerObj.GetComponent<PlayerFunctionality>();
+                if (playerStats == null || playerFunc == null) continue;
+
+                int distToPlayerFromTile = ManhattanDistance(loc, playerFunc.gridPosition);
+
+                foreach (Spell spell in enemy.spells)
+                {
+                    if (spell == null) continue;
+                    if (distToPlayerFromTile <= spell.range)
+                    {
+                        float Damage = spell.damage * (spell.accuracy / 100f);
+                        float KillBonus = (playerStats.health - Damage) <= 0f ? 1f : 0f;
+                        float supportTarget = (playerStats.type == Stats.Type.Support) ? 1f : 0f;
+                        float distanceBonus = enemy.moveRange > 0 ? (enemy.moveRange - moveDistance) / (float)enemy.moveRange : 0f;
+                        float resourceBonus = (spell.resourceCost != 0) ? (Damage / (float)spell.resourceCost) * 0.01f : 0f;
+                        float Threat = threatGrid[loc.x, loc.y];
+
+                        float currentScore = weightDamage * Damage
+                                           + weightKill * KillBonus
+                                           + weightPriorityRole * supportTarget
+                                           + weightProximity * distanceBonus
+                                           + weightSpellEffeciency * resourceBonus
+                                           - weightThreat * Threat;
+
+                       
+                        currentScore = Mathf.Clamp(currentScore, 0f, 100f);
+
+                        if (currentScore > bestAttackScore)
+                            bestAttackScore = currentScore;
+                    }
+                }
+            }
+        }
+
+        // 2) Positional/out-of-range heuristic
+        float bestPositional = float.MinValue;
+        foreach (GameObject playerObj in players)
+        {
+            if (playerObj == null) continue;
+            Stats playerStats = playerObj.GetComponent<Stats>();
+            PlayerFunctionality playerFunc = playerObj.GetComponent<PlayerFunctionality>();
+            if (playerStats == null || playerFunc == null) continue;
+
+            float supportTarget = (playerStats.type == Stats.Type.Support) ? 1f : 0f;
+            float Vulnerability = 1f - (playerStats.health / (float)playerStats.maxHealth);
+            float distanceFactor = 1f / (1f + ManhattanDistance(loc, playerFunc.gridPosition));
+            float Threat = threatGrid[loc.x, loc.y];
+
+            float tempTileScore = supportTarget * oorWeightPriorityRole
+                                + Vulnerability * oorWeightLowHpUnit
+                                + distanceFactor * oorWeightCloseTarget
+                                - Threat * oorWeightThreat;
+
+            // clamp positional to a reasonable range
+            tempTileScore = Mathf.Clamp(tempTileScore, -100f, 100f);
+
+            if (tempTileScore > bestPositional) bestPositional = tempTileScore;
+        }
+
+        float finalScore = Mathf.Max(bestAttackScore, bestPositional);
+
+        // If both remained unset, indicate invalid/unscored tile
+        if (finalScore == float.MinValue)
+            return float.NegativeInfinity;
+
+        return finalScore;
+    }
+
+
+    public void ClearScoreDebug()
+    {
+        if (gridManager == null) gridManager = GridManager.Instance;
+        if (gridManager == null) return;
+
+        // Remove previously created debug objects (ScoreDebug_* and marker)
+        List<GameObject> toRemove = new List<GameObject>();
+        foreach (Transform child in gridManager.map.transform)
+        {
+            if (child == null) continue;
+            if (child.name.StartsWith("ScoreDebug_") || child.name == "ScoreDebug_BestTile")
+                toRemove.Add(child.gameObject);
+        }
+
+        // Destroy outside of the transform enumeration
+        foreach (var go in toRemove)
+            DestroyImmediate(go);
+    }
+
+    public void SetEnemyMultipliers(float multiplier)
+    {
+        foreach (Enemy enemy in enemies)
+        {
+            enemy.dmgMultiplier = multiplier;
+        }
+    }
+
+}
+
+
+
+// FILE: Scripts\General\ActionManager.cs
+using System.Collections;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using UnityEngine;
+using UnityEngine.Events;
+
+public class ActionManager : MonoBehaviour 
+{
+    public static ActionManager Instance { get; private set; }
+    public UnityEvent onSpellUsed;
+
+    [Header("Projectile Settings")]
+    public float projectileSpeed = 12f;
+    public float projectileLifetimeAfterImpact = 1.5f; // (Now unused for destruction timing; kept in case you re-enable delayed cleanup)
+    public Vector3 spawnOffset = new Vector3(0f, 0.5f, 0f);
+
+    [Header("Projectile Slam Settings")]
+    [Tooltip("Speed used when the projectile slams downward at the end.")]
+    public float projectileSlamSpeed = 30f;
+    [Tooltip("Optional pause (seconds) after reaching above target before slamming down.")]
+    public float slamPause = 0.05f;
+
+    [Tooltip("Optional container to keep the hierarchy clean.")]
+    public Transform projectileContainer;
+    public GameObject projectilePrefab;
+
+    public Spell currentSpell;
+    public GameObject currentFrom;
+    public GameObject currentTo;
+
+    private void Awake()
+    {
+        Instance = this;
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+    }
+
+    public void UseSpell(Spell spell, GameObject from, GameObject to)
+    {
+        int roll = Random.Range(0, 101);
+        if (roll > spell.accuracy)
+        {
+            Debug.Log("Spell whiffed");
+            return;
+        }
+
+        SpellFunction.Instance.SetVariables(spell, from, to);
+        SpellFunction.Instance.CustomSpellFunction();
+        setCurrentValues();
+        onSpellUsed.Invoke();
+    }
+
+    private void setCurrentValues()
+    {
+        currentSpell = SpellFunction.Instance.spell;
+        currentFrom = SpellFunction.Instance.from;
+        currentTo = SpellFunction.Instance.to;
+    }
+
+    public void spawnProjectile()
+    {
+        GameObject from = currentFrom;
+        GameObject to = currentTo;
+
+        if (from == null || to == null)
+        {
+            Debug.LogWarning("spawnProjectile aborted: from or to is null.");
+            return;
+        }
+
+        Vector2Int fromGrid = TryGetGridPosition(from);
+        Vector2Int toGrid = TryGetGridPosition(to);
+        List<Vector2Int> path = FindPath(fromGrid, toGrid);
+
+        GameObject proj;
+        if (projectilePrefab != null)
+        {
+            proj = Instantiate(projectilePrefab);
+            var psr = proj.GetComponentInChildren<ParticleSystemRenderer>();
+            if (psr != null)
+                psr.material.color = new Color(currentSpell.ColorR, currentSpell.ColorG, currentSpell.ColorB, 0.5f);
+            var rend = proj.GetComponent<Renderer>();
+            if (rend != null)
+                rend.material.color = new Color(currentSpell.ColorR, currentSpell.ColorG, currentSpell.ColorB);
+            proj.name = $"{currentSpell.name}_Projectile";
+            if (projectileContainer != null)
+                proj.transform.parent = projectileContainer;
+
+            float travelY = currentFrom.transform.position.y;
+            Vector3 startWorld = new Vector3(fromGrid.x, travelY, fromGrid.y) + new Vector3(spawnOffset.x, 0f, spawnOffset.z);
+            proj.transform.position = startWorld;
+
+            StartCoroutine(MoveProjectileAlongPath(proj, path, to, currentSpell, travelY));
+        }
+    }
+
+    private IEnumerator MoveProjectileAlongPath(GameObject projectile, List<Vector2Int> path, GameObject target, Spell spell, float travelY)
+    {
+        Projectile projComponent = projectile.GetComponent<Projectile>();
+        projComponent.target = target;
+        projComponent.targetStats = target.GetComponent<Stats>();
+        projComponent.targetTransform = target.transform.position;
+
+        if (projComponent != null && projComponent.isDestroyed)
+            yield break;
+
+        if (projectile == null)
+            yield break;
+
+        if (path == null || path.Count < 2)
+        {
+            Vector3 targetFlat = new Vector3(
+                target.transform.position.x,
+                travelY,
+                target.transform.position.z) + new Vector3(spawnOffset.x, 0f, spawnOffset.z);
+
+            while (projectile != null && Vector3.Distance(projectile.transform.position, targetFlat) > 0.05f)
+            {
+                Vector3 current = projectile.transform.position;
+                if (current.y != travelY)
+                {
+                    current.y = travelY;
+                    projectile.transform.position = current;
+                }
+
+                projectile.transform.position = Vector3.MoveTowards(
+                    projectile.transform.position,
+                    targetFlat,
+                    projectileSpeed * Time.deltaTime);
+                yield return null;
+            }
+        }
+        else
+        {
+            for (int i = 1; i < path.Count; i++)
+            {
+                Vector3 waypoint = new Vector3(path[i].x, travelY, path[i].y) + new Vector3(spawnOffset.x, 0f, spawnOffset.z);
+                while (projectile != null && Vector3.Distance(projectile.transform.position, waypoint) > 0.02f)
+                {
+                    Vector3 current = projectile.transform.position;
+                    if (current.y != travelY)
+                    {
+                        current.y = travelY;
+                        projectile.transform.position = current;
+                    }
+
+                    projectile.transform.position = Vector3.MoveTowards(
+                        projectile.transform.position,
+                        waypoint,
+                        projectileSpeed * Time.deltaTime);
+                    yield return null;
+                }
+                if (projectile == null)
+                    yield break;
+            }
+
+            if (target == null)
+                yield break;
+
+            Vector3 aboveTarget = new Vector3(
+                target.transform.position.x,
+                travelY,
+                target.transform.position.z) + new Vector3(spawnOffset.x, 0f, spawnOffset.z);
+
+            while (projectile != null && Vector3.Distance(projectile.transform.position, aboveTarget) > 0.05f)
+            {
+                Vector3 current = projectile.transform.position;
+                if (current.y != travelY)
+                {
+                    current.y = travelY;
+                    projectile.transform.position = current;
+                }
+
+                projectile.transform.position = Vector3.MoveTowards(
+                    projectile.transform.position,
+                    aboveTarget,
+                    projectileSpeed * Time.deltaTime);
+                yield return null;
+            }
+        }
+
+        // Small pause before slam (optional)
+        if (slamPause > 0f)
+            yield return new WaitForSeconds(slamPause);
+
+        // Slam down to target's actual Y
+        if (projectile != null && target != null)
+        {
+            float targetY = target.transform.position.y; // Ground / model base
+            Vector3 slamTarget = new Vector3(
+                projectile.transform.position.x,
+                targetY,
+                projectile.transform.position.z);
+
+            while (projectile != null && projectile.transform.position.y > targetY + 0.01f)
+            {
+                Vector3 pos = projectile.transform.position;
+                pos.y = Mathf.MoveTowards(pos.y, targetY, projectileSlamSpeed * Time.deltaTime);
+                projectile.transform.position = pos;
+                yield return null;
+            }
+        }
+
+        // Immediate destruction upon reaching destination (changed from delayed Destroy with lifetime).
+        if (projectile != null)
+            Destroy(projectile);
+
+        if (target == null && projectile != null)
+            Destroy(projectile);
+    }
+
+    private Vector2Int TryGetGridPosition(GameObject obj)
+    {
+        if (obj == null)
+            return Vector2Int.zero;
+
+        PlayerFunctionality pf = obj.GetComponent<PlayerFunctionality>();
+        if (pf != null)
+            return pf.gridPosition;
+
+        Enemy enemy = obj.GetComponent<Enemy>();
+        if (enemy != null)
+            return enemy.gridPosition;
+
+        return new Vector2Int(
+            Mathf.RoundToInt(obj.transform.position.x),
+            Mathf.RoundToInt(obj.transform.position.z));
+    }
+
+    private List<Vector2Int> FindPath(Vector2Int start, Vector2Int goal)
+    {
+        GridManager gm = GridManager.Instance;
+        if (gm == null || gm.grid == null)
+            return null;
+
+        if (start == goal)
+            return new List<Vector2Int> { start, goal };
+
+        Queue<Vector2Int> q = new Queue<Vector2Int>();
+        Dictionary<Vector2Int, Vector2Int> cameFrom = new Dictionary<Vector2Int, Vector2Int>();
+        HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
+
+        q.Enqueue(start);
+        visited.Add(start);
+        cameFrom[start] = start;
+
+        Vector2Int[] dirs =
+        {
+            new Vector2Int(1,0),
+            new Vector2Int(-1,0),
+            new Vector2Int(0,1),
+            new Vector2Int(0,-1)
+        };
+
+        while (q.Count > 0)
+        {
+            var current = q.Dequeue();
+            if (current == goal)
+                break;
+
+            foreach (var d in dirs)
+            {
+                Vector2Int next = new Vector2Int(current.x + d.x, current.y + d.y);
+                if (visited.Contains(next))
+                    continue;
+
+                Tile t = gm.GetTile(next);
+                if (t == null)
+                    continue;
+                if (!t.walkable)
+                    continue;
+
+                if (t.occupant != null && next != goal)
+                    continue;
+
+                visited.Add(next);
+                cameFrom[next] = current;
+                q.Enqueue(next);
+            }
+        }
+
+        if (!cameFrom.ContainsKey(goal))
+        {
+            Vector2Int closest = start;
+            int bestDist = int.MaxValue;
+            foreach (var v in visited)
+            {
+                int dist = Mathf.Abs(v.x - goal.x) + Mathf.Abs(v.y - goal.y);
+                if (dist < bestDist)
+                {
+                    bestDist = dist;
+                    closest = v;
+                }
+            }
+            if (closest == start)
+                return null;
+            return ReconstructPath(cameFrom, start, closest);
+        }
+
+        return ReconstructPath(cameFrom, start, goal);
+    }
+
+    private List<Vector2Int> ReconstructPath(Dictionary<Vector2Int, Vector2Int> cameFrom, Vector2Int start, Vector2Int end)
+    {
+        List<Vector2Int> path = new List<Vector2Int>();
+        Vector2Int cur = end;
+        path.Add(cur);
+        while (cur != start)
+        {
+            cur = cameFrom[cur];
+            path.Add(cur);
+        }
+        path.Reverse();
+        return path;
+    }
+}
+
+
+
+
+
+// FILE: Scripts\General\Currency.cs
+using System.ComponentModel.Design.Serialization;
+using UnityEngine;
+
+public class Currency : MonoBehaviour
+{
+    public int Gold;
+    public int manaStone;
+
+}
+
+
+
+// FILE: Scripts\General\FloatingDamageNumber.cs
+using TMPro;
+using UnityEngine;
+
+public class FloatingDamageNumber : MonoBehaviour
+{
+    [Header("Animation Settings")]
+    public float riseSpeed = 1.5f;
+    public float lifetime = 1f;
+    public float scaleUp = 1.2f;
+    public float fadeStart = 0.5f;
+
+    private TextMeshPro textMesh;
+    private Color originalColor;
+    private Vector3 startScale;
+    private float timer;
+
+    void Awake()
+    {
+        textMesh = GetComponent<TextMeshPro>();
+        originalColor = textMesh.color;
+        startScale = transform.localScale;
+    }
+
+    public void Initialize(string text, Color color)
+    {
+        textMesh.text = text;
+        textMesh.color = color;
+        originalColor = color;
+
+        // Add a slight random offset for variation
+        transform.position += new Vector3(Random.Range(-0.3f, 0.3f), 0f, Random.Range(-0.3f, 0.3f));
+    }
+
+    void Update()
+    {
+        timer += Time.deltaTime;
+
+        // Make it face the camera
+        if (Camera.main != null)
+            transform.forward = Camera.main.transform.forward;
+
+        // Move upward
+        transform.position += Vector3.up * riseSpeed * Time.deltaTime;
+
+        // Scale up slightly for a pop effect
+        float scaleFactor = Mathf.Lerp(scaleUp, 1f, timer / lifetime);
+        transform.localScale = startScale * scaleFactor;
+
+        // Fade out after fadeStart
+        if (timer > lifetime * fadeStart)
+        {
+            float fadeProgress = (timer - lifetime * fadeStart) / (lifetime * (1 - fadeStart));
+            Color c = textMesh.color;
+            c.a = Mathf.Lerp(originalColor.a, 0, fadeProgress);
+            textMesh.color = c;
+        }
+
+        // Destroy after lifetime
+        if (timer >= lifetime)
+        {
+            Destroy(gameObject);
+        }
+    }
+}
+
+
+
+// FILE: Scripts\General\GameManager.cs
+using System.Collections.Generic;
+using TMPro;
+using Unity.VisualScripting;
+using UnityEngine;
+
+public class GameManager : MonoBehaviour
+{
+    public int roundNo;
+    public static GameManager Instance;
+    public List<GameObject> players = new List<GameObject>();
+    public List<GameObject> enemies = new List<GameObject>();
+    [SerializeField] private LLMController llmController;
+    [SerializeField] private CurrencyData currencyData;
+    public List<PlayerFunctionality> playerFunctionality;
+    public LLMController LLMController { get; private set; }
+    public CurrencyData getcurrencyData { get; private set; }
+    public bool lostGame = false;
+
+    public bool debugMode = false;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            Instance = this;          
+            DontDestroyOnLoad(gameObject);
+        }
+        LLMController = llmController;
+        getcurrencyData = currencyData;
+    }
+
+    private void Update()
+    {
+        if(Input.GetKeyDown(KeyCode.R))
+        {
+            GenerateNextRound();
+        }
+    }
+
+    public void CallSetSpellFrom(string tragetName)
+    {
+        for (int i = 0; i < playerFunctionality.Count; i++)
+        {
+            Debug.Log("Setting spell from " + tragetName + " for player " + i + "player is :" + playerFunctionality[i]);
+            playerFunctionality[i].setSpellFrom(tragetName);
+        }
+
+    }
+
+    public void CallSetSelectedSpell(int index)
+    {
+        for (int i = 0; i < playerFunctionality.Count; i++)
+        {
+            Debug.Log("selecting spell from index " + index + " for player " + i + "player is :" + playerFunctionality[i]);
+            playerFunctionality[i].SetSelectedSpell(index);
+        }
+    }
+
+    public void CheckGameState()
+    {
+        int playerDeaths = 0;
+        int enemyDeaths = 0;
+        foreach (GameObject player in players)
+        {
+            if(player.GetComponent<Stats>().isDead)
+            {
+                playerDeaths++;
+            }
+        }
+        foreach (GameObject enemy in enemies)
+        {
+            if (enemy.GetComponent<Stats>().isDead)
+            {
+                enemyDeaths++;
+            }
+        }
+
+        if (playerDeaths >= players.Count)
+        {
+            OnPlayersLost();
+        }
+        if (enemyDeaths >= enemies.Count)
+        {
+            OnPlayersWon();
+        }
+        
+    }
+
+    private void OnPlayersLost()
+    {
+        if(lostGame)
+            return; 
+        Debug.Log("Players Lost");
+        if(players!= null)
+        {
+            players[0].SetActive(false);
+            Destroy(players[0]);
+            players.Clear();
+        }
+
+        lostGame = true;
+        UIController.Instance.SwitchUI(UIIndex.DeathPanel);
+    }
+
+    private void OnPlayersWon()
+    {
+        Debug.Log("Players Won");
+        ChangeCurrency(100 + 100 * roundNo, true);
+
+        UIController.Instance.SwitchUI(UIIndex.RoundFinished);
+    }
+
+    public void ChangeCurrency(int amount, bool gold)
+    {
+        if (gold)
+            getcurrencyData.gold = getcurrencyData.gold + amount;
+        else
+            getcurrencyData.manaStone = getcurrencyData.manaStone + amount;
+    }
+
+    public void CleanUpPlayer()
+    {
+        foreach (GameObject player in players)
+        {
+            Destroy(player);
+        }
+        players.Clear();
+    }
+
+    public void ResetCurrency()
+    {
+        getcurrencyData.gold = 0;
+        getcurrencyData.manaStone = 0;
+    }
+
+    public void GenerateNextRound()
+    {
+        roundNo += 1;
+        UIController.Instance.getGameView.ResetGame();
+
+    }
+
+}
+
+
+
+// FILE: Scripts\General\JsonManager.cs
+using System;
+using UnityEngine;
+using System.IO;
+using Microsoft.CodeAnalysis.Scripting;
+using System.Collections.Generic;
+using Microsoft.CodeAnalysis.CSharp.Scripting;
+using System.Reflection;
+
+public class JsonManager : MonoBehaviour
+{
+    public static JsonManager Instance { get; private set; }
+
+    [Header("Directory Settings")]
+    public string location = "Assets/Spells";
+    public string playerLocation = "Assets/PlayerPool";
+    private string FolderPath => Path.Combine(Application.dataPath, location.Replace("Assets/", ""));
+    private string playerFolderPath => Path.Combine(Application.dataPath, playerLocation.Replace("Assets/", ""));
+
+    // Dictionary to store precompiled spell runners
+    public Dictionary<Spell, ScriptRunner<object>> compiledSpells = new Dictionary<Spell, ScriptRunner<object>>();
+
+    [Header("Latest Spell")]
+    public Spell current;
+
+    private void Awake()
+    {
+        Instance = this;
+        // Singleton setup
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        PrecompileAllSpells();
+    }
+
+    private void PrecompileAllSpells()
+    {
+        string[] files = Directory.GetFiles(FolderPath, "*.json");
+        foreach (string file in files)
+        {
+            string json = File.ReadAllText(file);
+            Spell spell = JsonUtility.FromJson<Spell>(json);
+            PrecompileSpell(spell);
+        }
+
+        files = Directory.GetFiles(playerFolderPath, "*.json");
+        foreach (string file in files)
+        {
+            string json = File.ReadAllText(file);
+            Spell spell = JsonUtility.FromJson<Spell>(json);
+            PrecompileSpell(spell);
+        }
+    }
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        ClearJsonInFolder();
+        DontDestroyOnLoad(gameObject); // Keep it across scenes
+
+        // Ensure the folder exists inside project
+        if (!Directory.Exists(FolderPath))
+        {
+            Directory.CreateDirectory(FolderPath);
+            Debug.Log($"Created folder at {FolderPath}");
+        }
+        if (!Directory.Exists(playerFolderPath))
+        {
+            Directory.CreateDirectory(playerFolderPath);
+            Debug.Log($"Created folder at {playerFolderPath}");
+        }
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    public Spell ReturnRandomSpell()
+    {
+        string[] files = Directory.GetFiles(FolderPath, "*.json");
+
+        if (files.Length == 0)
+        {
+            Debug.LogWarning("No spell files found in " + FolderPath);
+            return null;
+        }
+
+        // Pick a random file
+        string randomFile = files[UnityEngine.Random.Range(0, files.Length)];
+        string json = File.ReadAllText(randomFile);
+        Spell spell = JsonUtility.FromJson<Spell>(json);
+
+        Debug.Log($"Loaded Spell: {spell.name}");
+        PrecompileSpell(spell);
+        return spell;
+    }
+
+    public Spell ReturnPlayerSpell(int index)
+    {
+        string[] files = Directory.GetFiles(playerFolderPath, "*.json");
+
+        if (files.Length == 0)
+        {
+            Debug.LogWarning("No spell files found in " + playerFolderPath);
+            return null;
+        }
+
+        if (index < 0 || index >= files.Length)
+        {
+            Debug.LogWarning($"Invalid spell index {index}. Only {files.Length} spell files found.");
+            return null;
+        }
+
+        string json = File.ReadAllText(files[index]);
+        Spell spell = JsonUtility.FromJson<Spell>(json);
+
+        Debug.Log($"Loaded Spell: {spell.name}");
+        PrecompileSpell(spell);
+        return spell;
+    }
+    public void OnApplicationQuit()
+    {
+        ClearJsonInFolder();
+    }
+    public void CreateJsonFile(Spell spell)
+    {
+        if (string.IsNullOrEmpty(spell.name))
+        {
+            Debug.LogError("Spell name cannot be empty!");
+            return;
+        }
+
+        string filePath = Path.Combine(FolderPath, spell.name + ".json");
+        string json = JsonUtility.ToJson(spell, true);
+        File.WriteAllText(filePath, json);
+
+        Debug.Log($"Saved spell '{spell.name}' to {filePath}");
+    }
+    public void ClearJsonInFolder()
+    {
+        try
+        {
+            string[] files = Directory.GetFiles(playerFolderPath, "*.json");
+            foreach (string file in files)
+            {
+                File.Delete(file);
+                Debug.Log($"Deleted spell file: {file}");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error clearing spell files: {e.Message}");
+        }
+    }
+
+    private void PrecompileSpell(Spell spell)
+    {
+        SpellFunction.Instance.PrecompileSpell(spell);
+    }
+
+    // Moves all player spells (json files) from the player folder into the main spells folder.
+    // If overwrite is true existing files in the destination will be replaced.
+    public void MovePlayerSpellsToSpells(bool overwrite = true)
+    {
+        try
+        {
+            // Determine source directory (configured or fallback to Assets/PlayerSpells)
+            string sourceDir = playerFolderPath;
+            if (!Directory.Exists(sourceDir))
+            {
+                string fallback = Path.Combine(Application.dataPath, "PlayerSpells");
+                if (Directory.Exists(fallback))
+                {
+                    sourceDir = fallback;
+                    Debug.Log($"Player spells folder not found at configured path; using fallback: {fallback}");
+                }
+                else
+                {
+                    Debug.LogWarning($"No player spells folder found at '{playerFolderPath}' or fallback '{fallback}'. Nothing to move.");
+                    return;
+                }
+            }
+
+            if (!Directory.Exists(FolderPath))
+            {
+                Directory.CreateDirectory(FolderPath);
+            }
+
+            string[] files = Directory.GetFiles(sourceDir, "*.json");
+            if (files.Length == 0)
+            {
+                Debug.Log("No player spell JSON files to move.");
+                return;
+            }
+
+            foreach (string srcFile in files)
+            {
+                string fileName = Path.GetFileName(srcFile);
+                string destFile = Path.Combine(FolderPath, fileName);
+
+                if (File.Exists(destFile))
+                {
+                    if (overwrite)
+                    {
+                        File.Delete(destFile);
+                    }
+                    else
+                    {
+                        Debug.Log($"Skipping move for '{fileName}' � destination already exists.");
+                        continue;
+                    }
+                }
+
+                File.Move(srcFile, destFile);
+                Debug.Log($"Moved player spell '{fileName}' to main spells folder.");
+
+                // Precompile the newly moved spell
+                try
+                {
+                    string json = File.ReadAllText(destFile);
+                    Spell spell = JsonUtility.FromJson<Spell>(json);
+                    if (spell != null)
+                        PrecompileSpell(spell);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"Failed to precompile moved spell '{fileName}': {ex.Message}");
+                }
+            }
+
+#if UNITY_EDITOR
+            // Refresh AssetDatabase so Editor sees moved files
+            UnityEditor.AssetDatabase.Refresh();
+#endif
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error moving player spells: {e.Message}");
+        }
+    }
+}
+
+
+
+// FILE: Scripts\General\Projectile.cs
+using UnityEngine;
+
+public class Projectile : MonoBehaviour
+{
+    public GameObject target;
+    public Stats targetStats;
+    public Vector3 targetTransform;
+    public bool isDestroyed = false;
+
+    void Update()
+    {
+        if (target == null || targetStats == null || targetStats.isDead)
+        {
+            if(Vector3.Distance(transform.position, targetTransform) < 0.05f)
+                Destroy(gameObject);
+        }
+    }
+
+    void OnDestroy()
+    {
+        isDestroyed = true;
+    }
+}
+
+
+
+// FILE: Scripts\General\Spell.cs
+using UnityEngine;
+
+[System.Serializable]
+public class Spell
+{
+    public int damage;
+    public int accuracy;
+    public int resourceCost;
+    public int range;
+    public int selfDamage;
+    public bool support;
+    public string name;
+    public string description;
+    public string code;
+
+    public float ColorR;
+    public float ColorG;
+    public float ColorB;
+    public string status;
+    public int statusDuration;
+    public int statusDamagePerTurn;
+
+}
+
+
+
+// FILE: Scripts\General\SpellFunction.cs
+using UnityEngine;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Scripting;
+using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.Scripting.Hosting;
+using System;
+using System.Linq;
+using System.Reflection;
+using System.Collections.Generic;
+
+public class SpellFunction : MonoBehaviour
+{
+    private Dictionary<Spell, ScriptRunner<object>> compiledSpells = new Dictionary<Spell, ScriptRunner<object>>();
+
+    public static SpellFunction Instance { get; private set; }
+
+    public Spell spell;
+    public GameObject from;
+    public GameObject to;
+
+    private void Awake()
+    {
+        // Singleton setup
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+    }
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    public void SetVariables(Spell spell, GameObject from, GameObject to)
+    {
+        this.spell = spell;
+        this.from = from;
+        this.to = to;
+    }
+
+    public void CustomSpellFunction()
+    {
+        if (spell == null)
+        {
+            Debug.LogWarning("No spell selected!");
+            return;
+        }
+
+        // Check if spell is precompiled
+        if (compiledSpells.TryGetValue(spell, out var runner))
+        {
+            // Already compiled, just run it
+            var globals = new SpellGlobals { spell = spell, from = from, to = to };
+            runner(globals).Wait();
+        }
+        else
+        {
+            // Not compiled yet, precompile and run
+            PrecompileSpell(spell);
+
+            if (compiledSpells.TryGetValue(spell, out runner))
+            {
+                var globals = new SpellGlobals { spell = spell, from = from, to = to };
+                runner(globals).Wait();
+            }
+            else
+            {
+                Debug.LogError($"Failed to compile spell '{spell.name}'");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Precompiles a spell and stores its runner for instant execution later.
+    /// </summary>
+    public void PrecompileSpell(Spell spell)
+    {
+        if (spell == null)
+        {
+            Debug.LogWarning("Cannot precompile a null spell.");
+            return;
+        }
+
+        // Skip if already compiled
+        if (compiledSpells.ContainsKey(spell))
+            return;
+
+        try
+        {
+            var options = ScriptOptions.Default
+                .WithReferences(
+                    Assembly.GetAssembly(typeof(GameObject)),          // UnityEngine.GameObject
+                    Assembly.GetAssembly(typeof(UnityEngine.Object)), // UnityEngine.Object
+                    typeof(System.Linq.Enumerable).Assembly,         // System.Linq
+                    Assembly.Load("Assembly-CSharp")                  // Your game assembly (Stats, Player, etc.)
+                )
+                .WithImports(
+                    "System",
+                    "UnityEngine",
+                    "System.Linq",
+                    "System.Collections.Generic"
+                );
+
+            // Create the script
+            var script = CSharpScript.Create(spell.code, options, typeof(SpellGlobals));
+
+            // Compile only to check for errors
+            var compilationDiagnostics = script.Compile();
+
+            // Check for errors
+            bool hasErrors = false;
+            foreach (var diag in compilationDiagnostics)
+            {
+                if (diag.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)
+                {
+                    hasErrors = true;
+                    Debug.LogError($"[Spell Compilation Error] Spell '{spell.name}': {diag.GetMessage()}");
+                }
+            }
+
+            if (hasErrors)
+            {
+                Debug.LogWarning($"Spell '{spell.name}' was not compiled due to errors.");
+                return; // Stop here, don't store an invalid runner
+            }
+
+            // Create and store delegate
+            var runner = script.CreateDelegate();
+            compiledSpells[spell] = runner;
+
+            Debug.Log($"Spell '{spell.name}' successfully precompiled!");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Unexpected error while precompiling spell '{spell.name}': {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Executes a precompiled spell.
+    /// </summary>
+    public void UsePrecompiledSpell(Spell spell, GameObject from, GameObject to)
+    {
+        if (!compiledSpells.TryGetValue(spell, out var runner))
+        {
+            Debug.LogWarning($"Spell '{spell.name}' not precompiled, compiling now...");
+            PrecompileSpell(spell);
+            runner = compiledSpells[spell];
+        }
+
+        var globals = new SpellGlobals { spell = spell, from = from, to = to };
+        runner(globals).Wait();
+    }
+}
+
+public class SpellGlobals
+{
+    public Spell spell;
+    public GameObject from;
+    public GameObject to;
+}
+
+
+
+// FILE: Scripts\General\Stats.cs
+using JetBrains.Annotations;
+using NUnit.Framework;
+using System.Collections.Generic;
+using TMPro;
+using System;
+using UnityEngine;
+
+public class Stats : MonoBehaviour
+{
+    public int maxHealth = 100;
+    public int maxResource = 100;
+    public bool isDead = false;
+
+    public int health = 100;
+    public int armor = 0;
+    public int resource = 100;
+
+    public List<Status> statuses = new List<Status>();
+
+    public GameObject floatingTextPrefab;
+
+    public GameObject uiStatsHolder;
+
+
+    private void OnEnable()
+    {
+        uiStatsHolder = UIController.Instance.getGameView.playerStatsHolder;
+    }
+    public enum Type
+    {
+        Attack,
+        Support
+    }
+    public Type type = Type.Attack;
+
+    void Start()
+    {
+        health = maxHealth;
+        resource = maxResource;
+        if (gameObject.tag == "Player")
+        {
+            UpdateStatsHolder();
+        }
+    }
+
+    void Update()
+    {
+        
+    }
+
+    public void takeDamage(int damage)
+    {
+        damage = Mathf.FloorToInt(damage * (100f / (100f + armor)));
+        Debug.Log("Damage after armor calculation: " + damage);
+        health -= damage;
+        if (damage >= 0)
+        {
+            ShowFloatingText(damage.ToString(), Color.red);
+        }
+        else
+        {
+            ShowFloatingText((damage * -1).ToString(), Color.green);
+        }
+
+        if (health <= 0 && !isDead)
+        {
+            Debug.Log("Gameobject " + gameObject.name + " died");
+            isDead = true;
+            OnDead();
+        }
+
+        if(gameObject.tag == "Player")
+        {
+            UpdateStatsHolder();
+        }
+    }
+
+    public void takeDamage(int damage, Color color)
+    {
+        health -= damage;
+        ShowFloatingText(damage.ToString(), Color.yellow);
+
+        if (health <= 0 && !isDead)
+        {
+            Debug.Log("Gameobject " + gameObject.name + " died");
+            isDead = true;
+            OnDead();
+        }
+    }
+
+    public void StatusDamage(string name, int duration, int dot)
+    {
+        if (dot <=0)
+            return;
+
+        Debug.Log($"Applying status {name} ({duration} turns, {dot} dmg per turn) to {gameObject.name}");
+
+        Status existing = statuses.Find(s => s.name == name);
+        if (existing != null)
+        {
+            existing.turnsLeft += duration;
+            existing.dotDamage = Mathf.Max(existing.dotDamage, dot);
+        }
+        else
+        {
+            statuses.Add(new Status(name, duration, dot));
+        }
+    }
+
+    public void TakeStatusDamage()
+    {
+        if (statuses.Count == 0) return;
+        List<Status> expired = new List<Status>();
+
+        foreach (Status s in statuses)
+        {
+            if (s.turnsLeft > 0)
+            {
+                takeDamage(s.dotDamage, Color.yellow);
+                s.turnsLeft--;
+                Debug.Log($"{gameObject.name} takes {s.dotDamage} {s.name} damage ({health} HP left)");
+
+                if (s.turnsLeft <= 0)
+                {
+                    expired.Add(s);
+                }
+            }
+        }
+
+        foreach (Status s in expired)
+        {
+            Debug.Log($"{s.name} expired on {gameObject.name}");
+            statuses.Remove(s);
+        }
+    }
+
+    private void ShowFloatingText(string text, Color color)
+    {
+        if (floatingTextPrefab == null) return;
+
+        Vector3 spawnPos = transform.position + Vector3.up * 2f;
+        GameObject go = Instantiate(floatingTextPrefab, spawnPos, Quaternion.identity);
+        go.GetComponent<FloatingDamageNumber>().Initialize(text, color);
+    }
+
+    public void UpdateStatsHolder()
+    {
+        if(uiStatsHolder != null)
+        {
+            uiStatsHolder.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = "Health : " + health + "/" + maxHealth;
+            uiStatsHolder.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "Resource : " + resource + "/" + maxResource;
+        }
+    }
+
+    public void OnDead()
+    {
+        // prevent repeated execution
+        isDead = true;
+
+        // If this is an enemy, remove it from EnemyManager and GameManager lists,
+        // clear its tile occupant and destroy the GameObject.
+        Enemy enemyComp = GetComponent<Enemy>();
+        if (enemyComp != null)
+        {
+            if (EnemyManager.Instance != null)
+            {
+                EnemyManager.Instance.enemies.Remove(enemyComp);
+            }
+
+            if (GameManager.Instance != null && GameManager.Instance.enemies.Contains(gameObject))
+            {
+                GameManager.Instance.enemies.Remove(gameObject);
+            }
+
+            GridManager gm = GridManager.Instance;
+            if (gm != null)
+            {
+                Tile t = gm.GetTile(enemyComp.gridPosition);
+                if (t != null && t.occupant == gameObject)
+                    t.occupant = null;
+            }
+
+            GameManager.Instance?.CheckGameState();
+
+            Destroy(gameObject);
+            return;
+        }
+
+        // If this is a player, move their spells to the main spells folder,
+        // disable player functionality and update UI/state.
+        if (gameObject.CompareTag("Player"))
+        {
+            // Move player spells into the main Spells folder (overwrite if necessary)
+            try
+            {
+                JsonManager.Instance?.MovePlayerSpellsToSpells(true);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Failed to move player spells on death: {ex.Message}");
+            }
+
+            // disable player control component to avoid further input
+            PlayerFunctionality pf = GetComponent<PlayerFunctionality>();
+            if (pf != null)
+            {
+                pf.enabled = false;
+            }
+
+            UpdateStatsHolder();
+            GameManager.Instance?.CheckGameState();
+        }
+    }
+}
+
+[System.Serializable]
+public class Status
+{
+    public string name;
+    public int turnsLeft;
+    public int dotDamage;
+
+    public Status(string name, int duration, int dot)
+    {
+        this.name = name;
+        this.turnsLeft = duration;
+        this.dotDamage = dot;
+    }
+}
+
+
+
+// FILE: Scripts\General\TurnManager.cs
+using NUnit.Framework.Interfaces;
+using System.Collections;
+using UnityEngine;
+using UnityEngine.Events;
+
+public class TurnManager : MonoBehaviour
+{
+    public EnemyManager enemyManager;
+    public TurnState currentState = TurnState.PlayerTurn;
+
+    public bool waitButton = true; //True = enemy turn starts after player presses button
+    public bool waitTurn = false; //False = enemy turn proceeds immediately after each other
+    public float waitDuration = 1f;
+    private bool buttonPressed = false;
+
+    private bool isTakingTurn;
+
+
+    public static TurnManager Instance { get; private set; }
+    public enum TurnState
+    {
+        PlayerTurn,
+        EnemyTurn,
+        Waiting
+    }
+
+    private void Awake()
+    {
+        Instance = this;
+        // Singleton setup
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        
+    }
+    void Start()
+    {
+        if (enemyManager == null)
+        {
+            Debug.Log("TurnManager: enemyManager not found. Attempting to find");
+            enemyManager = GameObject.FindAnyObjectByType<EnemyManager>();
+        }
+    }
+
+    void Update()
+    {
+        // Force switch turn
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            if (GameManager.Instance.players.Count > 0)
+            {
+                WaitButtonPressed();
+            }
+        }
+    }
+
+    public void EndPlayerTurn()
+    {
+        if (currentState != TurnState.PlayerTurn) return;
+
+        Debug.Log("Player turn ended. Starting enemy turn...");
+
+        // Immediately clear player UI/selection/highlights so tiles are not left visible
+        if (GameManager.Instance != null && GameManager.Instance.players != null)
+        {
+            foreach (var playerObj in GameManager.Instance.players)
+            {
+                if (playerObj == null) continue;
+                var pf = playerObj.GetComponent<PlayerFunctionality>();
+                if (pf != null)
+                {
+                    // ResetTurn clears highlighted tiles and selected spell
+                    pf.ResetTurn();
+                }
+            }
+        }
+
+        currentState = TurnState.EnemyTurn;
+        StartCoroutine(HandleEnemyTurn());
+
+        GameManager.Instance.CheckGameState();
+    }
+
+    private IEnumerator HandleEnemyTurn()
+    {
+        if(GameManager.Instance.players.Count == 0)
+        {
+            Debug.Log("No players found. Skipping enemy turn.");
+            yield break;
+        }
+        // Tell the enemies to act
+        yield return StartCoroutine(StartEnemyTurnsCoroutine());
+
+        GameManager.Instance.CheckGameState();
+        Debug.Log("Enemy turn complete. Back to player turn.");
+        currentState = TurnState.PlayerTurn;
+        GameManager.Instance.players[0].GetComponent<PlayerFunctionality>().OnTurnStart();
+
+        foreach (var enemy in EnemyManager.Instance.enemies)
+        {
+            enemy.GetComponent<Enemy>().virtualCamera.Priority = 9; 
+        }
+
+        // Reset player movement for next turn
+        var player = FindAnyObjectByType<PlayerFunctionality>();
+        if (player != null)
+            player.ResetTurn();
+    }
+
+    public void WaitButtonPressed()
+    {
+        if (TurnManager.Instance.currentState == TurnManager.TurnState.PlayerTurn)
+            EndPlayerTurn();
+        else if(TurnManager.Instance.currentState == TurnManager.TurnState.EnemyTurn)
+            buttonPressed = true;
+    }
+
+    public IEnumerator StartEnemyTurnsCoroutine()
+    {
+        if (isTakingTurn)
+            yield break;
+
+        isTakingTurn = true;
+        yield return StartCoroutine(EnemyTurnRoutine());
+        isTakingTurn = false;
+    }
+
+    private IEnumerator EnemyTurnRoutine()
+    {
+        buttonPressed = false;
+        isTakingTurn = true;
+
+        foreach (var enemy in EnemyManager.Instance.enemies)
+        {
+            if (!enemy.gameObject.activeSelf)
+            {
+                continue;
+            }
+            enemy.GetComponent<Stats>().TakeStatusDamage();
+            yield return enemy.TakeTurn(() => { });
+
+            if (waitTurn)
+            {
+                yield return new WaitForSeconds(waitDuration);
+            }
+            else if (waitButton)
+            {
+                while (!buttonPressed)
+                {
+                    yield return null;
+                }
+                buttonPressed = false;
+            }
+        }
+
+        isTakingTurn = false;
+        Debug.Log("All enemies finished their turns!");
+    }
+
+}
+
+
+
+// FILE: Scripts\LLM\GeneratedScriptData.cs
+using System;
+using UnityEngine;
+[Serializable]
+public class GeneratedScriptData
+{
+    public string target;      // ex. "Player", "Projectile"
+    public string scriptName;  // ex. "ExplodingProjectile"
+    public string script; //code
+}
+
+
+
+// FILE: Scripts\LLM\GeneratedSkillData.cs
+using UnityEngine;
+
+[System.Serializable]
+public class GeneratedSkillData
+{
+    public string filePath;       
+    public string jsonContent;    
+    public Spell spellData;
+}
+
+
+
+// FILE: Scripts\LLM\JsonNameSaver.cs
+using UnityEngine;
+
+public class JsonNameSaver
+{
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+}
+
+
+
+// FILE: Scripts\LLM\LLMController.cs
+using System.Collections;
+using System.IO;
+using UnityEngine;
+using UnityEngine.Networking;
+using System.Text;
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine.Events;
+using Newtonsoft.Json;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System;
+
+
+public class LLMController : MonoBehaviour
+{
+    [Header("UI References")]
+    public List<TMP_InputField> skillInputs;
+    public string apiKey;
+    public string model = "gpt-4o-mini";
+    [Header("Events")]
+    public UnityEvent onJsonGenerated;
+    private bool isGenerating = false;
+    public string promptFileName = "LLMTrainer";
+    private string loadedPrompt;
+
+    public List<GeneratedSkillData> generatedSkills = new List<GeneratedSkillData>();
+
+    public UnityEvent onSpellReplaced;
+
+    private void Awake()
+    {
+        var config = OpenAIConfig.LoadConfig();
+        if (config == null)
+        {
+            Debug.LogError("Could not load OpenAI configuration file.");
+            return;
+        }
+
+        apiKey = config.apiKey;
+        model = string.IsNullOrEmpty(config.model) ? "gpt-4o-mini" : config.model;
+        TextAsset promptFile = Resources.Load<TextAsset>(promptFileName);
+        if (promptFile != null)
+        {
+            loadedPrompt = promptFile.text;
+        }
+        else
+        {
+            Debug.LogError("Prompt file not found in Resources!");
+            loadedPrompt = "";
+        }
+
+        Debug.Log("OpenAI configuration loaded successfully.");
+    }
+    public void OnGenerateSkillsButton()
+    {
+        if (isGenerating)
+        {
+            Debug.LogWarning("Skill generation already in progress...");
+            return;
+        }
+        Debug.Log("generating skill from LLM");
+        StartCoroutine(GenerateAllSkills());
+    }
+
+    private IEnumerator GenerateAllSkills()
+    {
+        isGenerating = true;
+        generatedSkills.Clear();
+        // Make sure the Skills folder exists
+        string skillsPath = Path.Combine(Application.dataPath, "Spells");
+        if (!Directory.Exists(skillsPath))
+            Directory.CreateDirectory(skillsPath);
+
+        for (int i = 0; i < skillInputs.Count; i++)
+        {
+            string prompt = skillInputs[i].text.Trim();
+
+            if (string.IsNullOrEmpty(prompt))
+            {
+                Debug.LogWarning($"Skill input {i + 1} is empty — skipping.");
+                continue;
+            }
+
+            yield return StartCoroutine(GenerateSkill(prompt, i + 1));
+        }
+
+        Debug.Log("All skill JSON files generated!");
+        isGenerating = false;
+        onJsonGenerated?.Invoke();
+    }
+    private IEnumerator GenerateSkill(string prompt, int skillIndex)
+    {
+        Debug.Log($"Generating skill {skillIndex}: {prompt}");
+
+        // Run the async skill generation as a task
+        Task<string> skillTask = GenerateSkillFromLLM(prompt);
+        yield return new WaitUntil(() => skillTask.IsCompleted);
+
+        if (skillTask.Result == null)
+        {
+            Debug.LogError($"Skill {skillIndex} generation failed.");
+            yield break;
+        }
+
+        string skillJson = ExtractJsonFromResponse(skillTask.Result);
+        if (string.IsNullOrEmpty(skillJson))
+        {
+            Debug.LogError($"Skill {skillIndex} JSON extraction failed.");
+            yield break;
+        }
+
+        // Save the JSON file
+        Spell spell = new Spell();
+        string fileName = $"{prompt.Replace(" ", "_")}.json";
+        string assetFolder = Path.Combine(Application.persistentDataPath, "PlayerSpells");
+        string streamingFolder = Path.Combine(Application.streamingAssetsPath, "PlayerSpells");
+        if (!Directory.Exists(assetFolder))
+            Directory.CreateDirectory(assetFolder);
+        if (!Directory.Exists(streamingFolder)) Directory.CreateDirectory(streamingFolder);
+        try
+        {
+            spell = JsonConvert.DeserializeObject<Spell>(skillJson);
+            if (spell == null || string.IsNullOrWhiteSpace(spell.name))
+            {
+                Debug.LogError($"Skill {skillIndex} JSON was invalid or missing skillName.");
+                yield break;
+            }
+
+            // Clean filename
+            fileName = $"{spell.name.Replace(" ", "_")}.json";
+
+            // Final paths
+            string assetPath = Path.Combine(assetFolder, fileName);
+            string streamingPath = Path.Combine(streamingFolder, fileName);
+
+            // Save to Assets/PlayerSpells
+            File.WriteAllText(assetPath, skillJson);
+
+            // Save to StreamingAssets/PlayerSpells
+            File.WriteAllText(streamingPath, skillJson);
+
+#if UNITY_EDITOR
+            UnityEditor.AssetDatabase.Refresh();
+#endif
+
+            generatedSkills.Add(new GeneratedSkillData
+            {
+                filePath = assetPath,
+                jsonContent = skillJson,
+                spellData = spell
+            });
+
+            Debug.Log($"Skill {skillIndex} saved to:\n{assetPath}\n{streamingPath}");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Failed to save skill {skillIndex}: {ex.Message}");
+        }
+    }
+    private async Task<string> GenerateSkillFromLLM(string prompt)
+    {
+        string endpoint = "https://api.openai.com/v1/chat/completions";
+
+        // Define what we want the model to output
+        string skillPrompt =
+            $"Generate a JSON object representing a game skill with the following fields: " +
+            $"The skill concept is: {prompt}. " +
+            $"Output only valid JSON without code blocks or explanations.";
+        skillPrompt += loadedPrompt;
+        string allScripts = LoadAllProjectScripts("Scripts");
+        string spellsRef = LoadAllProjectScripts("SpellReference");
+        Debug.Log("scripts are " + allScripts);
+        // Build the OpenAI chat request
+        ChatRequest requestData = new ChatRequest
+        {
+            model = model,
+            messages = new List<ChatMessage>
+        {
+            new ChatMessage
+            {
+                role = "system",
+                content = "You are a helpful assistant that outputs only clean JSON data for Unity games. " +
+                          allScripts +
+                          "Never include code fences, markdown, or explanations — just valid JSON."+
+                          $"Balance the spell with this values: {spellsRef}. " +
+                          loadedPrompt
+            },
+            new ChatMessage
+            {
+                role = "user",
+                content = skillPrompt
+            }
+        },
+            temperature = 0.7f
+        };
+
+        // Serialize the request body
+        string jsonBody = JsonConvert.SerializeObject(requestData);
+
+        using (UnityWebRequest request = new UnityWebRequest(endpoint, "POST"))
+        {
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.SetRequestHeader("Authorization", "Bearer " + apiKey);
+
+            var operation = request.SendWebRequest();
+            while (!operation.isDone)
+                await Task.Yield();
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError($"Request failed: {request.error}\n{request.downloadHandler.text}");
+                return null;
+            }
+
+            try
+            {
+                // Deserialize the response
+                OpenAIChatResponse response = JsonConvert.DeserializeObject<OpenAIChatResponse>(request.downloadHandler.text);
+
+                // Extract the JSON content (the actual skill)
+                string jsonContent = response?.choices?[0]?.message?.content?.Trim();
+
+                // Optional: remove markdown code fences if model includes them accidentally
+                if (!string.IsNullOrEmpty(jsonContent))
+                {
+                    jsonContent = Regex.Replace(jsonContent, @"^```(json)?|```$", "", RegexOptions.Multiline).Trim();
+                }
+
+                return jsonContent;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"JSON parse error: {e.Message}\nResponse: {request.downloadHandler.text}");
+                return null;
+            }
+        }
+    }
+    private string ExtractJsonFromResponse(string response)
+    {
+        // Simple JSON extraction from the LLM reply
+        int start = response.IndexOf('{');
+        int end = response.LastIndexOf('}');
+        if (start >= 0 && end > start)
+            return response.Substring(start, end - start + 1);
+        return null;
+    }
+
+    private string LoadAllProjectScripts(string FolderName)
+    {
+        string allScriptsPath = Path.Combine(Application.streamingAssetsPath, "Scripts", "AllScripts.txt");
+
+        if (!File.Exists(allScriptsPath))
+        {
+            Debug.LogWarning($"AllScripts.txt not found at {allScriptsPath}");
+            return "";
+        }
+
+        try
+        {
+            return File.ReadAllText(allScriptsPath);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Failed to read AllScripts.txt: {ex.Message}");
+            return "";
+        }
+    }
+
+    public void ShowGeneratedSpell()
+    {
+        for(int i = 0; i < generatedSkills.Count; i++)
+        {
+            UIController.Instance.getGeneratedSpellView.SetGeneratedSpellInfo(i, generatedSkills[i].spellData);
+            Debug.Log("Showing Skill");
+        }
+        
+    }
+    public IEnumerator GenerateAndReplaceSpell(string prompt, int spellIndex)
+    {
+        Debug.Log($"Regenerating spell at index {spellIndex} with prompt: {prompt}");
+
+        // --- RUN LLM REQUEST ---
+        Task<string> skillTask = GenerateSkillFromLLM(prompt);
+        yield return new WaitUntil(() => skillTask.IsCompleted);
+
+        if (skillTask.Result == null)
+        {
+            Debug.LogError($"Failed to regenerate spell {spellIndex}.");
+            yield break;
+        }
+
+        string skillJson = ExtractJsonFromResponse(skillTask.Result);
+        if (string.IsNullOrEmpty(skillJson))
+        {
+            Debug.LogError($"No valid JSON returned for spell {spellIndex}.");
+            yield break;
+        }
+
+        try
+        {
+            // --- DESERIALIZE NEW SPELL ---
+            Spell newSpell = JsonConvert.DeserializeObject<Spell>(skillJson);
+            if (newSpell == null || string.IsNullOrWhiteSpace(newSpell.name))
+            {
+                Debug.LogError($"Invalid JSON when regenerating spell {spellIndex}.");
+                yield break;
+            }
+
+            // --- FOLDERS ---
+            string assetsFolder = Path.Combine(Application.persistentDataPath, "PlayerSpells");
+            string streamingFolder = Path.Combine(Application.streamingAssetsPath, "PlayerSpells");
+
+            if (!Directory.Exists(assetsFolder)) Directory.CreateDirectory(assetsFolder);
+            if (!Directory.Exists(streamingFolder)) Directory.CreateDirectory(streamingFolder);
+
+            // --- FILENAMES ---
+            string fileName = $"{newSpell.name.Replace(" ", "_")}.json";
+
+            string assetPath = Path.Combine(assetsFolder, fileName);
+            string streamingPath = Path.Combine(streamingFolder, fileName);
+
+            // --- DELETE OLD FILE IF THE NAME CHANGED ---
+            if (spellIndex < generatedSkills.Count)
+            {
+                string oldPath = generatedSkills[spellIndex].filePath;
+
+                if (File.Exists(oldPath) &&
+                    !oldPath.Equals(assetPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    File.Delete(oldPath);
+                    Debug.Log("Deleted old spell file: " + oldPath);
+                }
+            }
+
+            // --- ALWAYS OVERWRITE (WriteAllText overwrites by default) ---
+            File.WriteAllText(assetPath, skillJson);
+            File.WriteAllText(streamingPath, skillJson);
+
+#if UNITY_EDITOR
+            UnityEditor.AssetDatabase.Refresh();
+#endif
+
+            // --- UPDATE GENERATED SPELL LIST ---
+            if (spellIndex < generatedSkills.Count)
+            {
+                generatedSkills[spellIndex] = new GeneratedSkillData
+                {
+                    filePath = assetPath,
+                    jsonContent = skillJson,
+                    spellData = newSpell
+                };
+            }
+            else
+            {
+                generatedSkills.Add(new GeneratedSkillData
+                {
+                    filePath = assetPath,
+                    jsonContent = skillJson,
+                    spellData = newSpell
+                });
+            }
+
+            // --- UPDATE UI ---
+            UIController.Instance.getGeneratedSpellView.SetGeneratedSpellInfo(spellIndex, newSpell);
+
+            Debug.Log($"Spell {spellIndex} regenerated and saved at:\n{assetPath}\n{streamingPath}");
+            onSpellReplaced?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Error regenerating spell {spellIndex}: {ex.Message}");
+        }
+    }
+
+}
+
+
+
+// FILE: Scripts\LLM\LLMJsonGridCreator.cs
+using Newtonsoft.Json;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.Networking;
+
+public class LLMJsonGridCreator : MonoBehaviour
+{
+    public string apiKey;
+    public string model = "gpt-4o-mini";
+    public UnityEvent onJsonGenerated;
+    public UnityEvent JsonGenerationStarted;
+    private bool isGenerating = false;
+    [Header("Generation Settings")]
+    [Tooltip("Number of rounds to generate in one go")]
+    public int numberOfRounds = 1;
+    private int currentRound = 1;
+
+    private void Awake()
+    {
+        var config = OpenAIConfig.LoadConfig();
+        if (config == null)
+        {
+            Debug.LogError("Could not load OpenAI configuration file.");
+            return;
+        }
+
+        apiKey = config.apiKey;
+        model = string.IsNullOrEmpty(config.model) ? "gpt-4o-mini" : config.model;
+
+        Debug.Log("OpenAI configuration loaded successfully.");
+    }
+    public void Start()
+    {
+        StartJsonGeneration();
+    }
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    public void StartJsonGeneration()
+    {
+        if (isGenerating)
+        {
+            Debug.LogWarning("JSON generation is already in progress.");
+            return;
+        }
+        JsonGenerationStarted?.Invoke();
+        Debug.Log("Starting JSON generation...");
+        StartCoroutine(GenerateGridMapJson());
+    }
+
+    private IEnumerator GenerateGridMapJson()
+    {
+        isGenerating = true;
+
+        // Make sure the Grid folder exists
+        string GridPath = Path.Combine(Application.dataPath, "Resources", "Rounds");
+        if (!Directory.Exists(GridPath))
+            Directory.CreateDirectory(GridPath);
+        for (int i = 0; i < numberOfRounds; i++)
+        {
+            Task<string> Task = GenerateJsonFromLLM();
+            yield return new WaitUntil(() => Task.IsCompleted);
+
+            string generatedJson = Task.Result;
+
+            if (string.IsNullOrEmpty(generatedJson))
+            {
+                Debug.LogError("Generated JSON was null or empty.");
+                isGenerating = false;
+                yield break;
+            }
+
+            // Count existing round files to determine the next number
+            string[] existingFiles = Directory.GetFiles(GridPath, "Round_*.json");
+            int nextRoundNumber = existingFiles.Length + 1;
+            currentRound = existingFiles.Length + 1;
+
+            // Format the filename: Round_1.json, Round_2.json, etc.
+            string fileName = $"Round_{nextRoundNumber}.json";
+            string filePath = Path.Combine(GridPath, fileName);
+
+            // Save the JSON
+            File.WriteAllText(filePath, generatedJson);
+
+            Debug.Log("JSON saved to: " + filePath);
+            // Small delay to avoid overwhelming the API
+            yield return new WaitForSeconds(0.1f);
+        }
+        Debug.Log("All requested map JSON files generated!");
+        isGenerating = false;
+        onJsonGenerated?.Invoke();
+
+    }
+    private async Task<string> GenerateJsonFromLLM()
+    {
+        string endpoint = "https://api.openai.com/v1/chat/completions";
+        ChatRequest requestData = new ChatRequest
+        {
+            model = model,
+            messages = new List<ChatMessage>
+        {
+            new ChatMessage
+            {
+                role = "system",
+                content =  "You are a JSON generator. Output ONLY valid JSON (no comments, no markdown, no explanation). " +
+        "Do NOT claim to have performed searches or to have accessed external resources."
+
+            },
+            new ChatMessage
+            {
+                role = "user",
+                content = @"Generate a JSON object containing a field called ""mapData"". 
+                            Rules:
+                            - current round: " + currentRound + @"
+                            - mapData must be a 12x12 2D array and it will increaase with the current round number to the max of 20x20.
+                            - Each row must contain min of 12 integers and max of 20 integers.
+                            - Only use integers:
+                              0 = empty
+                              1 = wall
+                              2 = Enemy
+                              3 = Player
+                            - Include at least Two ""2"" and it will increaase with the current round number to the max of 6.
+                            - Must include 1 ""3"".
+                            - ""3"" must be placed on a cell that is not adjacent (horizontally, vertically, or diagonally) to any ""2"".
+                            - ""3"" must be at least 3 cell away from each ""2"".
+                            - Make sure ""1"" does not block off any section of the map completely.
+                            - All ""0""s must be reachable from any other ""0"" (no isolated sections).
+                            - Form logical room or corridor structures with clusters of ""1""s.
+                            - Output ONLY the final JSON (no comments, no markdown, no text).
+                                            Example format:
+                            {
+                              { ""mapData"": [ [0,0,0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0,0,0], [0,0,0,0,1,1,1,0,0,0,0,0], [0,0,0,0,1,0,0,0,0,0,0,0], [0,0,0,0,1,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,1,0,0,0,0,0], [0,0,0,0,0,0,1,0,0,0,0,0], [0,1,0,0,0,0,1,0,0,0,0,0], [0,1,0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0,0,0], [0,0,2,0,0,0,1,0,0,2,0,0] ] }
+                            }"
+            }
+        },
+            temperature = 0.7f
+        };
+        string jsonBody = JsonConvert.SerializeObject(requestData);
+
+        using (UnityWebRequest request = new UnityWebRequest(endpoint, "POST"))
+        {
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.SetRequestHeader("Authorization", "Bearer " + apiKey);
+
+            var operation = request.SendWebRequest();
+            while (!operation.isDone)
+                await Task.Yield();
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError($"Request failed: {request.error}\n{request.downloadHandler.text}");
+                return null;
+            }
+
+            try
+            {
+                // Deserialize the response
+                OpenAIChatResponse response = JsonConvert.DeserializeObject<OpenAIChatResponse>(request.downloadHandler.text);
+
+                // Extract the JSON content (the actual skill)
+                string jsonContent = response?.choices?[0]?.message?.content?.Trim();
+
+                // Optional: remove markdown code fences if model includes them accidentally
+                if (!string.IsNullOrEmpty(jsonContent))
+                {
+                    jsonContent = Regex.Replace(jsonContent, @"^```(json)?|```$", "", RegexOptions.Multiline).Trim();
+                }
+
+                return jsonContent;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"JSON parse error: {e.Message}\nResponse: {request.downloadHandler.text}");
+                return null;
+            }
+        }
+
+
+    }
+}
+
+
+
+// FILE: Scripts\LLM\OpenAIConfig.cs
+using System.IO;
+using System;
+using UnityEngine;
+
+[Serializable]
+public class OpenAIConfig
+{
+    public string apiKey;
+    public string model;
+
+    public static OpenAIConfig LoadConfig()
+    {
+        string path = Path.Combine(Application.streamingAssetsPath, "openai_config.json");
+
+        if (!File.Exists(path))
+        {
+            Debug.LogError($"Missing config file: {path}");
+            return null;
+        }
+
+        try
+        {
+            string json = File.ReadAllText(path);
+            OpenAIConfig config = JsonUtility.FromJson<OpenAIConfig>(json);
+            if (string.IsNullOrEmpty(config.apiKey))
+                Debug.LogWarning("API key is empty in openai_config.json");
+            return config;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Failed to load OpenAI config: {ex.Message}");
+            return null;
+        }
+    }
+}
+
+
+
+// FILE: Scripts\LLM\OpenAIScript.cs
+using System.Collections;
+using System.Text;
+using UnityEngine;
+using UnityEngine.Networking;
+using System.Text.RegularExpressions;
+using System.IO;
+using UnityEngine.Events;
+using System.Collections.Generic;
+
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+[System.Serializable]
+public class ChatRequest
+{
+    public string model;
+    public List<ChatMessage> messages;
+    public float temperature;
+}
+
+[System.Serializable]
+public class ChatMessage
+{
+    public string role;
+    public string content;
+}
+
+[System.Serializable]
+public class OpenAIChatResponse
+{
+    public Choice[] choices;
+}
+
+[System.Serializable]
+public class Choice
+{
+    public ChatMessage message;
+}
+
+public class OpenAIScript : MonoBehaviour
+{
+    public string apiKey;
+    public string model = "gpt-4o-mini";
+
+    public bool useBaseJsonAsExample = false;
+    public UnityEvent onJsonGenerated;
+
+    private ICustomBehavior currentBehavior;
+    private Player player;
+}
+
+
+
+// FILE: Scripts\Map\GridManager.cs
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
+[System.Serializable]
+public class MapData
+{
+    public int[][] mapData;
+}
+public class GridManager : MonoBehaviour
+{
+    [Header("Grid Settings")]
+    public int width = 10; 
+    public int height = 10;
+    public GameObject tilePrefab;
+    public GameObject obstaclePrefab;
+    public GameObject map;
+    public Tile[,] grid;
+
+
+    [Header("Enemy Settings")]
+    public GameObject EnemyHolder;
+    public int enemyCount = 3;
+    public EnemyManager enemyManager;
+    public GameObject enemyPrefab;
+
+    [Header("Player Settings")]
+    public GameObject playerPrefab;
+    private GameObject playerObj;
+
+    public static GridManager Instance { get; private set; }
+
+
+    public int[][] mapDetails;
+
+    void Awake()
+    {
+        Instance = this;
+        // Singleton setup
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        
+    }
+
+    public void ResetGame(int enemyCount = 3, float dmgMultiplier = 1)
+    {
+        Debug.Log("[GridManager] Resetting game...");
+        this.enemyCount = enemyCount;
+
+        // --- 0. Destroy all existing tiles ---
+        foreach (Transform child in map.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // Clear grid reference
+        //grid = new Tile[width, height];
+
+        // --- 1. Recreate the tile grid ---
+        /*for (int x = 0; x < width; x++)
+        {
+            for (int z = 0; z < height; z++)
+            {
+                var tileObj = Instantiate(tilePrefab, new Vector3(x, 0, z), Quaternion.identity);
+                tileObj.transform.parent = map.transform;
+                var tile = tileObj.GetComponent<Tile>();
+
+                tile.gridPosition = new Vector2Int(x, z);
+                grid[x, z] = tile;
+            }
+        }*/
+
+      
+
+
+        //// --- 2. Clear all tiles' occupants ---
+        //for (int x = 0; x < width; x++)
+        //{
+        //    for (int y = 0; y < height; y++)
+        //    {
+        //        if (grid[x, y] != null)
+        //            grid[x, y].occupant = null;
+        //    }
+        //}
+
+
+        // --- 3. Destroy existing enemies and player ---
+        // Destroy enemies
+        foreach (Transform child in EnemyHolder.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // Destroy player
+        if (playerObj != null)
+        {
+            Destroy(playerObj);
+            playerObj = null;
+        }
+
+        // --- 4. Clear manager lists ---
+        if (enemyManager != null)
+            enemyManager.enemies.Clear();
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.playerFunctionality.Clear();
+            GameManager.Instance.players.Clear();
+            GameManager.Instance.enemies.Clear();
+        }
+
+        mapDetails = LoadRoundMap(GameManager.Instance.roundNo);
+        BuildMapFromData();
+
+        // --- 5. Respawn everything ---
+        //SpawnPlayer();
+        //SpawnEnemies(enemyCount);
+
+        // --- 6. Reinitialize threat grid ---
+        if (enemyManager != null)
+        {
+            enemyManager.initializeThreatGrid(height, width);
+            enemyManager.SetEnemyMultipliers(dmgMultiplier);
+        }
+
+        Debug.Log("[GridManager] Game reset complete.");
+    }
+
+    public void NextRound()
+    {
+
+    }
+
+
+    public void Start()
+    {
+        //SpawnEnemies(enemyCount);
+
+        //enemyManager.initializeThreatGrid(height, width);   
+    }
+
+    public Tile GetTile(Vector2Int pos)
+    {
+        if (pos.x < 0 || pos.x >= width || pos.y < 0 || pos.y >= height)
+            return null;
+
+        return grid[pos.x, pos.y];
+    }
+
+    public void SpawnEnemies(int count)
+    {
+        // Get all tiles in the back row
+        List<Vector2Int> availablePositions = new List<Vector2Int>();
+        int backRowY = height - 1;
+
+        for (int x = 0; x < width; x++)
+        {
+            if (grid[x, backRowY].occupant == null)
+                availablePositions.Add(new Vector2Int(x, backRowY));
+        }
+
+        // Safety check
+        if (availablePositions.Count == 0)
+        {
+            Debug.LogWarning("No available tiles in the back row to spawn enemies!");
+            return;
+        }
+
+        // Clamp to avoid spawning more enemies than spaces
+        int spawnCount = Mathf.Min(count, availablePositions.Count);
+
+        for (int i = 0; i < spawnCount; i++)
+        {
+            // Pick a random free tile
+            if(availablePositions == null)
+            {
+                return;
+            }
+            int randomIndex = UnityEngine.Random.Range(0, availablePositions.Count);
+            Vector2Int pos = availablePositions[randomIndex];
+            availablePositions.RemoveAt(randomIndex); // prevent reusing the same tile
+
+            // Spawn enemy
+            var enemyObj = Instantiate(enemyPrefab);
+            enemyObj.name = "Enemy " + i;
+            enemyObj.transform.parent = EnemyHolder.transform;
+            enemyObj.transform.position = new Vector3(pos.x, 1.5f, pos.y);
+
+            // Initialize and register
+            var enemy = enemyObj.GetComponent<Enemy>();
+            enemy.Initialize(pos, this, playerObj);
+            enemyManager.AddEnemy(enemy);
+            GameManager.Instance.enemies.Add(enemyObj);
+
+            // Mark the tile as occupied
+            GetTile(pos).occupant = enemyObj;
+        }
+    }
+
+
+    private void SpawnPlayer(Vector2Int pos )
+    {
+        //Vector2Int playerStartPos = new Vector2Int(width / 2, 0); // center bottom of grid
+        var instantiatedPlayerObj = Instantiate(playerPrefab, new Vector3(pos.x, 1.5f, pos.y), Quaternion.identity);
+        playerObj = instantiatedPlayerObj;
+        GameManager.Instance.players.Add(playerObj);
+        GameManager.Instance.playerFunctionality.Add(playerObj.GetComponent<PlayerFunctionality>());
+        GetTile(pos).occupant = instantiatedPlayerObj;
+
+        var playerScript = instantiatedPlayerObj.GetComponent<PlayerFunctionality>();
+        if (playerScript != null)
+        {
+            playerScript.Initialize(pos, this);
+        }
+    }
+
+    public static int[][] LoadRoundMap(int roundNumber)
+    {
+        string fileName = $"Round_{roundNumber}";
+        string path = Path.Combine(Application.dataPath, "Resources", "Rounds", fileName + ".json");
+
+        if (!File.Exists(path))
+        {
+            Debug.LogError($"JSON file not found: {path}");
+            return null;
+        }
+
+        try
+        {
+            string jsonText = File.ReadAllText(path);
+            //MapData data = JsonUtility.FromJson<MapData>(jsonText);
+            MapData data = JsonConvert.DeserializeObject<MapData>(jsonText);
+
+
+            if (data == null || data.mapData == null)
+            {
+                Debug.LogError($"Invalid or empty map data in {fileName}.json");
+                return null;
+            }
+
+            return data.mapData;
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"Failed to load {fileName}.json: {ex.Message}");
+            return null;
+        }
+    }
+
+    public void BuildMapFromData()
+    {
+        if (mapDetails == null || mapDetails.Length == 0)
+        {
+            Debug.LogError("Map details are empty");
+            return;
+        }
+
+        height = mapDetails.Length;
+        width = mapDetails[0].Length;
+        grid = new Tile[width, height];
+
+        // Clear previous map
+        foreach (Transform child in map.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // Clear previous enemies
+        foreach (Transform child in EnemyHolder.transform)
+        {
+            Destroy(child.gameObject);
+        }
+        int count = 0;
+        // Create Grid
+        
+        List<Vector2Int> enemyPositions = new List<Vector2Int>();
+        for (int z = 0; z < height; z++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                Vector3 tilePos = new Vector3(x, 0.5f, z);
+                var tileObj = Instantiate(tilePrefab, tilePos, Quaternion.identity);
+                tileObj.transform.parent = map.transform;
+
+                var tile = tileObj.GetComponent<Tile>();
+                tile.gridPosition = new Vector2Int(x, z);
+                grid[x, z] = tile;
+
+                int cell = mapDetails[z][x];
+
+                switch (cell)
+                {
+                    case 0: 
+                        break;
+
+                    case 1: 
+                        SpawnObstacle(tileObj.transform, tile);
+                        break;
+
+                    case 2: 
+                        enemyPositions.Add(tile.gridPosition);
+                        //SpawnEnemy(tile.gridPosition, count );
+                        count++;
+                        break;
+
+                    case 3: 
+                        SpawnPlayer(tile.gridPosition);
+                        break;
+                }
+            }
+        }
+        //SpawnPlayer();
+        SpawnEnemy(enemyPositions);
+        Debug.Log("Map built successfully.");
+    }
+
+    private void SpawnObstacle(Transform tileTransform , Tile tile)
+    {
+        var obstacle = Instantiate(obstaclePrefab, tileTransform.position + Vector3.up, Quaternion.identity, tileTransform);
+        tile.occupant = obstacle;
+        tile.walkable = false;
+    }
+
+    private void SpawnEnemy(List<Vector2Int> enemyList)
+    {
+        // Spawn enemy
+        for (int i = 0; i < enemyList.Count; i++)
+        {
+            var enemyObj = Instantiate(enemyPrefab);
+            enemyObj.name = "Enemy " + i;
+            enemyObj.transform.parent = EnemyHolder.transform;
+            enemyObj.transform.position = new Vector3(enemyList[i].x, 1.5f, enemyList[i].y);
+
+            // Initialize and register
+            var enemy = enemyObj.GetComponent<Enemy>();
+            enemy.Initialize(enemyList[i], this, playerObj);
+            enemyManager.AddEnemy(enemy);
+            GameManager.Instance.enemies.Add(enemyObj);
+
+            // Mark the tile as occupied
+            GetTile(enemyList[i]).occupant = enemyObj;
+        }
+
+
+    }
+}
+
+
+
+// FILE: Scripts\Map\Obstacle.cs
+using UnityEngine;
+
+public class NewMonoBehaviourScript : MonoBehaviour
+{
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+}
+
+
+
+// FILE: Scripts\Map\Tile.cs
+using UnityEngine;
+
+public class Tile : MonoBehaviour
+{
+    public Vector2Int gridPosition;
+    public bool walkable = true;
+    public GameObject occupant; // Enemy, Player, Rock, etc.
+
+    public bool IsOccupied => occupant != null;
+
+    private Renderer rend;
+    private Color defaultColor;
+    public bool isHighlighted = false;
+
+    
+    private void Start()
+    {
+        rend = GetComponent<Renderer>();
+        defaultColor = rend.material.color;
+    }
+    public void Highlight(Color color)
+    {
+        rend.material.color = color;
+        isHighlighted = true;
+    }
+
+    public void ResetHighlight()
+    {
+        rend.material.color = defaultColor;
+        isHighlighted = false;
+    }
+
+
+}
+
+
+
+// FILE: Scripts\Player\CameraBehaviour.cs
+using Cinemachine;
+using UnityEngine;
+
+public class CameraBehaviour : MonoBehaviour
+{
+    [Header("Player Settings")]
+    [SerializeField] private string playerTag = "Player";
+
+    [Header("Camera Settings")]
+    [SerializeField] private float distance = 15f;   // default distance behind player
+    [SerializeField] private float height = 8f;     // height above player
+    [SerializeField] private float orbitSpeed = 5f; // horizontal orbit speed
+    [SerializeField] private float zoomSpeed = 2f;  // scroll zoom speed
+    [SerializeField] private float minDistance = 10f; // min zoom
+    [SerializeField] private float maxDistance = 20f; // max zoom
+    private float defaultDistance = 0;
+
+    private CinemachineVirtualCamera vcam;
+    private Transform player;
+    private float currentYaw = 0f; // horizontal rotation
+
+    private void Awake()
+    {
+        // Ensure Main Camera has a CinemachineBrain
+        if (Camera.main != null && Camera.main.GetComponent<CinemachineBrain>() == null)
+            Camera.main.gameObject.AddComponent<CinemachineBrain>();
+
+        // Create a Cinemachine Virtual Camera
+        GameObject vcamObj = new GameObject("Runtime Virtual Camera");
+        vcam = vcamObj.AddComponent<CinemachineVirtualCamera>();
+
+        // Add Composer to look at player
+        var composer = vcam.AddCinemachineComponent<CinemachineComposer>();
+        composer.m_HorizontalDamping = 0;
+        composer.m_VerticalDamping = 0;
+
+        defaultDistance = distance;
+
+    }
+
+    private void Update()
+    {
+        if (player == null)
+        {
+            player = GameObject.FindGameObjectWithTag(playerTag)?.transform;
+            if (player != null)
+            {
+                vcam.Follow = player;
+                vcam.LookAt = player;
+            }
+            return;
+        }
+
+        HandleOrbitInput();
+        HandleZoomInput();
+        HandleResetCamera();
+        UpdateCameraPosition();
+    }
+
+    private void HandleOrbitInput()
+    {
+        if (Input.GetMouseButton(1)) // Right click held
+        {
+            float mouseX = Input.GetAxis("Mouse X");
+            currentYaw += mouseX * orbitSpeed;
+        }
+    }
+
+    private void HandleResetCamera()
+    {
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            currentYaw = 0f;
+            distance = defaultDistance;
+        }
+    }
+
+    private void HandleZoomInput()
+    {
+        float scroll = Input.GetAxis("Mouse ScrollWheel");
+        if (scroll != 0f)
+        {
+            distance -= scroll * zoomSpeed;
+            distance = Mathf.Clamp(distance, minDistance, maxDistance);
+        }
+    }
+
+    private void UpdateCameraPosition()
+    {
+        if (player == null) return;
+
+        // Fixed position above and slightly behind player
+        Vector3 offset = Quaternion.Euler(0, currentYaw, 0) * new Vector3(0, height, -distance);
+        vcam.transform.position = player.position + offset;
+
+        // Look at player
+        vcam.transform.LookAt(player.position + Vector3.up * height);
+    }
+}
+
+
+
+// FILE: Scripts\Player\PlayerFunctionality.cs
+using Microsoft.CodeAnalysis.Scripting;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using TMPro;
+using Unity.VisualScripting;
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.UI;
+
+public class PlayerFunctionality : MonoBehaviour
+{ 
+    public Spell[] spells = new Spell[4];
+    public Spell selectedSpell = null;
+    public Spell enemySelectedSpell = null;
+    public string spellFrom = null;
+
+    private GridManager gridManager;
+    public Vector2Int gridPosition;
+    public float yPos = 1.5f;
+
+    [Header("Player Settings")]
+    public int moveRange = 3;
+    public float moveSpeed = 5f;
+    public float rotateSpeed = 1000; // degrees/second
+
+    private List<Tile> highlightedTiles = new List<Tile>();
+    private bool hasMoved = false;
+
+    // Cache reachable tiles (distance) each turn to avoid recomputation until movement
+    private Dictionary<Tile, int> reachableTileDistances = new Dictionary<Tile, int>();
+
+    public GameObject playerSpellPanel;
+    public GameObject spellTextHolder;
+    public GameObject playerStatsHolder;
+    public GameObject ui_SelectedEnemy;
+    public GameObject selectedEnemy;
+    public Stats playerStats;
+
+    public bool turnStarted = true;
+    [SerializeField] private GameObject playerVisual;
+
+    private void OnEnable()
+    {
+        playerSpellPanel = UIController.Instance.getGameView.playerSpellPanel;
+        spellTextHolder = UIController.Instance.getGameView.spellTextHolder;
+        playerStatsHolder = UIController.Instance.getGameView.playerStatsHolder;
+        ui_SelectedEnemy = UIController.Instance.getGameView.ui_SelectedEnemy;
+    }
+    void Start()
+    {
+        if(playerStats == null)
+        {
+            playerStats = GetComponent<Stats>();
+        }
+        for (int i = 0; i < spells.Length; i++)
+        {
+            spells[i] = JsonManager.Instance.ReturnPlayerSpell(i);
+            if(spells[i] != null)
+            {
+                playerSpellPanel.transform.GetChild(i).GetChild(0).GetComponent<TextMeshProUGUI>().text = spells[i].name;
+            }
+        }
+
+        selectedSpell = null;
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            ResetSpellTextHolder();
+            selectedSpell = null;
+            Debug.Log("Selected spell cleared by escape");
+
+            foreach (Tile tile in highlightedTiles)
+                tile.ResetHighlight();
+            highlightedTiles.Clear();
+            reachableTileDistances.Clear();
+
+            ui_SelectedEnemy.SetActive(false);
+            playerSpellPanel.SetActive(true);
+            playerStatsHolder.SetActive(true);
+        }
+
+        GetEnemyDetails();
+
+        if (TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
+        {
+            if (turnStarted)
+            {
+                ResetSpellTextHolder();
+                selectedSpell = null;
+                foreach (Tile tile in highlightedTiles)
+                    tile.ResetHighlight();
+                highlightedTiles.Clear();
+                reachableTileDistances.Clear();
+
+                ui_SelectedEnemy.SetActive(false);
+                playerSpellPanel.SetActive(true);
+                playerStatsHolder.SetActive(true);
+                OnTurnEnd();
+            }
+
+            return;
+        }
+
+        if (!hasMoved && TurnManager.Instance.currentState == TurnManager.TurnState.PlayerTurn && selectedSpell == null)
+        {
+            HandleTileHighlights();
+        }
+
+        if (selectedSpell != null) 
+        {
+            UseSpell();
+        }
+    }
+
+    public void HandleTileHighlights()
+    {
+        HighlightReachableTiles();
+        HandleTileClick();
+    }
+
+    private void HighlightReachableTiles()
+    {
+        if (highlightedTiles.Count > 0) return;
+
+        // Compute reachable tiles via BFS considering obstacles
+        reachableTileDistances = ComputeReachableTiles(gridPosition, moveRange);
+
+        foreach (var kvp in reachableTileDistances)
+        {
+            Tile tile = kvp.Key;
+            if (tile == null) continue;
+
+            // Occupant logic
+            if (tile.gridPosition == gridPosition)
+            {
+                tile.Highlight(Color.green);
+            }
+            else if (tile.occupant == null)
+            {
+                tile.Highlight(new Color(0.3f, 0.5f, 1f, 1f)); // reachable & free
+            }
+            else
+            {
+                // Occupied but reachable (show as red)
+                tile.Highlight(Color.red);
+            }
+
+            highlightedTiles.Add(tile);
+        }
+    }
+
+    private void HandleTileClick()
+    {
+        if (Input.GetMouseButtonDown(0)) // LMB
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                Tile clickedTile = hit.collider.GetComponent<Tile>();
+                if (clickedTile != null && highlightedTiles.Contains(clickedTile))
+                {
+                    // Only move to empty, walkable tiles that were computed reachable
+                    if (clickedTile.occupant == null && reachableTileDistances.ContainsKey(clickedTile))
+                    {
+                        StartCoroutine(MoveAlongPath(clickedTile));
+                    }
+                }
+            }
+        }
+    }
+
+    //  BFS pathfinding movement
+    private IEnumerator MoveAlongPath(Tile targetTile)
+    {
+        hasMoved = true;
+
+        foreach (Tile tile in highlightedTiles)
+            tile.ResetHighlight();
+        highlightedTiles.Clear();
+        reachableTileDistances.Clear();
+
+        // Get path (list of grid positions excluding current)
+        List<Vector2Int> path = FindPath(gridPosition, targetTile.gridPosition);
+        if (path == null || path.Count == 0)
+        {
+            Debug.Log("No path found to target tile.");
+            hasMoved = false; // allow retry
+            yield break;
+        }
+
+        // Free old tile
+        Tile currentTile = gridManager.GetTile(gridPosition);
+        if (currentTile != null && currentTile.occupant == gameObject)
+            currentTile.occupant = null;
+
+        // Step through path
+        for (int i = 0; i < path.Count; i++)
+        {
+            Vector3 targetPos = new Vector3(path[i].x, yPos, path[i].y);
+
+            while (Vector3.Distance(transform.position, targetPos) > 0.01f)
+            {
+                // Rotate toward movement direction (Y-axis only)
+                Vector3 flatTarget = new Vector3(targetPos.x, transform.position.y, targetPos.z);
+                Vector3 direction = flatTarget - transform.position;
+                direction.y = 0f;
+
+                if (direction.sqrMagnitude > 0.0001f)
+                {
+                    Quaternion lookRot = Quaternion.LookRotation(direction.normalized, Vector3.up);
+
+                    // Use the visualObject(fallback to root if visual is not assigned)
+                    Transform rotTarget = playerVisual != null ? playerVisual.transform : transform;
+                    rotTarget.rotation = Quaternion.RotateTowards(rotTarget.rotation, lookRot, rotateSpeed * Time.deltaTime);
+                }
+
+                // Move toward target
+                transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * Time.deltaTime);
+                yield return null;
+            }
+
+            // Snap to exact step position
+            transform.position = targetPos;
+        }
+
+        gridPosition = targetTile.gridPosition;
+        targetTile.occupant = gameObject;
+
+        yield return null;
+    }
+
+    // BFS to compute reachable tiles within range
+    private Dictionary<Tile, int> ComputeReachableTiles(Vector2Int start, int range)
+    {
+        Dictionary<Tile, int> result = new Dictionary<Tile, int>();
+        Queue<Vector2Int> q = new Queue<Vector2Int>();
+        Dictionary<Vector2Int, int> dist = new Dictionary<Vector2Int, int>();
+
+        q.Enqueue(start);
+        dist[start] = 0;
+
+        while (q.Count > 0)
+        {
+            Vector2Int current = q.Dequeue();
+            int currentDist = dist[current];
+            Tile currentTile = gridManager.GetTile(current);
+            if (currentTile != null && currentDist <= range)
+            {
+                result[currentTile] = currentDist;
+            }
+
+            if (currentDist == range) continue;
+
+            foreach (Vector2Int dir in fourDirs)
+            {
+                Vector2Int next = new Vector2Int(current.x + dir.x, current.y + dir.y);
+                if (dist.ContainsKey(next)) continue;
+
+                Tile nextTile = gridManager.GetTile(next);
+                if (nextTile == null) continue;
+                if (!nextTile.walkable) continue;
+                // Treat other units as blocking for traversal
+                if (nextTile.occupant != null && nextTile.occupant != gameObject) continue;
+
+                dist[next] = currentDist + 1;
+                q.Enqueue(next);
+            }
+        }
+
+        return result;
+    }
+
+    // Path reconstruction using BFS (uniform cost grid)
+    private List<Vector2Int> FindPath(Vector2Int start, Vector2Int goal)
+    {
+        if (start == goal) return new List<Vector2Int>();
+
+        Queue<Vector2Int> q = new Queue<Vector2Int>();
+        Dictionary<Vector2Int, Vector2Int> cameFrom = new Dictionary<Vector2Int, Vector2Int>();
+        q.Enqueue(start);
+        cameFrom[start] = start;
+
+        while (q.Count > 0)
+        {
+            Vector2Int current = q.Dequeue();
+            if (current == goal) break;
+
+            foreach (Vector2Int dir in fourDirs)
+            {
+                Vector2Int next = new Vector2Int(current.x + dir.x, current.y + dir.y);
+                if (cameFrom.ContainsKey(next)) continue;
+
+                Tile nextTile = gridManager.GetTile(next);
+                if (nextTile == null) continue;
+                if (!nextTile.walkable) continue;
+                // Can't traverse through other occupants
+                if (nextTile.occupant != null && next != goal) continue;
+                // Allow goal if empty (already verified before calling)
+
+                cameFrom[next] = current;
+                q.Enqueue(next);
+            }
+        }
+
+        if (!cameFrom.ContainsKey(goal))
+        {
+            return null; // unreachable
+        }
+
+        // Reconstruct path (reverse)
+        List<Vector2Int> path = new List<Vector2Int>();
+        Vector2Int cur = goal;
+        while (cur != start)
+        {
+            path.Add(cur);
+            cur = cameFrom[cur];
+        }
+        path.Reverse();
+        return path;
+    }
+
+    private static readonly Vector2Int[] fourDirs = new[]
+    {
+        new Vector2Int(1,0),
+        new Vector2Int(-1,0),
+        new Vector2Int(0,1),
+        new Vector2Int(0,-1)
+    };
+
+    public void ResetTurn()
+    {
+        hasMoved = false;
+        selectedSpell = null; 
+        foreach (Tile tile in highlightedTiles)
+            tile.ResetHighlight();
+        highlightedTiles.Clear();
+        reachableTileDistances.Clear();
+    }
+
+    public void Initialize(Vector2Int startPos, GridManager grid)
+    {
+        gridPosition = startPos;
+        gridManager = grid;
+
+        transform.position = new Vector3(startPos.x, yPos, startPos.y);
+        grid.GetTile(startPos).occupant = gameObject;
+    }
+
+    public void setSpellFrom(string from)
+    {
+        if (TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
+            return;
+        spellFrom = from;
+    }
+
+    public void SetSelectedSpell(int index)
+    {
+        if (TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
+            return;
+        switch (spellFrom)
+        {
+            case "Player":
+                selectedSpell = spells[index];
+
+                if (selectedSpell != null)
+                {
+                    Debug.Log($"Selected spell: {selectedSpell.name}");
+                    HighlightEnemiesInRange();
+                    SetSpellTextHolder(selectedSpell);
+
+                }
+                break;
+            case "Enemy":
+                enemySelectedSpell = selectedEnemy.GetComponent<Enemy>().spells[index];
+                if(enemySelectedSpell != null)
+                {
+                    SetSpellTextHolder(enemySelectedSpell);
+                }
+                break;
+            default:
+                Debug.Log("spellFrom not set");
+                break;
+        }
+        
+    }
+
+    private void SetSpellTextHolder(Spell spell)
+    {
+        spellTextHolder.gameObject.SetActive(true);
+
+        spellTextHolder.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = "Spell : " + spell.name;
+        spellTextHolder.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "Damage : " + spell.damage;
+        spellTextHolder.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "Cost : " + spell.resourceCost.ToString();
+        spellTextHolder.transform.GetChild(3).GetComponent<TextMeshProUGUI>().text = "Range : " + spell.range.ToString();
+
+        if (spell.support)
+        {
+            spellTextHolder.transform.GetChild(4).GetComponent<TextMeshProUGUI>().text = "Support : " + "Yes";
+        }
+        else
+        {
+            spellTextHolder.transform.GetChild(4).GetComponent<TextMeshProUGUI>().text = "Support : " + "No";
+        }
+
+        spellTextHolder.transform.GetChild(5).GetComponent<TextMeshProUGUI>().text = "Description : " + spell.description;
+    }
+
+    private void ResetSpellTextHolder()
+    {
+        spellTextHolder.gameObject.SetActive(false);
+    }
+
+    public void SyncGridPosition()
+    {
+        if (gridManager == null || gridManager.grid == null)
+            return;
+
+        Vector2Int newPos = new Vector2Int(
+            Mathf.RoundToInt(transform.position.x),
+            Mathf.RoundToInt(transform.position.z)
+        );
+
+        if (newPos != gridPosition)
+        {
+            Tile oldTile = gridManager.GetTile(gridPosition);
+            if (oldTile != null && oldTile.occupant == gameObject)
+                oldTile.occupant = null;
+        }
+
+        Tile newTile = gridManager.GetTile(newPos);
+        if (newTile != null)
+        {
+            newTile.occupant = gameObject;
+            gridPosition = newPos;
+        }
+    }
+
+    public void UseSpell()
+    {
+        if (TurnManager.Instance.currentState != TurnManager.TurnState.PlayerTurn)
+            return;
+
+        if (selectedSpell == null)
+            return;
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                Enemy enemy = hit.collider.GetComponent<Enemy>();
+                if (enemy != null)
+                {
+                    int distance = Mathf.Abs(enemy.gridPosition.x - gridPosition.x) + Mathf.Abs(enemy.gridPosition.y - gridPosition.y);
+                    if (distance <= selectedSpell.range)
+                    {
+                        if(selectedSpell.resourceCost > playerStats.resource)
+                        {
+                            Debug.Log("Not enough resource");
+                            return;
+                        }
+                        else
+                        {
+                            playerStats.resource -= selectedSpell.resourceCost;
+                            playerStats.UpdateStatsHolder();
+                        }
+
+                        Debug.Log($"Casted {selectedSpell.name} on {enemy.name}");
+
+                        ActionManager.Instance.UseSpell(selectedSpell, this.gameObject, enemy.gameObject);
+
+                        TurnManager.Instance.EndPlayerTurn();
+                        foreach (Tile tile in highlightedTiles)
+                            tile.ResetHighlight();
+                        highlightedTiles.Clear();
+                        reachableTileDistances.Clear();
+                        selectedSpell = null;
+                        hasMoved = true;
+
+                    }
+                    else
+                    {
+                        Debug.Log("Target out of spell range!");
+                    }
+                }
+                else
+                {
+                    PlayerFunctionality player = hit.collider.GetComponent<PlayerFunctionality>();
+                    if(player != null)
+                    {
+                        
+                            if (selectedSpell.resourceCost > playerStats.resource)
+                            {
+                                Debug.Log("Not enough resource");
+                                return;
+                            }
+                            else
+                            {
+                                playerStats.resource -= selectedSpell.resourceCost;
+                                playerStats.UpdateStatsHolder();
+                            }
+
+                            Debug.Log($"Casted {selectedSpell.name} on {player.name}");
+
+                            ActionManager.Instance.UseSpell(selectedSpell, this.gameObject, player.gameObject);
+
+                            TurnManager.Instance.EndPlayerTurn();
+                            foreach (Tile tile in highlightedTiles)
+                                tile.ResetHighlight();
+                            highlightedTiles.Clear();
+                            reachableTileDistances.Clear();
+                            selectedSpell = null;
+                            hasMoved = true;
+                            playerStats.UpdateStatsHolder();
+
+                    }
+                }
+            }
+        }
+    }
+
+    private void HighlightEnemiesInRange()
+    {
+        foreach (Tile tile in highlightedTiles)
+            tile.ResetHighlight();
+        highlightedTiles.Clear();
+        reachableTileDistances.Clear();
+
+        if (selectedSpell == null || gridManager == null)
+            return;
+
+        foreach (Tile tile in gridManager.grid)
+        {
+            if (tile == null) continue;
+
+            int distance = Mathf.Abs(tile.gridPosition.x - gridPosition.x) + Mathf.Abs(tile.gridPosition.y - gridPosition.y);
+
+            if (distance <= selectedSpell.range)
+            {
+                Color baseColor = new Color(1f, 0.5f, 0.4f, 0.5f);
+                tile.Highlight(baseColor);
+                highlightedTiles.Add(tile);
+
+                if (tile.occupant == gameObject)
+                {
+                    tile.Highlight(Color.green);
+                }
+                else if (tile.occupant != null)
+                {
+                    Enemy enemy = tile.occupant.GetComponent<Enemy>();
+                    if (enemy != null)
+                    {
+                        tile.Highlight(new Color(1f, 0f, 0f, 0.9f));
+                    }
+                }
+            }
+        }
+    }
+
+    public void OnTurnStart()
+    {
+        SyncGridPosition();
+        playerStats.resource = Mathf.Clamp((int)(playerStats.resource + (playerStats.maxResource * 0.1)), 0, playerStats.maxResource);
+        playerStats.UpdateStatsHolder();
+        turnStarted = true;
+    }
+
+    public void OnTurnEnd()
+    {
+        SyncGridPosition();
+        turnStarted = false;
+    }
+
+    public void GetEnemyDetails()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            if (selectedSpell != null && TurnManager.Instance.currentState == TurnManager.TurnState.PlayerTurn)
+                return;
+
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                Enemy enemy = hit.collider.GetComponent<Enemy>();
+                if (enemy != null)
+                {
+                    selectedEnemy = enemy.gameObject;
+                    Debug.Log("Selected Enemy: " + selectedEnemy.name);
+                    SetSelectedEnemyDetails(selectedEnemy);
+                    ui_SelectedEnemy.SetActive(true);
+                    playerSpellPanel.SetActive(false);
+                    playerStatsHolder.SetActive(false);
+                    ResetSpellTextHolder();
+                }
+            }
+        }
+    }
+
+    public void SetSelectedEnemyDetails(GameObject selectedEnemy)
+    {
+        if (selectedEnemy != null)
+        {
+            if (ui_SelectedEnemy != null)
+            {
+                ui_SelectedEnemy.transform.GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().text = "Name: " + selectedEnemy.name;
+                ui_SelectedEnemy.transform.GetChild(0).GetChild(1).GetComponent<TextMeshProUGUI>().text = "Health: " + selectedEnemy.GetComponent<Stats>().health;
+                ui_SelectedEnemy.transform.GetChild(0).GetChild(2).GetComponent<TextMeshProUGUI>().text = "Resource: " + selectedEnemy.GetComponent<Stats>().resource;
+
+                ui_SelectedEnemy.transform.GetChild(1).GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().text = selectedEnemy.GetComponent<Enemy>().spells[0].name;
+                ui_SelectedEnemy.transform.GetChild(1).GetChild(1).GetChild(0).GetComponent<TextMeshProUGUI>().text = selectedEnemy.GetComponent<Enemy>().spells[1].name;
+                ui_SelectedEnemy.transform.GetChild(1).GetChild(2).GetChild(0).GetComponent<TextMeshProUGUI>().text = selectedEnemy.GetComponent<Enemy>().spells[2].name;
+                ui_SelectedEnemy.transform.GetChild(1).GetChild(3).GetChild(0).GetComponent<TextMeshProUGUI>().text = selectedEnemy.GetComponent<Enemy>().spells[3].name;
+            }
+        }
+    }
+
+    
+}
+
+
+
+// FILE: Scripts\UI\DeathPanelView.cs
+using UnityEngine;
+
+public class DeathPanelView : MonoBehaviour
+{
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    public void GoToMainMenu()
+    {
+        UIController.Instance.SwitchUI(UIIndex.MainMenu);
+    }
+}
+
+
+
+// FILE: Scripts\UI\EditSingleSpellView.cs
+using System.Collections.Generic;
+using TMPro;
+using System.Collections;
+using UnityEngine;
+using UnityEngine.Events;
+
+public class EditSingleSpellView : MonoBehaviour
+{
+    public TMP_InputField skillInputs;
+    public int spellIndex;
+    public GameObject insufficientText;
+    [SerializeField] private TMP_Text currencyText;
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+    }
+
+    private void OnEnable()
+    {
+        currencyText.text = GameManager.Instance.getcurrencyData.manaStone.ToString();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    public void OnEditSpellButtonClicked()
+    {
+        UIController uiController = UIController.Instance;
+
+        if (spellIndex >= uiController.getUnitEditCurrentSpellView.getSpells.Length || uiController.getUnitEditCurrentSpellView.getSpells[spellIndex] == null)
+        {
+            Debug.LogWarning($"No spell found at slot {spellIndex}");
+            return;
+        }
+
+        Debug.Log($"Editing spell: {uiController.getUnitEditCurrentSpellView.getSpells[spellIndex].name}");
+        // Send the spell concept (name/description) to the LLMController for regeneration
+        string newPrompt = skillInputs.text.Trim();
+        LLMController llm = GameManager.Instance.LLMController;
+
+        if (llm != null)
+        {
+            if(GameManager.Instance.getcurrencyData.manaStone >= 1)
+            {
+                llm.StartCoroutine(llm.GenerateAndReplaceSpell(newPrompt, spellIndex));
+                GameManager.Instance.getcurrencyData.manaStone--;
+            }
+            else
+            {
+                StartCoroutine(ShowInsufficientText());
+            }
+            
+        }
+        else
+        {
+            Debug.LogError("LLMController not found in the scene!");
+        }
+        currencyText.text = GameManager.Instance.getcurrencyData.manaStone.ToString();
+    }
+    public void GoToUnitEditCurrentSpellView()
+    {
+        UIController.Instance.SwitchUI(UIIndex.UnitEditCurrentSpell);
+    }
+
+    public IEnumerator ShowInsufficientText()
+    {
+        insufficientText.SetActive(true);
+        yield return new WaitForSeconds(1);
+        insufficientText.SetActive(false);
+    }
+}
+
+
+
+// FILE: Scripts\UI\GameOverView.cs
+using UnityEngine;
+
+public class GameOverView : MonoBehaviour
+{
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+}
+
+
+
+// FILE: Scripts\UI\GameView.cs
+using UnityEngine;
+
+public class GameView : MonoBehaviour
+{
+
+
+    public GameObject playerSpellPanel;
+    public GameObject spellTextHolder;
+    public GameObject playerStatsHolder;
+    public GameObject ui_SelectedEnemy;
+
+
+    private void Awake()
+    {
+    }
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+        //GridManager.Instance.SpawnEnemies(GridManager.Instance.enemyCount);
+        //GridManager.Instance.enemyManager.initializeThreatGrid(GridManager.Instance.height, GridManager.Instance.width);
+
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+    public void StartGame()
+    {
+
+    }
+
+    private void OnEnable()
+    {
+        ResetGame();
+    }
+
+    public void ResetGame()
+    {
+        if (GameManager.Instance == null || GridManager.Instance == null)
+            return;
+
+        int round = Mathf.Max(1, GameManager.Instance.roundNo);
+
+        // Base enemy count for round 1
+        int baseEnemies = 2;
+
+        // Increase enemy count by 1 for every even round
+        int extraFromEvenRounds = round / 2;
+        int enemyCount = baseEnemies + extraFromEvenRounds;
+
+        // Damage multiplier increases by 0.5 every round
+        float dmgMultiplier = 0.5f * round;
+
+        Debug.Log($"[GameView] Round {round}: ResetGame(enemyCount={enemyCount}, dmgMultiplier={dmgMultiplier:F2})");
+        GridManager.Instance.ResetGame(enemyCount, dmgMultiplier);
+    }
+
+}
+
+
+
+// FILE: Scripts\UI\GeneratedSpellView.cs
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections.Generic;
+
+public class GeneratedSpellView : MonoBehaviour
+{
+    [SerializeField] private List<TextMeshProUGUI> spellNameText;
+    [SerializeField] private List<TextMeshProUGUI> spellDescriptionText;
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+    public void SetGeneratedSpellInfo(int index, Spell spell)
+    {
+        spellNameText[index].text = spell.name;
+        spellDescriptionText[index].text = spell.description;
+        Debug.Log("Skill are now set");
+    }
+
+    public void GoToShop()
+    {
+        UIController.Instance.SwitchUI(UIIndex.Shop);
+    }
+
+    public void GotoPlayerUnits()
+    {
+        UIController.Instance.SwitchUI(UIIndex.PlayerUnits);
+    }
+    public void GotoEditPlayerUnits()
+    {
+        UIController.Instance.SwitchUI(UIIndex.UnitEditCurrentSpell);
+    }
+}
+
+
+
+// FILE: Scripts\UI\LoadingView.cs
+using UnityEngine;
+
+public class LoadingView : MonoBehaviour
+{
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+}
+
+
+
+// FILE: Scripts\UI\MainMenuView.cs
+using UnityEngine;
+
+public class MainMenuView : MonoBehaviour
+{
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    public void GoToGameStart()
+    {
+        UIController.Instance.SwitchUI(UIIndex.Game);
+    }
+
+    public void GoToSetting()
+    {
+        UIController.Instance.SwitchUI(UIIndex.Setting);
+    }
+
+    public void GoToPlayerUnits()
+    {
+        UIController.Instance.SwitchUI(UIIndex.PlayerUnits);
+    }
+}
+
+
+
+// FILE: Scripts\UI\PlayerUnitsView.cs
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections.Generic;
+
+public class PlayerUnitsView : MonoBehaviour
+{
+    [SerializeField] private List<Image> targetImage;
+    [SerializeField] private List<Sprite> characterSprites;
+    [SerializeField] private List<GameObject> createCharButton;
+    [SerializeField] private List<GameObject> editCharButton;
+    public int targetSlot;
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+    public void GoToShop()
+    {
+        UIController.Instance.SwitchUI(UIIndex.Shop);
+    }
+    public void GoToCharPreset()
+    {
+        UIController.Instance.SwitchUI(UIIndex.PresetCharacterSelection);
+    }
+
+    public void GoToMainMenu()
+    {
+        UIController.Instance.SwitchUI(UIIndex.MainMenu);
+    }
+    public void ChangeImage(Image targetImage, Sprite newSprite)
+    {
+        if (targetImage == null)
+        {
+            Debug.LogWarning("UIImageChanger: Target Image is null!");
+            return;
+        }
+
+        if (newSprite == null)
+        {
+            Debug.LogWarning("UIImageChanger: Sprite is null!");
+            return;
+        }
+
+        targetImage.sprite = newSprite;
+    }
+
+    public void ChangeCharacterImage()
+    {
+        Debug.Log("target index Slot is " + targetSlot);
+        ChangeImage(targetImage[targetSlot], characterSprites[targetSlot]);
+    }
+
+    public void ChangeButton()
+    {
+        createCharButton[targetSlot].SetActive(false);
+        editCharButton[targetSlot].SetActive(true);
+    }
+    public void TargetSlot(int index)
+    {
+        targetSlot = index;
+    }
+    public void GoToUnitEditCurrentSpellView()
+    {
+        UIController.Instance.SwitchUI(UIIndex.UnitEditCurrentSpell);
+    }
+
+}
+
+
+
+// FILE: Scripts\UI\PresetCharacterSelectionView.cs
+using UnityEngine;
+
+public class PresetCharacterSelectionView : MonoBehaviour
+{
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+}
+
+
+
+// FILE: Scripts\UI\RoundFinishedView.cs
+using UnityEngine;
+
+public class RoundFinishedView : MonoBehaviour
+{
+    public static RoundFinishedView Instance { get; private set; }
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+    }
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    public void GoToShop()
+    {
+        UIController.Instance.SwitchUI(UIIndex.UnitEditCurrentSpell);
+    }
+
+    public void NextRound()
+    {
+        GameManager.Instance.roundNo += 1;
+        GameManager.Instance.CleanUpPlayer();
+        UIController.Instance.SwitchUI(UIIndex.Game);
+    }
+}
+
+
+
+// FILE: Scripts\UI\SettingView.cs
+using UnityEngine;
+
+public class SettingView : MonoBehaviour
+{
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+}
+
+
+
+// FILE: Scripts\UI\ShopView.cs
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class ShopView : MonoBehaviour
+{
+    public List<TMP_InputField> skillInputs;
+    public Button sendButton;
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        foreach (var input in skillInputs)
+        {
+            input.onValueChanged.AddListener(delegate { ValidateInputs(); });
+        }
+
+        ValidateInputs();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    private void ValidateInputs()
+    {
+        sendButton.interactable = AllInputsFilled();
+    }
+
+    private bool AllInputsFilled()
+    {
+        foreach (var input in skillInputs)
+        {
+            if (string.IsNullOrWhiteSpace(input.text))
+                return false;
+        }
+        return true;
+    }
+
+    public void GoToGeneratedSpell()
+    {
+        UIController.Instance.SwitchUI(UIIndex.GeneratedSpell);
+    }
+
+    public void GoToMainMenu()
+    {
+        UIController.Instance.SwitchUI(UIIndex.MainMenu);
+    }
+    public void GoToPlayerUnits()
+    {
+        UIController.Instance.SwitchUI(UIIndex.PlayerUnits);
+    }
+
+    public void GotoLoading()
+    {
+        UIController.Instance.SwitchUI(UIIndex.Loading);
+    }
+}
+
+
+
+
+// FILE: Scripts\UI\UIController.cs
+using System.Collections.Generic;
+using UnityEngine;
+
+public enum UIIndex
+{
+    Game = 0,
+    GameOver = 1,
+    MainMenu = 2,
+    PlayerUnits = 3,
+    PresetCharacterSelection = 4,
+    Setting = 5,
+    Shop = 6,
+    GeneratedSpell = 7,
+    UnitEditCurrentSpell = 8,
+    editSingleSpell = 9,
+    DeathPanel = 10,
+    RoundFinished = 11,
+    Loading = 12,
+}
+
+
+public class UIController : MonoBehaviour
+{
+    public static UIController Instance;
+    [SerializeField] GameView gameView; // to be implemented need to use gameScene
+    [SerializeField] GameOverView gameOverView;
+    [SerializeField] MainMenuView mainMenuView;
+    [SerializeField] PlayerUnitsView playerUnitsView;
+    [SerializeField] PresetCharacterSelectionView presetCharacterSelectionView;
+    [SerializeField] SettingView settingView;
+    [SerializeField] ShopView shopView;
+    [SerializeField] GeneratedSpellView generatedSpellView;
+    [SerializeField] UnitEditCurrentSpellView unitEditCurrentSpellView;
+    [SerializeField] EditSingleSpellView editSingleSpellView;
+    [SerializeField] DeathPanelView deathPanelView;
+    [SerializeField] RoundFinishedView roundFinishedView;
+    [SerializeField] LoadingView loadingView;
+
+    public GameView getGameView { get; private set; }
+    public GameOverView getGameOverView { get; private set; }
+    public MainMenuView getMainMenuView { get; private set; }
+    public PlayerUnitsView getPlayerUnitsView { get; private set; }
+    public PresetCharacterSelectionView getPresetCharacterSelectionView { get; private set; }
+    public SettingView getSettingView { get; private set; }
+    public ShopView getShopView { get; private set; }
+    public GeneratedSpellView getGeneratedSpellView { get; private set; }
+    public UnitEditCurrentSpellView getUnitEditCurrentSpellView { get; private set; }
+    public EditSingleSpellView getEditSingleSpellView { get; private set; }
+
+    public DeathPanelView GetDeathPanelView { get; private set; }
+    public RoundFinishedView GetRoundFinishedView { get; private set; }
+
+    public LoadingView GetLoadingView { get; private set; }
+
+    [SerializeField] List<GameObject> uiList = new List<GameObject>();
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        getGameView = gameView;
+        getGameOverView = gameOverView;
+        getMainMenuView = mainMenuView;
+        getPlayerUnitsView = playerUnitsView;
+        getPresetCharacterSelectionView = presetCharacterSelectionView;
+        getSettingView = settingView;
+        getShopView = shopView;
+        getGeneratedSpellView = generatedSpellView;
+        getUnitEditCurrentSpellView = unitEditCurrentSpellView;
+        getEditSingleSpellView = editSingleSpellView;
+        GetDeathPanelView = deathPanelView;
+        GetRoundFinishedView = roundFinishedView;
+        GetLoadingView = loadingView;
+    }
+    void Start()
+    {
+        SwitchUI(UIIndex.MainMenu);
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    public void SwitchUI(UIIndex index)
+    {
+        foreach(GameObject UI in uiList)
+        {
+            UI.SetActive(false);
+        }
+        uiList[(int)index].SetActive(true);
+    }
+}
+
+
+
+// FILE: Scripts\UI\UnitEditCurrentSpellView.cs
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class UnitEditCurrentSpellView : MonoBehaviour
+{
+    [SerializeField] private Spell[] spells = new Spell[4];
+    [SerializeField] private List<TextMeshProUGUI> spellNameText;
+    [SerializeField] private List<TextMeshProUGUI> spellDescriptionText;
+    public Spell[] getSpells { get; private set; }
+    //[SerializeField] private List<Button> editSpelButton;
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    private void Awake()
+    {
+        getSpells = spells;
+    }
+    void Start()
+    {
+
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    public void GetPlayerSpell()
+    {
+        for (int i = 0; i < spells.Length; i++)
+        {
+            spells[i] = GameManager.Instance.LLMController.generatedSkills[i].spellData;
+            Debug.Log("spell is : " + spells[i].name);
+            SetGeneratedSpellInfo(i, spells[i]);
+        }
+    }
+
+    private void OnEnable()
+    {
+        GetPlayerSpell();
+    }
+
+    public void SetGeneratedSpellInfo(int index, Spell spell)
+    {
+        if (index < spellNameText.Count && spell != null)
+        {
+            spellNameText[index].text = spell.name;
+            spellDescriptionText[index].text = spell.description;
+        }
+    }
+
+    public void GoToEditSingleSpell(int spellIndex)
+    {
+        UIController.Instance.getEditSingleSpellView.spellIndex = spellIndex;
+        UIController.Instance.SwitchUI(UIIndex.editSingleSpell);
+    }
+
+    public void GoToUnitEditCurrentSpellView()
+    {
+        UIController.Instance.SwitchUI(UIIndex.UnitEditCurrentSpell);
+    }
+
+    public void GoToPlayerUnitView()
+    {
+        UIController.Instance.SwitchUI(UIIndex.PlayerUnits);
+    }
+
+    public void GoToGameplayView()
+    {
+        UIController.Instance.SwitchUI(UIIndex.Game);
+    }
+    public void GoToRoundFinishView()
+    {
+        UIController.Instance.SwitchUI(UIIndex.RoundFinished);
+    }
+}
+
+
+
+
+
+// FILE: TutorialInfo\Scripts\Readme.cs
+using System;
+using UnityEngine;
+
+public class Readme : ScriptableObject
+{
+    public Texture2D icon;
+    public string title;
+    public Section[] sections;
+    public bool loadedLayout;
+
+    [Serializable]
+    public class Section
+    {
+        public string heading, text, linkText, url;
+    }
+}
+
+
+
+// FILE: Scripts\Player\PlayerScriptableObject\CurrencyData.cs
+using UnityEngine;
+
+[CreateAssetMenu(fileName = "CurrencyData", menuName = "ScriptableObjects/CurrencyData")]
+public class CurrencyData : ScriptableObject
+{
+    public int gold;
+    public int manaStone;
+
+}
+
+
+
+// FILE: TutorialInfo\Scripts\Editor\ReadmeEditor.cs
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEditor;
+using System;
+using System.IO;
+using System.Reflection;
+
+[CustomEditor(typeof(Readme))]
+[InitializeOnLoad]
+public class ReadmeEditor : Editor
+{
+    static string s_ShowedReadmeSessionStateName = "ReadmeEditor.showedReadme";
+    
+    static string s_ReadmeSourceDirectory = "Assets/TutorialInfo";
+
+    const float k_Space = 16f;
+
+    static ReadmeEditor()
+    {
+        EditorApplication.delayCall += SelectReadmeAutomatically;
+    }
+
+    static void RemoveTutorial()
+    {
+        if (EditorUtility.DisplayDialog("Remove Readme Assets",
+            
+            $"All contents under {s_ReadmeSourceDirectory} will be removed, are you sure you want to proceed?",
+            "Proceed",
+            "Cancel"))
+        {
+            if (Directory.Exists(s_ReadmeSourceDirectory))
+            {
+                FileUtil.DeleteFileOrDirectory(s_ReadmeSourceDirectory);
+                FileUtil.DeleteFileOrDirectory(s_ReadmeSourceDirectory + ".meta");
+            }
+            else
+            {
+                Debug.Log($"Could not find the Readme folder at {s_ReadmeSourceDirectory}");
+            }
+
+            var readmeAsset = SelectReadme();
+            if (readmeAsset != null)
+            {
+                var path = AssetDatabase.GetAssetPath(readmeAsset);
+                FileUtil.DeleteFileOrDirectory(path + ".meta");
+                FileUtil.DeleteFileOrDirectory(path);
+            }
+
+            AssetDatabase.Refresh();
+        }
+    }
+
+    static void SelectReadmeAutomatically()
+    {
+        if (!SessionState.GetBool(s_ShowedReadmeSessionStateName, false))
+        {
+            var readme = SelectReadme();
+            SessionState.SetBool(s_ShowedReadmeSessionStateName, true);
+
+            if (readme && !readme.loadedLayout)
+            {
+                LoadLayout();
+                readme.loadedLayout = true;
+            }
+        }
+    }
+
+    static void LoadLayout()
+    {
+        var assembly = typeof(EditorApplication).Assembly;
+        var windowLayoutType = assembly.GetType("UnityEditor.WindowLayout", true);
+        var method = windowLayoutType.GetMethod("LoadWindowLayout", BindingFlags.Public | BindingFlags.Static);
+        method.Invoke(null, new object[] { Path.Combine(Application.dataPath, "TutorialInfo/Layout.wlt"), false });
+    }
+
+    static Readme SelectReadme()
+    {
+        var ids = AssetDatabase.FindAssets("Readme t:Readme");
+        if (ids.Length == 1)
+        {
+            var readmeObject = AssetDatabase.LoadMainAssetAtPath(AssetDatabase.GUIDToAssetPath(ids[0]));
+
+            Selection.objects = new UnityEngine.Object[] { readmeObject };
+
+            return (Readme)readmeObject;
+        }
+        else
+        {
+            Debug.Log("Couldn't find a readme");
+            return null;
+        }
+    }
+
+    protected override void OnHeaderGUI()
+    {
+        var readme = (Readme)target;
+        Init();
+
+        var iconWidth = Mathf.Min(EditorGUIUtility.currentViewWidth / 3f - 20f, 128f);
+
+        GUILayout.BeginHorizontal("In BigTitle");
+        {
+            if (readme.icon != null)
+            {
+                GUILayout.Space(k_Space);
+                GUILayout.Label(readme.icon, GUILayout.Width(iconWidth), GUILayout.Height(iconWidth));
+            }
+            GUILayout.Space(k_Space);
+            GUILayout.BeginVertical();
+            {
+
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(readme.title, TitleStyle);
+                GUILayout.FlexibleSpace();
+            }
+            GUILayout.EndVertical();
+            GUILayout.FlexibleSpace();
+        }
+        GUILayout.EndHorizontal();
+    }
+
+    public override void OnInspectorGUI()
+    {
+        var readme = (Readme)target;
+        Init();
+
+        foreach (var section in readme.sections)
+        {
+            if (!string.IsNullOrEmpty(section.heading))
+            {
+                GUILayout.Label(section.heading, HeadingStyle);
+            }
+
+            if (!string.IsNullOrEmpty(section.text))
+            {
+                GUILayout.Label(section.text, BodyStyle);
+            }
+
+            if (!string.IsNullOrEmpty(section.linkText))
+            {
+                if (LinkLabel(new GUIContent(section.linkText)))
+                {
+                    Application.OpenURL(section.url);
+                }
+            }
+
+            GUILayout.Space(k_Space);
+        }
+
+        if (GUILayout.Button("Remove Readme Assets", ButtonStyle))
+        {
+            RemoveTutorial();
+        }
+    }
+
+    bool m_Initialized;
+
+    GUIStyle LinkStyle
+    {
+        get { return m_LinkStyle; }
+    }
+
+    [SerializeField]
+    GUIStyle m_LinkStyle;
+
+    GUIStyle TitleStyle
+    {
+        get { return m_TitleStyle; }
+    }
+
+    [SerializeField]
+    GUIStyle m_TitleStyle;
+
+    GUIStyle HeadingStyle
+    {
+        get { return m_HeadingStyle; }
+    }
+
+    [SerializeField]
+    GUIStyle m_HeadingStyle;
+
+    GUIStyle BodyStyle
+    {
+        get { return m_BodyStyle; }
+    }
+
+    [SerializeField]
+    GUIStyle m_BodyStyle;
+
+    GUIStyle ButtonStyle
+    {
+        get { return m_ButtonStyle; }
+    }
+
+    [SerializeField]
+    GUIStyle m_ButtonStyle;
+
+    void Init()
+    {
+        if (m_Initialized)
+            return;
+        m_BodyStyle = new GUIStyle(EditorStyles.label);
+        m_BodyStyle.wordWrap = true;
+        m_BodyStyle.fontSize = 14;
+        m_BodyStyle.richText = true;
+
+        m_TitleStyle = new GUIStyle(m_BodyStyle);
+        m_TitleStyle.fontSize = 26;
+
+        m_HeadingStyle = new GUIStyle(m_BodyStyle);
+        m_HeadingStyle.fontStyle = FontStyle.Bold;
+        m_HeadingStyle.fontSize = 18;
+
+        m_LinkStyle = new GUIStyle(m_BodyStyle);
+        m_LinkStyle.wordWrap = false;
+
+        // Match selection color which works nicely for both light and dark skins
+        m_LinkStyle.normal.textColor = new Color(0x00 / 255f, 0x78 / 255f, 0xDA / 255f, 1f);
+        m_LinkStyle.stretchWidth = false;
+
+        m_ButtonStyle = new GUIStyle(EditorStyles.miniButton);
+        m_ButtonStyle.fontStyle = FontStyle.Bold;
+
+        m_Initialized = true;
+    }
+
+    bool LinkLabel(GUIContent label, params GUILayoutOption[] options)
+    {
+        var position = GUILayoutUtility.GetRect(label, LinkStyle, options);
+
+        Handles.BeginGUI();
+        Handles.color = LinkStyle.normal.textColor;
+        Handles.DrawLine(new Vector3(position.xMin, position.yMax), new Vector3(position.xMax, position.yMax));
+        Handles.color = Color.white;
+        Handles.EndGUI();
+
+        EditorGUIUtility.AddCursorRect(position, MouseCursor.Link);
+
+        return GUI.Button(position, label, LinkStyle);
+    }
+}
+
+
+

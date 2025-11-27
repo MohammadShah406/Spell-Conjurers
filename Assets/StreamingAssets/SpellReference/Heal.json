@@ -1,0 +1,17 @@
+{
+    "damage": 0,
+    "accuracy": 100,
+    "resourceCost": 15,
+    "range": 1,
+    "selfDamage": 10,
+    "support": true,
+    "name": "Heal",
+    "description": "Restores a small amount of health to the target.",
+    "code": "string actionLog = \"\";\r\n\r\nto.GetComponent<Stats>().health = Mathf.Min(to.GetComponent<Stats>().health + spell.selfDamage,to.GetComponent<Stats>().maxHealth);\r\nactionLog += from.name + \" healed \" + to.name + \", restoring 10 health.\";\r\n",
+    "ColorR": 0,
+    "ColorG": 255,
+    "ColorB": 0,
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}

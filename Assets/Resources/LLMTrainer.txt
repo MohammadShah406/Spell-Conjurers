@@ -108,4 +108,4 @@ EXAMPLE SPELL JSON (follows the rules above exactly):
     "status": "None",
     "statusDuration": 0,
     "statusDamagePerTurn": 0
-}
+}w
