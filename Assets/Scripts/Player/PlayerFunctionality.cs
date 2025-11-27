@@ -487,6 +487,38 @@ public class PlayerFunctionality : MonoBehaviour
                         Debug.Log("Target out of spell range!");
                     }
                 }
+                else
+                {
+                    PlayerFunctionality player = hit.collider.GetComponent<PlayerFunctionality>();
+                    if(player != null)
+                    {
+                        
+                            if (selectedSpell.resourceCost > playerStats.resource)
+                            {
+                                Debug.Log("Not enough resource");
+                                return;
+                            }
+                            else
+                            {
+                                playerStats.resource -= selectedSpell.resourceCost;
+                                playerStats.UpdateStatsHolder();
+                            }
+
+                            Debug.Log($"Casted {selectedSpell.name} on {player.name}");
+
+                            ActionManager.Instance.UseSpell(selectedSpell, this.gameObject, player.gameObject);
+
+                            TurnManager.Instance.EndPlayerTurn();
+                            foreach (Tile tile in highlightedTiles)
+                                tile.ResetHighlight();
+                            highlightedTiles.Clear();
+                            reachableTileDistances.Clear();
+                            selectedSpell = null;
+                            hasMoved = true;
+                            playerStats.UpdateStatsHolder();
+
+                    }
+                }
             }
         }
     }

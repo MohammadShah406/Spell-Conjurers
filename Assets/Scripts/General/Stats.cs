@@ -7,11 +7,11 @@ using UnityEngine;
 
 public class Stats : MonoBehaviour
 {
-    public int maxHealth = 10;
+    public int maxHealth = 100;
     public int maxResource = 100;
     public bool isDead = false;
 
-    public int health = 10;
+    public int health = 100;
     public int armor = 0;
     public int resource = 100;
 
