@@ -2,13 +2,16 @@ using UnityEngine;
 
 public class GameView : MonoBehaviour
 {
+
+
     public GameObject playerSpellPanel;
     public GameObject spellTextHolder;
     public GameObject playerStatsHolder;
     public GameObject ui_SelectedEnemy;
+
+
     private void Awake()
     {
-        
     }
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -30,6 +33,11 @@ public class GameView : MonoBehaviour
     }
 
     private void OnEnable()
+    {
+        ResetGame();
+    }
+
+    public void ResetGame()
     {
         if (GameManager.Instance == null || GridManager.Instance == null)
             return;

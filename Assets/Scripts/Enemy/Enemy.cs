@@ -29,7 +29,10 @@ public class Enemy : MonoBehaviour
     public bool debugMode = true;
     [SerializeField] private GameObject enemyVisual;
 
-
+    private void Start()
+    {
+        debugMode = GameManager.Instance.debugMode;
+    }
 
     private void Update()
     {
@@ -69,6 +72,12 @@ public class Enemy : MonoBehaviour
 
     public IEnumerator TakeTurn(System.Action onComplete)
     {
+        if(GameManager.Instance.lostGame)
+        {
+             onComplete?.Invoke();
+            yield break;
+        }
+
         SyncGridPosition();
         virtualCamera.Priority = 11; // Activate enemy camera
 

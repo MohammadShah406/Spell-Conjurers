@@ -16,6 +16,7 @@ public class GameManager : MonoBehaviour
     public CurrencyData getcurrencyData { get; private set; }
     public bool lostGame = false;
 
+    public bool debugMode = false;
 
     private void Awake()
     {
@@ -30,6 +31,14 @@ public class GameManager : MonoBehaviour
         }
         LLMController = llmController;
         getcurrencyData = currencyData;
+    }
+
+    private void Update()
+    {
+        if(Input.GetKeyDown(KeyCode.R))
+        {
+            GenerateNextRound();
+        }
     }
 
     public void CallSetSpellFrom(string tragetName)
@@ -126,6 +135,13 @@ public class GameManager : MonoBehaviour
     {
         getcurrencyData.gold = 0;
         getcurrencyData.manaStone = 0;
+    }
+
+    public void GenerateNextRound()
+    {
+        roundNo += 1;
+        UIController.Instance.getGameView.ResetGame();
+
     }
 
 }

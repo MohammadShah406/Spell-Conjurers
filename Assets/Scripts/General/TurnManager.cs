@@ -85,6 +85,11 @@ public class TurnManager : MonoBehaviour
 
     private IEnumerator HandleEnemyTurn()
     {
+        if(GameManager.Instance.players.Count == 0)
+        {
+            Debug.Log("No players found. Skipping enemy turn.");
+            yield break;
+        }
         // Tell the enemies to act
         yield return StartCoroutine(StartEnemyTurnsCoroutine());
 
