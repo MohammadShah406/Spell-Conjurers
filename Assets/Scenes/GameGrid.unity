@@ -2407,6 +2407,34 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7693815579125026310, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7693815579125026310, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7693815579125026310, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
+      value: 
+      objectReference: {fileID: 1702397874}
+    - target: {fileID: 7693815579125026310, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7693815579125026310, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
+      value: ResetCurrency
+      objectReference: {fileID: 0}
+    - target: {fileID: 7693815579125026310, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_TargetAssemblyTypeName
+      value: GameManager, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 7693815579125026310, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 7810087129129490660, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_SizeDelta.x
       value: 300
@@ -4718,7 +4746,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Insufficient Mana Stone!!!
+  m_text: Insufficient Mana Stones!!!
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -7698,6 +7726,7 @@ MonoBehaviour:
   llmController: {fileID: 341758073}
   currencyData: {fileID: 11400000, guid: 62004c7955a9af44c823d05e708a9512, type: 2}
   playerFunctionality: []
+  lostGame: 0
 --- !u!1 &1727973347
 GameObject:
   m_ObjectHideFlags: 0

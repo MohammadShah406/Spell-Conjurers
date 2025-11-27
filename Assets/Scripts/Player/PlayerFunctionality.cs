@@ -22,6 +22,7 @@ public class PlayerFunctionality : MonoBehaviour
     [Header("Player Settings")]
     public int moveRange = 3;
     public float moveSpeed = 5f;
+    public float rotateSpeed = 1000; // degrees/second
 
     private List<Tile> highlightedTiles = new List<Tile>();
     private bool hasMoved = false;
@@ -37,6 +38,7 @@ public class PlayerFunctionality : MonoBehaviour
     public Stats playerStats;
 
     public bool turnStarted = true;
+    [SerializeField] private GameObject playerVisual;
 
     private void OnEnable()
     {
@@ -199,11 +201,29 @@ public class PlayerFunctionality : MonoBehaviour
         for (int i = 0; i < path.Count; i++)
         {
             Vector3 targetPos = new Vector3(path[i].x, yPos, path[i].y);
+
             while (Vector3.Distance(transform.position, targetPos) > 0.01f)
             {
+                // Rotate toward movement direction (Y-axis only)
+                Vector3 flatTarget = new Vector3(targetPos.x, transform.position.y, targetPos.z);
+                Vector3 direction = flatTarget - transform.position;
+                direction.y = 0f;
+
+                if (direction.sqrMagnitude > 0.0001f)
+                {
+                    Quaternion lookRot = Quaternion.LookRotation(direction.normalized, Vector3.up);
+
+                    // Use the visual's rotation as the current rotation (fallback to root if visual is not assigned)
+                    Transform rotTarget = playerVisual != null ? playerVisual.transform : transform;
+                    rotTarget.rotation = Quaternion.RotateTowards(rotTarget.rotation, lookRot, rotateSpeed * Time.deltaTime);
+                }
+
+                // Move toward target
                 transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * Time.deltaTime);
                 yield return null;
             }
+
+            // Snap to exact step position
             transform.position = targetPos;
         }
 

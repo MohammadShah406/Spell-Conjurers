@@ -122,4 +122,10 @@ public class GameManager : MonoBehaviour
         players.Clear();
     }
 
+    public void ResetCurrency()
+    {
+        getcurrencyData.gold = 0;
+        getcurrencyData.manaStone = 0;
+    }
+
 }

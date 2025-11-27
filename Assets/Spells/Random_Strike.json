@@ -7,7 +7,7 @@
     "support": false,
     "name": "Random Strike",
     "description": "A random strike that has a chance to deal high damage but comes with risks.",
-    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" struck \" + to.name + \" with a Random Strike, dealing \" + spell.damage + \" damage. \";\r\n            if (UnityEngine.Random.Range(0, 100) < 5) {\r\n                from.GetComponent<Stats>().takeDamage(selfDamage);\r\n                actionLog += from.name + \" suffered backlash, taking \" + selfDamage + \" damage. \";\r\n            }\r\n        \r\n        ",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" struck \" + to.name + \" with a Random Strike, dealing \" + spell.damage + \" damage. \";\r\n            if (UnityEngine.Random.Range(0, 100) < 5) {\r\n                from.GetComponent<Stats>().takeDamage(spell.selfDamage);\r\n                actionLog += from.name + \" suffered backlash, taking \" + spell.selfDamage + \" damage. \";\r\n            }\r\n        \r\n        ",
     "ColorR": 255,
     "ColorG": 0,
     "ColorB": 0,

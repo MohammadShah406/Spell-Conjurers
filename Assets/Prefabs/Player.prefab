@@ -246,6 +246,7 @@ MonoBehaviour:
   yPos: 1.5
   moveRange: 3
   moveSpeed: 5
+  rotateSpeed: 1000
   playerSpellPanel: {fileID: 0}
   spellTextHolder: {fileID: 0}
   playerStatsHolder: {fileID: 0}
@@ -253,6 +254,7 @@ MonoBehaviour:
   selectedEnemy: {fileID: 0}
   playerStats: {fileID: 0}
   turnStarted: 1
+  playerVisual: {fileID: 4841072192405402917}
 --- !u!1 &8468385736157514419
 GameObject:
   m_ObjectHideFlags: 0
@@ -421,5 +423,10 @@ PrefabInstance:
 --- !u!4 &1774226133001654806 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7773601277109138866, guid: 9d24bed3e024f99409ecedc822ed1a58, type: 3}
+  m_PrefabInstance: {fileID: 8322142386060502948}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &4841072192405402917 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3481495726398362241, guid: 9d24bed3e024f99409ecedc822ed1a58, type: 3}
   m_PrefabInstance: {fileID: 8322142386060502948}
   m_PrefabAsset: {fileID: 0}

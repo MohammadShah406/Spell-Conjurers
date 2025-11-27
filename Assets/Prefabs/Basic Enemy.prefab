@@ -134,6 +134,7 @@ MonoBehaviour:
   attackRange: 1
   moveSpeed: 5
   dmgMultiplier: 1
+  rotateSpeed: 1000
   spells:
   - damage: 0
     accuracy: 0
@@ -197,6 +198,7 @@ MonoBehaviour:
     statusDamagePerTurn: 0
   preffered: 0
   debugMode: 1
+  enemyVisual: {fileID: 6248354649078076923}
 --- !u!114 &4304294238587302398
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -558,5 +560,10 @@ PrefabInstance:
 --- !u!4 &3579195426362864047 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6393006942970025123, guid: 6752c3a5a6c492b43864e42541d5d3ed, type: 3}
+  m_PrefabInstance: {fileID: 7571499540899570956}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &6248354649078076923 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4586287047239512311, guid: 6752c3a5a6c492b43864e42541d5d3ed, type: 3}
   m_PrefabInstance: {fileID: 7571499540899570956}
   m_PrefabAsset: {fileID: 0}

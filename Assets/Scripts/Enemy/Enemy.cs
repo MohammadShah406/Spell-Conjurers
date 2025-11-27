@@ -17,6 +17,7 @@ public class Enemy : MonoBehaviour
     public int attackRange = 1;
     public float moveSpeed = 5f;
     public float dmgMultiplier = 1.0f;
+    public float rotateSpeed = 1000f; // degrees/second
 
     private GridManager gridManager;
     private GameObject player;
@@ -26,9 +27,9 @@ public class Enemy : MonoBehaviour
     public int preffered = 0;
 
     public bool debugMode = true;
+    [SerializeField] private GameObject enemyVisual;
 
 
-    
 
     private void Update()
     {
@@ -124,6 +125,21 @@ public class Enemy : MonoBehaviour
         while (t < 1f)
         {
             t += Time.deltaTime * moveSpeed;
+
+            // Rotate toward movement direction (Y-axis only)
+            Vector3 flatTarget = new Vector3(end.x, transform.position.y, end.z);
+            Vector3 direction = flatTarget - transform.position;
+            direction.y = 0f;
+
+            if (direction.sqrMagnitude > 0.0001f)
+            {
+                Quaternion lookRot = Quaternion.LookRotation(direction.normalized, Vector3.up);
+
+                // Use the visualObject(fallback to root if visual is not assigned)
+                Transform rotTarget = enemyVisual != null ? enemyVisual.transform : transform;
+                rotTarget.rotation = Quaternion.RotateTowards(rotTarget.rotation, lookRot, rotateSpeed * Time.deltaTime);
+            }
+
             transform.position = Vector3.Lerp(start, end, t);
             yield return null;
         }
@@ -152,6 +168,16 @@ public class Enemy : MonoBehaviour
             while (t < 1f)
             {
                 t += Time.deltaTime * moveSpeed;
+
+                // Rotate toward movement direction (Y-axis only)
+                Vector3 flatTarget = new Vector3(end.x, transform.position.y, end.z);
+                Vector3 direction = flatTarget - transform.position;
+                if (direction.sqrMagnitude > 0.0001f)
+                {
+                    Quaternion lookRot = Quaternion.LookRotation(direction.normalized, Vector3.up);
+                    transform.rotation = Quaternion.RotateTowards(transform.rotation, lookRot, rotateSpeed * Time.deltaTime);
+                }
+
                 transform.position = Vector3.Lerp(start, end, t);
                 yield return null;
             }
