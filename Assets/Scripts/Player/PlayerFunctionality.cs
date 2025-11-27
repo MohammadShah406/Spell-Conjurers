@@ -213,7 +213,7 @@ public class PlayerFunctionality : MonoBehaviour
                 {
                     Quaternion lookRot = Quaternion.LookRotation(direction.normalized, Vector3.up);
 
-                    // Use the visual's rotation as the current rotation (fallback to root if visual is not assigned)
+                    // Use the visualObject(fallback to root if visual is not assigned)
                     Transform rotTarget = playerVisual != null ? playerVisual.transform : transform;
                     rotTarget.rotation = Quaternion.RotateTowards(rotTarget.rotation, lookRot, rotateSpeed * Time.deltaTime);
                 }
@@ -531,6 +531,7 @@ public class PlayerFunctionality : MonoBehaviour
 
     public void OnTurnStart()
     {
+        SyncGridPosition();
         playerStats.resource = Mathf.Clamp((int)(playerStats.resource + (playerStats.maxResource * 0.1)), 0, playerStats.maxResource);
         playerStats.UpdateStatsHolder();
         turnStarted = true;
@@ -538,6 +539,7 @@ public class PlayerFunctionality : MonoBehaviour
 
     public void OnTurnEnd()
     {
+        SyncGridPosition();
         turnStarted = false;
     }
 

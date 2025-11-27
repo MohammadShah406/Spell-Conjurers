@@ -69,6 +69,7 @@ public class Enemy : MonoBehaviour
 
     public IEnumerator TakeTurn(System.Action onComplete)
     {
+        SyncGridPosition();
         virtualCamera.Priority = 11; // Activate enemy camera
 
         yield return new WaitForSeconds(TurnManager.Instance.waitDuration);
