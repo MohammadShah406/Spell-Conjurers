@@ -1087,11 +1087,11 @@ PrefabInstance:
       objectReference: {fileID: 2013295178}
     - target: {fileID: 1817306701572098071, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1922911060062191379, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2088688077893976366, guid: 2c82768d14cbca6429019eed3ddf00e7, type: 3}
       propertyPath: m_IsActive
@@ -1920,7 +1920,7 @@ MonoBehaviour:
   JsonGenerationStarted:
     m_PersistentCalls:
       m_Calls: []
-  numberOfRounds: 1
+  numberOfRounds: 10
 --- !u!1 &911918273
 GameObject:
   m_ObjectHideFlags: 0

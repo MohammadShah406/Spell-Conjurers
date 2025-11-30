@@ -4822,8 +4822,10 @@ public class PlayerUnitsView : MonoBehaviour
 {
     [SerializeField] private List<Image> targetImage;
     [SerializeField] private List<Sprite> characterSprites;
+    [SerializeField] private Sprite defaultSprite;
     [SerializeField] private List<GameObject> createCharButton;
     [SerializeField] private List<GameObject> editCharButton;
+
     public int targetSlot;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -4871,6 +4873,12 @@ public class PlayerUnitsView : MonoBehaviour
     {
         Debug.Log("target index Slot is " + targetSlot);
         ChangeImage(targetImage[targetSlot], characterSprites[targetSlot]);
+    }
+
+    public void ChangeCharacterBackImage()
+    {
+        Debug.Log("target index Slot is " + targetSlot);
+        ChangeImage(targetImage[targetSlot], defaultSprite);
     }
 
     public void ChangeButton()
