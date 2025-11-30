@@ -13,4 +13,8 @@ public class GameOverView : MonoBehaviour
     {
         
     }
+    private void OnEnable()
+    {
+        GameManager.Instance.GameStarted = false;
+    }
 }

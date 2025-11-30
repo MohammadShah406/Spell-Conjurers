@@ -1,0 +1,15 @@
+{
+    "damage": 15,
+    "accuracy": 85,
+    "resourceCost": 20,
+    "range": 3,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Earth Quake",
+    "description": "Unleashes a shockwave of earth that damages nearby enemies.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" unleashed an Earth Quake on \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n        \r\n        ",
+    "spellVisualType": "Sphere",
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}

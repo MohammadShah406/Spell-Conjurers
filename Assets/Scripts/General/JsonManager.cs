@@ -10,8 +10,10 @@ public class JsonManager : MonoBehaviour
 {
     public static JsonManager Instance { get; private set; }
 
-    private string FolderPath => Path.Combine(Application.persistentDataPath, "Spells");
-    private string playerFolderPath => Path.Combine(Application.persistentDataPath, "PlayerSpells");
+    private string spellsFolderPath => Path.Combine(Application.persistentDataPath, "Spells");
+    private string playerSpellsFolderPath => Path.Combine(Application.persistentDataPath, "PlayerSpells");
+
+    private string premadeSpellsFolderPath => Path.Combine(Application.streamingAssetsPath, "SpellPool");
 
     // Dictionary to store precompiled spell runners
     public Dictionary<Spell, ScriptRunner<object>> compiledSpells = new Dictionary<Spell, ScriptRunner<object>>();
@@ -30,18 +32,18 @@ public class JsonManager : MonoBehaviour
         }
 
         // Ensure folders exist
-        if (!Directory.Exists(FolderPath))
-            Directory.CreateDirectory(FolderPath);
+        if (!Directory.Exists(spellsFolderPath))
+            Directory.CreateDirectory(spellsFolderPath);
 
-        if (!Directory.Exists(playerFolderPath))
-            Directory.CreateDirectory(playerFolderPath);
+        if (!Directory.Exists(playerSpellsFolderPath))
+            Directory.CreateDirectory(playerSpellsFolderPath);
 
         PrecompileAllSpells();
     }
 
     private void PrecompileAllSpells()
     {
-        string[] files = Directory.GetFiles(FolderPath, "*.json");
+        string[] files = Directory.GetFiles(spellsFolderPath, "*.json");
         foreach (string file in files)
         {
             string json = File.ReadAllText(file);
@@ -49,7 +51,7 @@ public class JsonManager : MonoBehaviour
             PrecompileSpell(spell);
         }
 
-        files = Directory.GetFiles(playerFolderPath, "*.json");
+        files = Directory.GetFiles(playerSpellsFolderPath, "*.json");
         foreach (string file in files)
         {
             string json = File.ReadAllText(file);
@@ -65,31 +67,41 @@ public class JsonManager : MonoBehaviour
         DontDestroyOnLoad(gameObject); // Keep it across scenes
 
         // Ensure the folder exists inside project
-        if (!Directory.Exists(FolderPath))
+        if (!Directory.Exists(spellsFolderPath))
         {
-            Directory.CreateDirectory(FolderPath);
-            Debug.Log($"Created folder at {FolderPath}");
+            Directory.CreateDirectory(spellsFolderPath);
+            Debug.Log($"Created folder at {spellsFolderPath}");
         }
-        if (!Directory.Exists(playerFolderPath))
+        if (!Directory.Exists(playerSpellsFolderPath))
         {
-            Directory.CreateDirectory(playerFolderPath);
-            Debug.Log($"Created folder at {playerFolderPath}");
+            Directory.CreateDirectory(playerSpellsFolderPath);
+            Debug.Log($"Created folder at {playerSpellsFolderPath}");
+        }
+        if (!Directory.Exists(premadeSpellsFolderPath))
+        {
+            Directory.CreateDirectory(premadeSpellsFolderPath);
+            Debug.Log($"Created folder at {premadeSpellsFolderPath}");
+        }
+
+        if (Directory.Exists(premadeSpellsFolderPath))
+        {
+            MoveSpellsFromFolders(Path.Combine(Application.streamingAssetsPath, "SpellPool"), Path.Combine(Application.persistentDataPath,"Spells"), overwrite: true);
         }
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     public Spell ReturnRandomSpell()
     {
-        string[] files = Directory.GetFiles(FolderPath, "*.json");
+        string[] files = Directory.GetFiles(spellsFolderPath, "*.json");
 
         if (files.Length == 0)
         {
-            Debug.LogWarning("No spell files found in " + FolderPath);
+            Debug.LogWarning("No spell files found in " + spellsFolderPath);
             return null;
         }
 
@@ -105,11 +117,11 @@ public class JsonManager : MonoBehaviour
 
     public Spell ReturnPlayerSpell(int index)
     {
-        string[] files = Directory.GetFiles(playerFolderPath, "*.json");
+        string[] files = Directory.GetFiles(playerSpellsFolderPath, "*.json");
 
         if (files.Length == 0)
         {
-            Debug.LogWarning("No spell files found in " + playerFolderPath);
+            Debug.LogWarning("No spell files found in " + playerSpellsFolderPath);
             return null;
         }
 
@@ -138,7 +150,7 @@ public class JsonManager : MonoBehaviour
             return;
         }
 
-        string filePath = Path.Combine(FolderPath, spell.name + ".json");
+        string filePath = Path.Combine(spellsFolderPath, spell.name + ".json");
         string json = JsonUtility.ToJson(spell, true);
         File.WriteAllText(filePath, json);
 
@@ -148,7 +160,7 @@ public class JsonManager : MonoBehaviour
     {
         try
         {
-            string[] files = Directory.GetFiles(playerFolderPath, "*.json");
+            string[] files = Directory.GetFiles(playerSpellsFolderPath, "*.json");
             foreach (string file in files)
             {
                 File.Delete(file);
@@ -166,14 +178,16 @@ public class JsonManager : MonoBehaviour
         SpellFunction.Instance.PrecompileSpell(spell);
     }
 
-    // Moves all player spells (json files) from the player folder into the main spells folder.
+    // Moves all files from a source folder to a destination folder.
     // If overwrite is true existing files in the destination will be replaced.
-    public void MovePlayerSpellsToSpells(bool overwrite = true)
+    public void MoveSpellsFromFolders(string sourceDir, string targetDir, bool overwrite = true)
     {
+
         try
         {
             // Determine source directory (configured or fallback to Assets/PlayerSpells)
-            string sourceDir = playerFolderPath;
+
+
             if (!Directory.Exists(sourceDir))
             {
                 string fallback = Path.Combine(Application.dataPath, "PlayerSpells");
@@ -184,14 +198,14 @@ public class JsonManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning($"No player spells folder found at '{playerFolderPath}' or fallback '{fallback}'. Nothing to move.");
+                    Debug.LogWarning($"No player spells folder found at '{playerSpellsFolderPath}' or fallback '{fallback}'. Nothing to move.");
                     return;
                 }
             }
 
-            if (!Directory.Exists(FolderPath))
+            if (!Directory.Exists(targetDir))
             {
-                Directory.CreateDirectory(FolderPath);
+                Directory.CreateDirectory(targetDir);
             }
 
             string[] files = Directory.GetFiles(sourceDir, "*.json");
@@ -204,7 +218,7 @@ public class JsonManager : MonoBehaviour
             foreach (string srcFile in files)
             {
                 string fileName = Path.GetFileName(srcFile);
-                string destFile = Path.Combine(FolderPath, fileName);
+                string destFile = Path.Combine(targetDir, fileName);
 
                 if (File.Exists(destFile))
                 {
@@ -246,4 +260,5 @@ public class JsonManager : MonoBehaviour
             Debug.LogError($"Error moving player spells: {e.Message}");
         }
     }
+
 }

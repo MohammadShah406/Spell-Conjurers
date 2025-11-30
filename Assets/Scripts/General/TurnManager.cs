@@ -40,20 +40,13 @@ public class TurnManager : MonoBehaviour
         if (enemyManager == null)
         {
             Debug.Log("TurnManager: enemyManager not found. Attempting to find");
-            enemyManager = GameObject.FindAnyObjectByType<EnemyManager>();
+            enemyManager = EnemyManager.Instance;
         }
     }
 
     void Update()
     {
-        // Force switch turn
-        if (Input.GetKeyDown(KeyCode.T))
-        {
-            if (GameManager.Instance.players.Count > 0)
-            {
-                WaitButtonPressed();
-            }
-        }
+        
     }
 
     public void EndPlayerTurn()

@@ -18,6 +18,8 @@ public class GameManager : MonoBehaviour
 
     public bool debugMode = false;
 
+    public bool GameStarted = false;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -35,10 +37,7 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        if(Input.GetKeyDown(KeyCode.R))
-        {
-            GenerateNextRound();
-        }
+        
     }
 
     public void CallSetSpellFrom(string tragetName)

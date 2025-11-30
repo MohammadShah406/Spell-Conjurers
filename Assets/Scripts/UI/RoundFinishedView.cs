@@ -37,4 +37,9 @@ public class RoundFinishedView : MonoBehaviour
         GameManager.Instance.CleanUpPlayer();
         UIController.Instance.SwitchUI(UIIndex.Game);
     }
+
+    private void OnEnable()
+    {
+        GameManager.Instance.GameStarted = false;
+    }
 }

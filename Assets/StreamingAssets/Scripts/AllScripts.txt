@@ -1601,6 +1601,8 @@ public class GameManager : MonoBehaviour
 
     public bool debugMode = false;
 
+    public bool GameStarted = false;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -1618,10 +1620,7 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        if(Input.GetKeyDown(KeyCode.R))
-        {
-            GenerateNextRound();
-        }
+        
     }
 
     public void CallSetSpellFrom(string tragetName)
@@ -1744,8 +1743,10 @@ public class JsonManager : MonoBehaviour
 {
     public static JsonManager Instance { get; private set; }
 
-    private string FolderPath => Path.Combine(Application.persistentDataPath, "Spells");
-    private string playerFolderPath => Path.Combine(Application.persistentDataPath, "PlayerSpells");
+    private string spellsFolderPath => Path.Combine(Application.persistentDataPath, "Spells");
+    private string playerSpellsFolderPath => Path.Combine(Application.persistentDataPath, "PlayerSpells");
+
+    private string premadeSpellsFolderPath => Path.Combine(Application.streamingAssetsPath, "SpellPool");
 
     // Dictionary to store precompiled spell runners
     public Dictionary<Spell, ScriptRunner<object>> compiledSpells = new Dictionary<Spell, ScriptRunner<object>>();
@@ -1764,18 +1765,18 @@ public class JsonManager : MonoBehaviour
         }
 
         // Ensure folders exist
-        if (!Directory.Exists(FolderPath))
-            Directory.CreateDirectory(FolderPath);
+        if (!Directory.Exists(spellsFolderPath))
+            Directory.CreateDirectory(spellsFolderPath);
 
-        if (!Directory.Exists(playerFolderPath))
-            Directory.CreateDirectory(playerFolderPath);
+        if (!Directory.Exists(playerSpellsFolderPath))
+            Directory.CreateDirectory(playerSpellsFolderPath);
 
         PrecompileAllSpells();
     }
 
     private void PrecompileAllSpells()
     {
-        string[] files = Directory.GetFiles(FolderPath, "*.json");
+        string[] files = Directory.GetFiles(spellsFolderPath, "*.json");
         foreach (string file in files)
         {
             string json = File.ReadAllText(file);
@@ -1783,7 +1784,7 @@ public class JsonManager : MonoBehaviour
             PrecompileSpell(spell);
         }
 
-        files = Directory.GetFiles(playerFolderPath, "*.json");
+        files = Directory.GetFiles(playerSpellsFolderPath, "*.json");
         foreach (string file in files)
         {
             string json = File.ReadAllText(file);
@@ -1799,31 +1800,41 @@ public class JsonManager : MonoBehaviour
         DontDestroyOnLoad(gameObject); // Keep it across scenes
 
         // Ensure the folder exists inside project
-        if (!Directory.Exists(FolderPath))
+        if (!Directory.Exists(spellsFolderPath))
         {
-            Directory.CreateDirectory(FolderPath);
-            Debug.Log($"Created folder at {FolderPath}");
+            Directory.CreateDirectory(spellsFolderPath);
+            Debug.Log($"Created folder at {spellsFolderPath}");
         }
-        if (!Directory.Exists(playerFolderPath))
+        if (!Directory.Exists(playerSpellsFolderPath))
         {
-            Directory.CreateDirectory(playerFolderPath);
-            Debug.Log($"Created folder at {playerFolderPath}");
+            Directory.CreateDirectory(playerSpellsFolderPath);
+            Debug.Log($"Created folder at {playerSpellsFolderPath}");
+        }
+        if (!Directory.Exists(premadeSpellsFolderPath))
+        {
+            Directory.CreateDirectory(premadeSpellsFolderPath);
+            Debug.Log($"Created folder at {premadeSpellsFolderPath}");
+        }
+
+        if (Directory.Exists(premadeSpellsFolderPath))
+        {
+            MoveSpellsFromFolders(Path.Combine(Application.streamingAssetsPath, "SpellPool"), Path.Combine(Application.persistentDataPath,"Spells"), overwrite: true);
         }
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     public Spell ReturnRandomSpell()
     {
-        string[] files = Directory.GetFiles(FolderPath, "*.json");
+        string[] files = Directory.GetFiles(spellsFolderPath, "*.json");
 
         if (files.Length == 0)
         {
-            Debug.LogWarning("No spell files found in " + FolderPath);
+            Debug.LogWarning("No spell files found in " + spellsFolderPath);
             return null;
         }
 
@@ -1839,11 +1850,11 @@ public class JsonManager : MonoBehaviour
 
     public Spell ReturnPlayerSpell(int index)
     {
-        string[] files = Directory.GetFiles(playerFolderPath, "*.json");
+        string[] files = Directory.GetFiles(playerSpellsFolderPath, "*.json");
 
         if (files.Length == 0)
         {
-            Debug.LogWarning("No spell files found in " + playerFolderPath);
+            Debug.LogWarning("No spell files found in " + playerSpellsFolderPath);
             return null;
         }
 
@@ -1872,7 +1883,7 @@ public class JsonManager : MonoBehaviour
             return;
         }
 
-        string filePath = Path.Combine(FolderPath, spell.name + ".json");
+        string filePath = Path.Combine(spellsFolderPath, spell.name + ".json");
         string json = JsonUtility.ToJson(spell, true);
         File.WriteAllText(filePath, json);
 
@@ -1882,7 +1893,7 @@ public class JsonManager : MonoBehaviour
     {
         try
         {
-            string[] files = Directory.GetFiles(playerFolderPath, "*.json");
+            string[] files = Directory.GetFiles(playerSpellsFolderPath, "*.json");
             foreach (string file in files)
             {
                 File.Delete(file);
@@ -1900,14 +1911,16 @@ public class JsonManager : MonoBehaviour
         SpellFunction.Instance.PrecompileSpell(spell);
     }
 
-    // Moves all player spells (json files) from the player folder into the main spells folder.
+    // Moves all files from a source folder to a destination folder.
     // If overwrite is true existing files in the destination will be replaced.
-    public void MovePlayerSpellsToSpells(bool overwrite = true)
+    public void MoveSpellsFromFolders(string sourceDir, string targetDir, bool overwrite = true)
     {
+
         try
         {
             // Determine source directory (configured or fallback to Assets/PlayerSpells)
-            string sourceDir = playerFolderPath;
+
+
             if (!Directory.Exists(sourceDir))
             {
                 string fallback = Path.Combine(Application.dataPath, "PlayerSpells");
@@ -1918,14 +1931,14 @@ public class JsonManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning($"No player spells folder found at '{playerFolderPath}' or fallback '{fallback}'. Nothing to move.");
+                    Debug.LogWarning($"No player spells folder found at '{playerSpellsFolderPath}' or fallback '{fallback}'. Nothing to move.");
                     return;
                 }
             }
 
-            if (!Directory.Exists(FolderPath))
+            if (!Directory.Exists(targetDir))
             {
-                Directory.CreateDirectory(FolderPath);
+                Directory.CreateDirectory(targetDir);
             }
 
             string[] files = Directory.GetFiles(sourceDir, "*.json");
@@ -1938,7 +1951,7 @@ public class JsonManager : MonoBehaviour
             foreach (string srcFile in files)
             {
                 string fileName = Path.GetFileName(srcFile);
-                string destFile = Path.Combine(FolderPath, fileName);
+                string destFile = Path.Combine(targetDir, fileName);
 
                 if (File.Exists(destFile))
                 {
@@ -1980,6 +1993,7 @@ public class JsonManager : MonoBehaviour
             Debug.LogError($"Error moving player spells: {e.Message}");
         }
     }
+
 }
 
 
@@ -2215,11 +2229,12 @@ public class SpellGlobals
 
 
 // FILE: Scripts\General\Stats.cs
+using System;
+using System.Collections.Generic;
+using System.IO;
 using JetBrains.Annotations;
 using NUnit.Framework;
-using System.Collections.Generic;
 using TMPro;
-using System;
 using UnityEngine;
 
 public class Stats : MonoBehaviour
@@ -2410,7 +2425,7 @@ public class Stats : MonoBehaviour
             // Move player spells into the main Spells folder (overwrite if necessary)
             try
             {
-                JsonManager.Instance?.MovePlayerSpellsToSpells(true);
+                JsonManager.Instance?.MoveSpellsFromFolders(Path.Combine(Application.persistentDataPath,"PlayerSpells"), Path.Combine(Application.persistentDataPath, "Spells"), true);
             }
             catch (Exception ex)
             {
@@ -2490,20 +2505,13 @@ public class TurnManager : MonoBehaviour
         if (enemyManager == null)
         {
             Debug.Log("TurnManager: enemyManager not found. Attempting to find");
-            enemyManager = GameObject.FindAnyObjectByType<EnemyManager>();
+            enemyManager = EnemyManager.Instance;
         }
     }
 
     void Update()
     {
-        // Force switch turn
-        if (Input.GetKeyDown(KeyCode.T))
-        {
-            if (GameManager.Instance.players.Count > 0)
-            {
-                WaitButtonPressed();
-            }
-        }
+        
     }
 
     public void EndPlayerTurn()
@@ -2528,6 +2536,12 @@ public class TurnManager : MonoBehaviour
         }
 
         currentState = TurnState.EnemyTurn;
+
+        if (GameManager.Instance.players.Count == 0)
+        {
+            Debug.Log("No players found. Cannot continue with turns.");
+            return;
+        }
         StartCoroutine(HandleEnemyTurn());
 
         GameManager.Instance.CheckGameState();
@@ -2535,28 +2549,41 @@ public class TurnManager : MonoBehaviour
 
     private IEnumerator HandleEnemyTurn()
     {
+
         if(GameManager.Instance.players.Count == 0)
         {
             Debug.Log("No players found. Skipping enemy turn.");
             yield break;
         }
+
         // Tell the enemies to act
         yield return StartCoroutine(StartEnemyTurnsCoroutine());
 
         GameManager.Instance.CheckGameState();
         Debug.Log("Enemy turn complete. Back to player turn.");
         currentState = TurnState.PlayerTurn;
-        GameManager.Instance.players[0].GetComponent<PlayerFunctionality>().OnTurnStart();
 
-        foreach (var enemy in EnemyManager.Instance.enemies)
+
+        if (GameManager.Instance.players.Count == 0)
         {
-            enemy.GetComponent<Enemy>().virtualCamera.Priority = 9; 
+            Debug.Log("No players found. Cannot start player turn.");
+            yield break;
         }
+        else
+        {
+            GameManager.Instance.players[0].GetComponent<PlayerFunctionality>().OnTurnStart();
 
-        // Reset player movement for next turn
-        var player = FindAnyObjectByType<PlayerFunctionality>();
-        if (player != null)
-            player.ResetTurn();
+            foreach (var enemy in EnemyManager.Instance.enemies)
+            {
+                enemy.GetComponent<Enemy>().virtualCamera.Priority = 9;
+            }
+
+            // Reset player movement for next turn
+            var player = FindAnyObjectByType<PlayerFunctionality>();
+            if (player != null)
+                player.ResetTurn();
+        }
+           
     }
 
     public void WaitButtonPressed()
@@ -4600,6 +4627,10 @@ public class GameOverView : MonoBehaviour
     {
         
     }
+    private void OnEnable()
+    {
+        GameManager.Instance.GameStarted = false;
+    }
 }
 
 
@@ -4632,7 +4663,18 @@ public class GameView : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            GameManager.Instance.GenerateNextRound();
+        }
+        // Force switch turn
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            if (GameManager.Instance.players.Count > 0)
+            {
+                TurnManager.Instance.WaitButtonPressed();
+            }
+        }
     }
     public void StartGame()
     {
@@ -4646,6 +4688,8 @@ public class GameView : MonoBehaviour
 
     public void ResetGame()
     {
+        GameManager.Instance.GameStarted = true;
+
         if (GameManager.Instance == null || GridManager.Instance == null)
             return;
 
@@ -4906,6 +4950,11 @@ public class RoundFinishedView : MonoBehaviour
         GameManager.Instance.roundNo += 1;
         GameManager.Instance.CleanUpPlayer();
         UIController.Instance.SwitchUI(UIIndex.Game);
+    }
+
+    private void OnEnable()
+    {
+        GameManager.Instance.GameStarted = false;
     }
 }
 

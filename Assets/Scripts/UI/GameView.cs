@@ -25,7 +25,18 @@ public class GameView : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            GameManager.Instance.GenerateNextRound();
+        }
+        // Force switch turn
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            if (GameManager.Instance.players.Count > 0)
+            {
+                TurnManager.Instance.WaitButtonPressed();
+            }
+        }
     }
     public void StartGame()
     {
@@ -39,6 +50,8 @@ public class GameView : MonoBehaviour
 
     public void ResetGame()
     {
+        GameManager.Instance.GameStarted = true;
+
         if (GameManager.Instance == null || GridManager.Instance == null)
             return;
 

@@ -1,8 +1,9 @@
-﻿using JetBrains.Annotations;
-using NUnit.Framework;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using JetBrains.Annotations;
+using NUnit.Framework;
 using TMPro;
-using System;
 using UnityEngine;
 
 public class Stats : MonoBehaviour
@@ -193,7 +194,7 @@ public class Stats : MonoBehaviour
             // Move player spells into the main Spells folder (overwrite if necessary)
             try
             {
-                JsonManager.Instance?.MovePlayerSpellsToSpells(true);
+                JsonManager.Instance?.MoveSpellsFromFolders(Path.Combine(Application.persistentDataPath,"PlayerSpells"), Path.Combine(Application.persistentDataPath, "Spells"), true);
             }
             catch (Exception ex)
             {

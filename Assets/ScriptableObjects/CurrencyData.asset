@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: CurrencyData
   m_EditorClassIdentifier: 
   gold: 0
-  manaStone: 19
+  manaStone: 0
