@@ -78,6 +78,12 @@ public class TurnManager : MonoBehaviour
         }
 
         currentState = TurnState.EnemyTurn;
+
+        if (GameManager.Instance.players.Count == 0)
+        {
+            Debug.Log("No players found. Cannot continue with turns.");
+            return;
+        }
         StartCoroutine(HandleEnemyTurn());
 
         GameManager.Instance.CheckGameState();
@@ -85,28 +91,41 @@ public class TurnManager : MonoBehaviour
 
     private IEnumerator HandleEnemyTurn()
     {
+
         if(GameManager.Instance.players.Count == 0)
         {
             Debug.Log("No players found. Skipping enemy turn.");
             yield break;
         }
+
         // Tell the enemies to act
         yield return StartCoroutine(StartEnemyTurnsCoroutine());
 
         GameManager.Instance.CheckGameState();
         Debug.Log("Enemy turn complete. Back to player turn.");
         currentState = TurnState.PlayerTurn;
-        GameManager.Instance.players[0].GetComponent<PlayerFunctionality>().OnTurnStart();
 
-        foreach (var enemy in EnemyManager.Instance.enemies)
+
+        if (GameManager.Instance.players.Count == 0)
         {
-            enemy.GetComponent<Enemy>().virtualCamera.Priority = 9; 
+            Debug.Log("No players found. Cannot start player turn.");
+            yield break;
         }
+        else
+        {
+            GameManager.Instance.players[0].GetComponent<PlayerFunctionality>().OnTurnStart();
 
-        // Reset player movement for next turn
-        var player = FindAnyObjectByType<PlayerFunctionality>();
-        if (player != null)
-            player.ResetTurn();
+            foreach (var enemy in EnemyManager.Instance.enemies)
+            {
+                enemy.GetComponent<Enemy>().virtualCamera.Priority = 9;
+            }
+
+            // Reset player movement for next turn
+            var player = FindAnyObjectByType<PlayerFunctionality>();
+            if (player != null)
+                player.ResetTurn();
+        }
+           
     }
 
     public void WaitButtonPressed()
