@@ -129,15 +129,15 @@ public class LLMJsonGridCreator : MonoBehaviour
                 role = "user",
                 content = @"Generate a JSON object containing a field called ""mapData"". 
                             Rules:
-                            - current round: " + currentRound + @"
-                            - mapData must be a 12x12 2D array and it will increaase with the current round number to the max of 20x20.
+                            - The current round number is " + currentRound + @"
+                            - mapData must be a 12x12 2D array and it will increase with the current round number to the max of 20x20.
                             - Each row must contain min of 12 integers and max of 20 integers.
                             - Only use integers:
                               0 = empty
                               1 = wall
                               2 = Enemy
                               3 = Player
-                            - Include at least Two ""2"" and it will increaase with the current round number to the max of 6.
+                            - Include at least Two ""2"" and it will increase with the current round number to the max of 10.
                             - Must include 1 ""3"".
                             - ""3"" must be placed on a cell that is not adjacent (horizontally, vertically, or diagonally) to any ""2"".
                             - ""3"" must be at least 3 cell away from each ""2"".
