@@ -15,6 +15,9 @@ public class JsonManager : MonoBehaviour
 
     private string premadeSpellsFolderPath => Path.Combine(Application.streamingAssetsPath, "SpellPool");
 
+    private string roundFilesFolderPath => Path.Combine(Application.persistentDataPath, "Rounds");
+
+
     // Dictionary to store precompiled spell runners
     public Dictionary<Spell, ScriptRunner<object>> compiledSpells = new Dictionary<Spell, ScriptRunner<object>>();
 
@@ -37,6 +40,9 @@ public class JsonManager : MonoBehaviour
 
         if (!Directory.Exists(playerSpellsFolderPath))
             Directory.CreateDirectory(playerSpellsFolderPath);
+
+        if (!Directory.Exists(roundFilesFolderPath))
+            Directory.CreateDirectory(roundFilesFolderPath);
 
         PrecompileAllSpells();
     }
@@ -261,4 +267,33 @@ public class JsonManager : MonoBehaviour
         }
     }
 
+    public bool CanGenerate(int roundsNo)
+    {
+        int roundsTotal = CheckRoundFiles();
+        if (roundsNo >= roundsTotal - 2)
+            return true;
+        else
+            return false;
+    }
+
+    public int CheckRoundFiles()
+    {
+        try
+        {
+            if (!Directory.Exists(roundFilesFolderPath))
+            {
+                // If the folder doesn't exist, there are no files.
+                return 0;
+            }
+
+            string[] files = Directory.GetFiles(roundFilesFolderPath, "*.json");
+            return files.Length;
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error checking round files: {e.Message}");
+            return 0;
+        }
+    }
+    
 }

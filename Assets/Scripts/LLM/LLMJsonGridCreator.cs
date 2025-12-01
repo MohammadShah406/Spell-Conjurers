@@ -22,8 +22,21 @@ public class LLMJsonGridCreator : MonoBehaviour
     public int numberOfRounds = 1;
     private int currentRound = 1;
 
+    public static LLMJsonGridCreator Instance { get; private set; }
+
     private void Awake()
     {
+        if(Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         var config = OpenAIConfig.LoadConfig();
         if (config == null)
         {
@@ -38,7 +51,7 @@ public class LLMJsonGridCreator : MonoBehaviour
     }
     public void Start()
     {
-        StartJsonGeneration();
+        //StartJsonGeneration();
     }
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public void StartJsonGeneration()

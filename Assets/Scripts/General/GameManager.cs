@@ -20,6 +20,8 @@ public class GameManager : MonoBehaviour
 
     public bool GameStarted = false;
 
+    private bool shouldGenerate = false;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -33,6 +35,11 @@ public class GameManager : MonoBehaviour
         }
         LLMController = llmController;
         getcurrencyData = currencyData;
+    }
+
+    private void Start()
+    {
+        tryGeneratingRounds();
     }
 
     private void Update()
@@ -111,6 +118,8 @@ public class GameManager : MonoBehaviour
         ChangeCurrency(100 + 100 * roundNo, true);
 
         UIController.Instance.SwitchUI(UIIndex.RoundFinished);
+
+        
     }
 
     public void ChangeCurrency(int amount, bool gold)
@@ -141,6 +150,18 @@ public class GameManager : MonoBehaviour
         roundNo += 1;
         UIController.Instance.getGameView.ResetGame();
 
+        tryGeneratingRounds();
+    }
+
+    public void tryGeneratingRounds()
+    {
+        shouldGenerate = JsonManager.Instance.CanGenerate(roundNo);
+
+        if (shouldGenerate)
+        {
+            LLMJsonGridCreator.Instance.StartJsonGeneration();
+            shouldGenerate = false;
+        }
     }
 
 }

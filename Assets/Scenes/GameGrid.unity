@@ -1920,7 +1920,7 @@ MonoBehaviour:
   JsonGenerationStarted:
     m_PersistentCalls:
       m_Calls: []
-  numberOfRounds: 10
+  numberOfRounds: 2
 --- !u!1 &911918273
 GameObject:
   m_ObjectHideFlags: 0
