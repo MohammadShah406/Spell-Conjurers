@@ -20,6 +20,8 @@ public class Stats : MonoBehaviour
 
     public GameObject floatingTextPrefab;
 
+    public GameObject manaCrystalPrefab;
+
     public GameObject uiStatsHolder;
 
 
@@ -159,10 +161,19 @@ public class Stats : MonoBehaviour
         isDead = true;
 
         // If this is an enemy, remove it from EnemyManager and GameManager lists,
+        //Roll for mana crystal drop,
         // clear its tile occupant and destroy the GameObject.
         Enemy enemyComp = GetComponent<Enemy>();
         if (enemyComp != null)
         {
+            int rand = UnityEngine.Random.Range(1, 101);
+            Debug.Log("Crystal roll: " + rand);
+            if(rand <= 25)
+            {
+                GameObject manaCrystal = Instantiate(manaCrystalPrefab, transform.position, Quaternion.identity);
+                GameManager.Instance.ChangeCurrency(1, false);
+            }
+
             if (EnemyManager.Instance != null)
             {
                 EnemyManager.Instance.enemies.Remove(enemyComp);

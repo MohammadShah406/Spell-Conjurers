@@ -22,6 +22,8 @@ public class GameManager : MonoBehaviour
 
     private bool shouldGenerate = false;
 
+    public bool GameEnded = false;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -91,7 +93,12 @@ public class GameManager : MonoBehaviour
         }
         if (enemyDeaths >= enemies.Count)
         {
-            OnPlayersWon();
+            if(!GameEnded)
+            {
+                GameEnded = true;
+                OnPlayersWon();
+            }
+            
         }
         
     }
@@ -124,6 +131,8 @@ public class GameManager : MonoBehaviour
 
     public void ChangeCurrency(int amount, bool gold)
     {
+        Debug.Log("Crystal Currency: " + amount + " " + gold);
+
         if (gold)
             getcurrencyData.gold = getcurrencyData.gold + amount;
         else

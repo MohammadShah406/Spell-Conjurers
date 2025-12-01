@@ -3135,6 +3135,7 @@ MonoBehaviour:
   lostGame: 0
   debugMode: 0
   GameStarted: 0
+  GameEnded: 0
 --- !u!1 &1727973347
 GameObject:
   m_ObjectHideFlags: 0

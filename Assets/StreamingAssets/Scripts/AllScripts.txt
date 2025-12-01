@@ -1605,6 +1605,8 @@ public class GameManager : MonoBehaviour
 
     private bool shouldGenerate = false;
 
+    public bool GameEnded = false;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -1674,7 +1676,12 @@ public class GameManager : MonoBehaviour
         }
         if (enemyDeaths >= enemies.Count)
         {
-            OnPlayersWon();
+            if(!GameEnded)
+            {
+                GameEnded = true;
+                OnPlayersWon();
+            }
+            
         }
         
     }
@@ -1707,6 +1714,8 @@ public class GameManager : MonoBehaviour
 
     public void ChangeCurrency(int amount, bool gold)
     {
+        Debug.Log("Crystal Currency: " + amount + " " + gold);
+
         if (gold)
             getcurrencyData.gold = getcurrencyData.gold + amount;
         else
@@ -2054,6 +2063,50 @@ public class JsonManager : MonoBehaviour
 
 
 
+// FILE: Scripts\General\ManaCrystalMovement.cs
+using UnityEngine;
+
+public class ManaCrystalMovement : MonoBehaviour
+{
+    public Transform target;
+    public float speed = 3f;
+
+    private void OnEnable()
+    {
+        target = GameManager.Instance.players[0].transform;
+    }
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        Destroy(gameObject, 3f);
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        MoveTowardsTarget();
+    }
+
+    public void MoveTowardsTarget()
+    {
+        if (target == null)
+        {
+            return;
+        }
+        if(Vector3.Distance(transform.position, target.position) < 0.1f)
+        {
+            Destroy(gameObject);
+        }
+
+
+        transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
+
+    }
+}
+
+
+
 // FILE: Scripts\General\Projectile.cs
 using UnityEngine;
 
@@ -2307,6 +2360,8 @@ public class Stats : MonoBehaviour
 
     public GameObject floatingTextPrefab;
 
+    public GameObject manaCrystalPrefab;
+
     public GameObject uiStatsHolder;
 
 
@@ -2446,10 +2501,19 @@ public class Stats : MonoBehaviour
         isDead = true;
 
         // If this is an enemy, remove it from EnemyManager and GameManager lists,
+        //Roll for mana crystal drop,
         // clear its tile occupant and destroy the GameObject.
         Enemy enemyComp = GetComponent<Enemy>();
         if (enemyComp != null)
         {
+            int rand = UnityEngine.Random.Range(1, 101);
+            Debug.Log("Crystal roll: " + rand);
+            if(rand <= 25)
+            {
+                GameObject manaCrystal = Instantiate(manaCrystalPrefab, transform.position, Quaternion.identity);
+                GameManager.Instance.ChangeCurrency(1, false);
+            }
+
             if (EnemyManager.Instance != null)
             {
                 EnemyManager.Instance.enemies.Remove(enemyComp);
@@ -3485,6 +3549,8 @@ public class GridManager : MonoBehaviour
 
     public void ResetGame(int enemyCount = 3, float dmgMultiplier = 1)
     {
+        GameManager.Instance.GameEnded = false;
+
         Debug.Log("[GridManager] Resetting game...");
         this.enemyCount = enemyCount;
 

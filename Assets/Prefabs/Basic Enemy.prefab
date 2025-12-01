@@ -219,6 +219,7 @@ MonoBehaviour:
   resource: 100
   statuses: []
   floatingTextPrefab: {fileID: 7453728233935770986, guid: bba6f4ff8db24d24081c4ecda64671e6, type: 3}
+  manaCrystalPrefab: {fileID: 1794030609179905623, guid: 9ff334290f3eb954b8eca3d5c9e4a418, type: 3}
   uiStatsHolder: {fileID: 0}
   type: 0
 --- !u!1 &2955847807167445474
