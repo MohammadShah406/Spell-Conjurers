@@ -1,0 +1,17 @@
+{
+    "damage": 25,
+    "accuracy": 85,
+    "resourceCost": 20,
+    "range": 4,
+    "selfDamage": 0,
+    "support": false,
+    "name": "Trigger",
+    "description": "Triggers a powerful effect that deals damage to the target.",
+    "code": "string actionLog = \"\";\r\n        \r\n            to.GetComponent<Stats>().takeDamage(spell.damage);\r\n            actionLog += from.name + \" triggered a powerful effect on \" + to.name + \", dealing \" + spell.damage + \" damage. \";\r\n        \r\n        ",
+    "ColorR": 255,
+    "ColorG": 0,
+    "ColorB": 0,
+    "status": "None",
+    "statusDuration": 0,
+    "statusDamagePerTurn": 0
+}
