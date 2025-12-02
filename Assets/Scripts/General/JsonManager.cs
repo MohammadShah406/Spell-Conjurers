@@ -91,7 +91,7 @@ public class JsonManager : MonoBehaviour
 
         if (Directory.Exists(premadeSpellsFolderPath))
         {
-            MoveSpellsFromFolders(Path.Combine(Application.streamingAssetsPath, "SpellPool"), Path.Combine(Application.persistentDataPath,"Spells"), overwrite: true);
+            CopySpellsFromFolders(Path.Combine(Application.streamingAssetsPath, "SpellPool"), Path.Combine(Application.persistentDataPath,"Spells"), overwrite: true);
         }
     }
 
@@ -240,6 +240,86 @@ public class JsonManager : MonoBehaviour
                 }
 
                 File.Move(srcFile, destFile);
+                Debug.Log($"Moved player spell '{fileName}' to main spells folder.");
+
+                // Precompile the newly moved spell
+                try
+                {
+                    string json = File.ReadAllText(destFile);
+                    Spell spell = JsonUtility.FromJson<Spell>(json);
+                    if (spell != null)
+                        PrecompileSpell(spell);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"Failed to precompile moved spell '{fileName}': {ex.Message}");
+                }
+            }
+
+#if UNITY_EDITOR
+            // Refresh AssetDatabase so Editor sees moved files
+            UnityEditor.AssetDatabase.Refresh();
+#endif
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error moving player spells: {e.Message}");
+        }
+    }
+    public void CopySpellsFromFolders(string sourceDir, string targetDir, bool overwrite = true)
+    {
+
+        try
+        {
+            // Determine source directory (configured or fallback to Assets/PlayerSpells)
+
+
+            if (!Directory.Exists(sourceDir))
+            {
+                string fallback = Path.Combine(Application.dataPath, "PlayerSpells");
+                if (Directory.Exists(fallback))
+                {
+                    sourceDir = fallback;
+                    Debug.Log($"Player spells folder not found at configured path; using fallback: {fallback}");
+                }
+                else
+                {
+                    Debug.LogWarning($"No player spells folder found at '{playerSpellsFolderPath}' or fallback '{fallback}'. Nothing to move.");
+                    return;
+                }
+            }
+
+            if (!Directory.Exists(targetDir))
+            {
+                Directory.CreateDirectory(targetDir);
+            }
+
+            string[] files = Directory.GetFiles(sourceDir, "*.json");
+            if (files.Length == 0)
+            {
+                Debug.Log("No player spell JSON files to move.");
+                return;
+            }
+
+            foreach (string srcFile in files)
+            {
+                string fileName = Path.GetFileName(srcFile);
+                string destFile = Path.Combine(targetDir, fileName);
+
+                if (File.Exists(destFile))
+                {
+                    if (overwrite)
+                    {
+                        File.Delete(destFile);
+                    }
+                    else
+                    {
+                        Debug.Log($"Skipping move for '{fileName}' — destination already exists.");
+                        continue;
+                    }
+                }
+
+                File.Copy(srcFile, destFile);
                 Debug.Log($"Moved player spell '{fileName}' to main spells folder.");
 
                 // Precompile the newly moved spell
