@@ -93,6 +93,8 @@ public class Stats : MonoBehaviour
 
     public void StatusDamage(string name, int duration, int dot)
     {
+        
+
         if (dot <=0)
             return;
 

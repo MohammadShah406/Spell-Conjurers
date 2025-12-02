@@ -29,6 +29,13 @@ public class Enemy : MonoBehaviour
     public bool debugMode = true;
     [SerializeField] private GameObject enemyVisual;
 
+    private Stats stats;
+
+    private void Awake()
+    {
+        stats = GetComponent<Stats>();
+    }
+
     private void Start()
     {
         debugMode = GameManager.Instance.debugMode;
@@ -65,16 +72,19 @@ public class Enemy : MonoBehaviour
                 break;
             }
         }
-
-        
-
     }
 
     public IEnumerator TakeTurn(System.Action onComplete)
     {
-        if(GameManager.Instance.lostGame)
+        if (IsDeadOrDestroyed())
         {
-             onComplete?.Invoke();
+            onComplete?.Invoke();
+            yield break;
+        }
+
+        if (GameManager.Instance.lostGame)
+        {
+            onComplete?.Invoke();
             yield break;
         }
 
@@ -82,6 +92,14 @@ public class Enemy : MonoBehaviour
         virtualCamera.Priority = 11; // Activate enemy camera
 
         yield return new WaitForSeconds(TurnManager.Instance.waitDuration);
+
+        if (IsDeadOrDestroyed())
+        {
+            onComplete?.Invoke();
+            Debug.Log("Enemy is dead at start of turn.");
+            yield break;
+            
+        }
 
         EnemyManager.Instance.calculateThreatGrid();
         Dictionary<String, object> result = EnemyManager.Instance.CalculateScore(this);
@@ -102,9 +120,13 @@ public class Enemy : MonoBehaviour
             yield return MoveTo(location);
         }
 
-        Debug.Log("Enemy moving to " + gridPosition);
+        if (IsDeadOrDestroyed())
+        {
+            onComplete?.Invoke();
+            yield break;
+        }
 
-        
+        Debug.Log("Enemy moving to " + gridPosition);
 
         if (result.ContainsKey("target"))
         {
@@ -113,27 +135,43 @@ public class Enemy : MonoBehaviour
             Debug.Log("Attempting to hit target " + target.name + " with spell " + spell.name);
 
             yield return new WaitForSeconds(0.5f);
+
+            if (IsDeadOrDestroyed())
+            {
+                onComplete?.Invoke();
+                yield break;
+            }
+
             AttackPlayer(spell, target);
 
             // Set camera to look at target during/after attack
-            virtualCamera.LookAt = target.transform;    
-
+            virtualCamera.LookAt = target.transform;
         }
 
         SyncGridPosition();
         onComplete?.Invoke();
+    }
 
+    public void EndTurn(System.Action onComplete)
+    {
+        onComplete?.Invoke();
     }
 
     // single segment movement retained for fallback
     private IEnumerator MoveTo(Vector2Int targetPos)
     {
+        if (IsDeadOrDestroyed())
+            yield break;
+
         Vector3 start = transform.position;
         Vector3 end = new Vector3(targetPos.x, yPos, targetPos.y);
         float t = 0;
 
         while (t < 1f)
         {
+            if (IsDeadOrDestroyed())
+                yield break;
+
             t += Time.deltaTime * moveSpeed;
 
             // Rotate toward movement direction (Y-axis only)
@@ -161,10 +199,16 @@ public class Enemy : MonoBehaviour
     //  Move along a computed path step-by-step (respecting obstacles).
     private IEnumerator MoveAlongPath(List<Vector2Int> path, int maxSteps)
     {
+        if (IsDeadOrDestroyed())
+            yield break;
+
         // path includes start; skip index 0
         int stepsToTake = Mathf.Min(maxSteps, path.Count - 1);
         for (int i = 1; i <= stepsToTake; i++)
         {
+            if (IsDeadOrDestroyed())
+                yield break;
+
             Vector2Int nextPos = path[i];
             // Clear previous tile occupant
             Tile prevTile = gridManager.GetTile(gridPosition);
@@ -177,6 +221,9 @@ public class Enemy : MonoBehaviour
             float t = 0f;
             while (t < 1f)
             {
+                if (IsDeadOrDestroyed())
+                    yield break;
+
                 t += Time.deltaTime * moveSpeed;
 
                 // Rotate toward movement direction (Y-axis only)
@@ -326,6 +373,9 @@ public class Enemy : MonoBehaviour
 
     private IEnumerator FacePlayer()
     {
+        if (IsDeadOrDestroyed())
+            yield break;
+
         Vector3 direction = player.transform.position - transform.position;
         direction.y = 0;
         if (direction != Vector3.zero)
@@ -336,6 +386,9 @@ public class Enemy : MonoBehaviour
 
             while (t < 1f)
             {
+                if (IsDeadOrDestroyed())
+                    yield break;
+
                 t += Time.deltaTime * rotateSpeed;
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, t);
                 yield return null;
@@ -412,5 +465,15 @@ public class Enemy : MonoBehaviour
     private void SetMulitplier(float multiplier)
     {
         dmgMultiplier = multiplier;
+    }
+
+    private void OnDestroy()
+    {
+        StopAllCoroutines();
+    }
+
+    private bool IsDeadOrDestroyed()
+    {
+        return this == null || (stats != null && stats.isDead);
     }
 }
