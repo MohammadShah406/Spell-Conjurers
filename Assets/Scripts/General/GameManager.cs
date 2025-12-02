@@ -10,7 +10,7 @@ public class GameManager : MonoBehaviour
     public List<GameObject> players = new List<GameObject>();
     public List<GameObject> enemies = new List<GameObject>();
     [SerializeField] private LLMController llmController;
-    [SerializeField] private CurrencyData currencyData;
+    public CurrencyData currencyData;
     public List<PlayerFunctionality> playerFunctionality;
     public LLMController LLMController { get; private set; }
     public CurrencyData getcurrencyData { get; private set; }

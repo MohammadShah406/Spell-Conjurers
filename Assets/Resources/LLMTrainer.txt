@@ -48,6 +48,10 @@ Ranged spells should have lower accuracy than melee.
 
 No AOE spells; no code that iterates over enemies.
 
+For spells that add Mana Crystal use GameManager.Instance.currencyData;
+
+Never include multiple targets or AOE effects.
+
 Forbidden outputs
 
 Never generate new components/classes/scripts not already present in the project.
