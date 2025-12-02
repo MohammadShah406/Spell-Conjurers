@@ -1,10 +1,11 @@
-using System;
-using UnityEngine;
-using System.IO;
-using Microsoft.CodeAnalysis.Scripting;
-using System.Collections.Generic;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.Scripting;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
+using System.Text;
+using UnityEngine;
 
 public class JsonManager : MonoBehaviour
 {
@@ -94,8 +95,41 @@ public class JsonManager : MonoBehaviour
             CopySpellsFromFolders(Path.Combine(Application.streamingAssetsPath, "SpellPool"), Path.Combine(Application.persistentDataPath,"Spells"), overwrite: true);
         }
     }
+    public string MergeJsonToString(string spellReferenceFolder)
+    {
+        string folderPath = Path.Combine(Application.streamingAssetsPath, spellReferenceFolder);
 
-    public Spell ReturnRandomSpell()
+        if (!Directory.Exists(folderPath))
+        {
+            Debug.LogError($"Folder not found: {folderPath}");
+            return string.Empty;
+        }
+
+        try
+        {
+            StringBuilder sb = new StringBuilder();
+
+            // Get all JSON files
+            string[] jsonFiles = Directory.GetFiles(folderPath, "*.json", SearchOption.TopDirectoryOnly);
+
+            foreach (string file in jsonFiles)
+            {
+                string content = File.ReadAllText(file);
+                sb.AppendLine(content); // add JSON content
+                sb.AppendLine();        // optional blank line between JSONs
+            }
+
+            return sb.ToString();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"Error merging JSON files: {ex.Message}");
+            return string.Empty;
+        }
+    }
+
+
+public Spell ReturnRandomSpell()
     {
         string[] files = Directory.GetFiles(spellsFolderPath, "*.json");
 

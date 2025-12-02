@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: caf22b24f6ac526468d4f0f6b12dbe9f, type: 3}
   m_Name: CurrencyData
   m_EditorClassIdentifier: 
-  gold: 0
+  gold: 200
   manaStone: 0

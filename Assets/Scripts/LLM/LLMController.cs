@@ -27,6 +27,8 @@ public class LLMController : MonoBehaviour
     public List<GeneratedSkillData> generatedSkills = new List<GeneratedSkillData>();
 
     public UnityEvent onSpellReplaced;
+    private string cachedScripts;
+    private string cachedSpellRefs;
 
     private void Awake()
     {
@@ -51,10 +53,15 @@ public class LLMController : MonoBehaviour
         }
 
         Debug.Log("OpenAI configuration loaded successfully.");
+
+
     }
     private void Start()
     {
         ClearSkillsFolder();
+        cachedScripts = LoadAllProjectScripts("Scripts");
+        cachedSpellRefs = JsonManager.Instance.MergeJsonToString("SpellReference");
+
     }
     public void OnGenerateSkillsButton()
     {
@@ -181,10 +188,8 @@ public class LLMController : MonoBehaviour
             $"The skill concept is: {prompt}. " +
             $"Output only valid JSON without code blocks or explanations.";
         skillPrompt += loadedPrompt;
-        string allScripts = LoadAllProjectScripts("Scripts");
-        string spellsRef = LoadAllProjectScripts("SpellReference");
-        Debug.Log("scripts are " + allScripts);
-        Debug.Log("spellsRef are " + spellsRef);
+        Debug.Log("scripts are " + cachedScripts);
+        Debug.Log("spellsRef are " + cachedSpellRefs);
         // Build the OpenAI chat request
         ChatRequest requestData = new ChatRequest
         {
@@ -195,9 +200,9 @@ public class LLMController : MonoBehaviour
             {
                 role = "system",
                 content = "You are a helpful assistant that outputs only clean JSON data for Unity games. " +
-                          allScripts +
+                          cachedScripts +
                           "Never include code fences, markdown, or explanations — just valid JSON."+
-                          $"Balance the spell with this values: {spellsRef}. " +
+                          $"EXAMPLE SPELL JSON are: {cachedSpellRefs}. " +
                           loadedPrompt
             },
             new ChatMessage
@@ -253,6 +258,7 @@ public class LLMController : MonoBehaviour
             }
         }
     }
+
     private string ExtractJsonFromResponse(string response)
     {
         // Simple JSON extraction from the LLM reply
@@ -292,6 +298,26 @@ public class LLMController : MonoBehaviour
         {
             Debug.LogError($"Failed to read scripts from {folderPath}: {ex.Message}");
             return "";
+        }
+    }
+    private void LoadReferenceSpells(string folderName)
+    {
+        string folderPath = Path.Combine(Application.streamingAssetsPath, folderName);
+        List<Spell> spells = new();
+
+        foreach (string file in Directory.GetFiles(folderPath, "*.json"))
+        {
+            try
+            {
+                string json = File.ReadAllText(file);
+                Spell spell = JsonConvert.DeserializeObject<Spell>(json);
+                if (spell != null)
+                    spells.Add(spell);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error loading spell JSON from {file}: {ex.Message}");
+            }
         }
     }
 
