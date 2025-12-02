@@ -38,4 +38,9 @@ public class GeneratedSpellView : MonoBehaviour
     {
         UIController.Instance.SwitchUI(UIIndex.UnitEditCurrentSpell);
     }
+
+    public void GoToMainMenu()
+    {
+        UIController.Instance.SwitchUI(UIIndex.MainMenu);
+    }
 }
