@@ -49,6 +49,7 @@ public class EditSingleSpellView : MonoBehaviour
             {
                 llm.StartCoroutine(llm.GenerateAndReplaceSpell(newPrompt, spellIndex));
                 GameManager.Instance.getcurrencyData.manaStone--;
+                UIController.Instance.SwitchUI(UIIndex.Loading);
             }
             else
             {

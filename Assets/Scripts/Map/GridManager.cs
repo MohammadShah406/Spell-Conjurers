@@ -49,7 +49,7 @@ public class GridManager : MonoBehaviour
     public void ResetGame(int enemyCount = 3, float dmgMultiplier = 1)
     {
         GameManager.Instance.GameEnded = false;
-
+        GameManager.Instance.lostGame = false;
         Debug.Log("[GridManager] Resetting game...");
         this.enemyCount = enemyCount;
 
