@@ -44,12 +44,19 @@ public class Stats : MonoBehaviour
         {
             UpdateStatsHolder();
         }
+
     }
 
     public void takeDamage(int damage)
     {
-        damage = Mathf.FloorToInt(damage * (100f / (100f + armor)));
-        Debug.Log("Damage after armor calculation: " + damage);
+        Debug.Log("Taking damage: " + damage);
+        if (damage > 0)
+        {
+            damage = Mathf.FloorToInt(damage * (100f / (100f + armor)));
+            Debug.Log("Damage after armor calculation: " + damage);
+        }
+
+        
         health -= damage;
         if (damage >= 0)
         {
@@ -219,6 +226,13 @@ public class Stats : MonoBehaviour
             UpdateStatsHolder();
             GameManager.Instance?.CheckGameState();
         }
+    }
+
+    public void ClampHealth()
+    {
+        Debug.Log("Clamping health, current health = " + health);
+        health = Mathf.Clamp(health, 0, maxHealth);
+        UpdateStatsHolder();
     }
 }
 

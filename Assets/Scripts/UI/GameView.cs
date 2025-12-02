@@ -2,46 +2,10 @@ using UnityEngine;
 
 public class GameView : MonoBehaviour
 {
-
-
     public GameObject playerSpellPanel;
     public GameObject spellTextHolder;
     public GameObject playerStatsHolder;
     public GameObject ui_SelectedEnemy;
-
-
-    private void Awake()
-    {
-    }
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-        //GridManager.Instance.SpawnEnemies(GridManager.Instance.enemyCount);
-        //GridManager.Instance.enemyManager.initializeThreatGrid(GridManager.Instance.height, GridManager.Instance.width);
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            GameManager.Instance.GenerateNextRound();
-        }
-        // Force switch turn
-        if (Input.GetKeyDown(KeyCode.T))
-        {
-            if (GameManager.Instance.players.Count > 0)
-            {
-                TurnManager.Instance.WaitButtonPressed();
-            }
-        }
-    }
-    public void StartGame()
-    {
-
-    }
 
     private void OnEnable()
     {
