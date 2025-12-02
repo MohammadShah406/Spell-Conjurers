@@ -139,7 +139,7 @@ public class Stats : MonoBehaviour
         }
     }
 
-    private void ShowFloatingText(string text, Color color)
+    public void ShowFloatingText(string text, Color color)
     {
         if (floatingTextPrefab == null) return;
 

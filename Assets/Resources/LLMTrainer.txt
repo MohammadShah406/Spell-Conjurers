@@ -38,6 +38,12 @@ Spells with status effects must have lower damage and higher cost.
 
 Support (non-heal) moves are highly unpredictable: use very low accuracy.
 
+Minimum range is 1.
+
+Healing spells must have support = true.
+
+Healing spells must have below zero damage.
+
 Ranged spells should have lower accuracy than melee.
 
 No AOE spells; no code that iterates over enemies.

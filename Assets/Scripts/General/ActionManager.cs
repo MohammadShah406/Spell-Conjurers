@@ -8,6 +8,7 @@ public class ActionManager : MonoBehaviour
 {
     public static ActionManager Instance { get; private set; }
     public UnityEvent onSpellUsed;
+    public UnityEvent onSpellMiss;
 
     [Header("Projectile Settings")]
     public float projectileSpeed = 12f;
@@ -43,6 +44,8 @@ public class ActionManager : MonoBehaviour
         int roll = Random.Range(0, 101);
         if (roll > spell.accuracy)
         {
+            onSpellMiss.Invoke();
+            to.GetComponent<Stats>().ShowFloatingText("Miss", Color.red);
             Debug.Log("Spell whiffed");
             return;
         }
