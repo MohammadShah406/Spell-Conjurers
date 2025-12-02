@@ -38,15 +38,3 @@ public class Choice
 {
     public ChatMessage message;
 }
-
-public class OpenAIScript : MonoBehaviour
-{
-    public string apiKey;
-    public string model = "gpt-4o-mini";
-
-    public bool useBaseJsonAsExample = false;
-    public UnityEvent onJsonGenerated;
-
-    private ICustomBehavior currentBehavior;
-    private Player player;
-}

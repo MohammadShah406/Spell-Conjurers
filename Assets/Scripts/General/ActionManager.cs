@@ -12,7 +12,7 @@ public class ActionManager : MonoBehaviour
 
     [Header("Projectile Settings")]
     public float projectileSpeed = 12f;
-    public float projectileLifetimeAfterImpact = 1.5f; // (Now unused for destruction timing; kept in case you re-enable delayed cleanup)
+    public float projectileLifetimeAfterImpact = 1.5f; 
     public Vector3 spawnOffset = new Vector3(0f, 0.5f, 0f);
 
     [Header("Projectile Slam Settings")]

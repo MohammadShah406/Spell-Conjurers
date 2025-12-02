@@ -10,7 +10,6 @@ public class EnemyManager : MonoBehaviour
     public List<Enemy> enemies = new List<Enemy>();
     
     float[,] threatGrid;
-    private bool isTakingTurn;
     public Transform player;
     private Dictionary<GameObject, int[]> playerMaxDamageList = new Dictionary<GameObject, int[]>();
     private GridManager gridManager;

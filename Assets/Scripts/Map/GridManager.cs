@@ -21,7 +21,6 @@ public class GridManager : MonoBehaviour
 
     [Header("Enemy Settings")]
     public GameObject EnemyHolder;
-    public int enemyCount = 3;
     public EnemyManager enemyManager;
     public GameObject enemyPrefab;
 
@@ -46,51 +45,19 @@ public class GridManager : MonoBehaviour
         
     }
 
-    public void ResetGame(int enemyCount = 3, float dmgMultiplier = 1)
+    public void ResetGame(float dmgMultiplier)
     {
         GameManager.Instance.GameEnded = false;
         GameManager.Instance.lostGame = false;
         Debug.Log("[GridManager] Resetting game...");
-        this.enemyCount = enemyCount;
 
-        // --- 0. Destroy all existing tiles ---
+        // --- 1. Destroy all existing tiles ---
         foreach (Transform child in map.transform)
         {
             Destroy(child.gameObject);
         }
 
-        // Clear grid reference
-        //grid = new Tile[width, height];
-
-        // --- 1. Recreate the tile grid ---
-        /*for (int x = 0; x < width; x++)
-        {
-            for (int z = 0; z < height; z++)
-            {
-                var tileObj = Instantiate(tilePrefab, new Vector3(x, 0, z), Quaternion.identity);
-                tileObj.transform.parent = map.transform;
-                var tile = tileObj.GetComponent<Tile>();
-
-                tile.gridPosition = new Vector2Int(x, z);
-                grid[x, z] = tile;
-            }
-        }*/
-
-      
-
-
-        //// --- 2. Clear all tiles' occupants ---
-        //for (int x = 0; x < width; x++)
-        //{
-        //    for (int y = 0; y < height; y++)
-        //    {
-        //        if (grid[x, y] != null)
-        //            grid[x, y].occupant = null;
-        //    }
-        //}
-
-
-        // --- 3. Destroy existing enemies and player ---
+        // --- 2. Destroy existing enemies and player ---
         // Destroy enemies
         foreach (Transform child in EnemyHolder.transform)
         {
@@ -104,7 +71,7 @@ public class GridManager : MonoBehaviour
             playerObj = null;
         }
 
-        // --- 4. Clear manager lists ---
+        // --- 3. Clear manager lists ---
         if (enemyManager != null)
             enemyManager.enemies.Clear();
 
@@ -118,11 +85,9 @@ public class GridManager : MonoBehaviour
         mapDetails = LoadRoundMap(GameManager.Instance.roundNo);
         BuildMapFromData();
 
-        // --- 5. Respawn everything ---
-        //SpawnPlayer();
-        //SpawnEnemies(enemyCount);
 
-        // --- 6. Reinitialize threat grid ---
+
+        // --- 4. Reinitialize threat grid ---
         if (enemyManager != null)
         {
             enemyManager.initializeThreatGrid(height, width);
@@ -140,9 +105,7 @@ public class GridManager : MonoBehaviour
 
     public void Start()
     {
-        //SpawnEnemies(enemyCount);
 
-        //enemyManager.initializeThreatGrid(height, width);   
     }
 
     public Tile GetTile(Vector2Int pos)
@@ -234,7 +197,6 @@ public class GridManager : MonoBehaviour
         try
         {
             string jsonText = File.ReadAllText(path);
-            //MapData data = JsonUtility.FromJson<MapData>(jsonText);
             MapData data = JsonConvert.DeserializeObject<MapData>(jsonText);
 
 
@@ -305,7 +267,6 @@ public class GridManager : MonoBehaviour
 
                     case 2: 
                         enemyPositions.Add(tile.gridPosition);
-                        //SpawnEnemy(tile.gridPosition, count );
                         count++;
                         break;
 
@@ -315,7 +276,6 @@ public class GridManager : MonoBehaviour
                 }
             }
         }
-        //SpawnPlayer();
         SpawnEnemy(enemyPositions);
         Debug.Log("Map built successfully.");
     }

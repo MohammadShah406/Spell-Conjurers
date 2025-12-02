@@ -46,11 +46,6 @@ public class Stats : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        
-    }
-
     public void takeDamage(int damage)
     {
         damage = Mathf.FloorToInt(damage * (100f / (100f + armor)));

@@ -95,12 +95,6 @@ public class JsonManager : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
     public Spell ReturnRandomSpell()
     {
         string[] files = Directory.GetFiles(spellsFolderPath, "*.json");
@@ -266,6 +260,9 @@ public class JsonManager : MonoBehaviour
             Debug.LogError($"Error moving player spells: {e.Message}");
         }
     }
+
+    // Copy all files from a source folder to a destination folder.
+    // If overwrite is true existing files in the destination will be replaced.
     public void CopySpellsFromFolders(string sourceDir, string targetDir, bool overwrite = true)
     {
 

@@ -140,38 +140,6 @@ public class TurnManager : MonoBehaviour
         isTakingTurn = false;
     }
 
-    //private IEnumerator EnemyTurnRoutine()
-    //{
-    //    buttonPressed = false;
-    //    isTakingTurn = true;
-
-    //    foreach (var enemy in EnemyManager.Instance.enemies)
-    //    {
-    //        if (!enemy.gameObject.activeSelf)
-    //        {
-    //            continue;
-    //        }
-    //        enemy.GetComponent<Stats>().TakeStatusDamage();
-    //        yield return enemy.TakeTurn(() => { });
-
-    //        if (waitTurn)
-    //        {
-    //            yield return new WaitForSeconds(waitDuration);
-    //        }
-    //        else if (waitButton)
-    //        {
-    //            while (!buttonPressed)
-    //            {
-    //                yield return null;
-    //            }
-    //            buttonPressed = false;
-    //        }
-    //    }
-
-    //    isTakingTurn = false;
-    //    Debug.Log("All enemies finished their turns!");
-    //}
-
     private IEnumerator EnemyTurnRoutine()
     {
         buttonPressed = false;
@@ -179,7 +147,7 @@ public class TurnManager : MonoBehaviour
 
 
 
-        // 🔥 iterate over a copy so enemies can safely die / be removed
+        // Iterate over a copy so enemies can safely die / be removed
         var enemiesSnapshot = new List<Enemy>(EnemyManager.Instance.enemies);
 
         foreach (var enemy in enemiesSnapshot)

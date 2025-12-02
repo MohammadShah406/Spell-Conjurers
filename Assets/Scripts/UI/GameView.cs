@@ -68,7 +68,7 @@ public class GameView : MonoBehaviour
         float dmgMultiplier = 0.5f * round;
 
         Debug.Log($"[GameView] Round {round}: ResetGame(enemyCount={enemyCount}, dmgMultiplier={dmgMultiplier:F2})");
-        GridManager.Instance.ResetGame(enemyCount, dmgMultiplier);
+        GridManager.Instance.ResetGame(dmgMultiplier);
 
     }
 

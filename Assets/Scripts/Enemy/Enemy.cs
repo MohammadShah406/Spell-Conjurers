@@ -17,7 +17,7 @@ public class Enemy : MonoBehaviour
     public int attackRange = 1;
     public float moveSpeed = 5f;
     public float dmgMultiplier = 1.0f;
-    public float rotateSpeed = 1000f; // degrees/second
+    public float rotateSpeed = 1000f; 
 
     private GridManager gridManager;
     private GameObject player;
