@@ -34,6 +34,7 @@ public class RoundFinishedView : MonoBehaviour
     public void NextRound()
     {
         GameManager.Instance.roundNo += 1;
+        GameManager.Instance.tryGeneratingRounds();
         GameManager.Instance.CleanUpPlayer();
         UIController.Instance.SwitchUI(UIIndex.Game);
     }

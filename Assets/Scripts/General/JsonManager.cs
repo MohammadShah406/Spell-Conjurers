@@ -381,7 +381,7 @@ public Spell ReturnRandomSpell()
     public bool CanGenerate(int roundsNo)
     {
         int roundsTotal = CheckRoundFiles();
-        if (roundsNo >= roundsTotal - 2)
+        if (roundsNo >= roundsTotal / 2)
             return true;
         else
             return false;
