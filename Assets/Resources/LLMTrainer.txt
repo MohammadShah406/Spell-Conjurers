@@ -50,6 +50,8 @@ No AOE spells; no code that iterates over enemies.
 
 For spells that add Mana Crystal use GameManager.Instance.currencyData;
 
+For spells that affects Positions and Location use transform.position.
+
 Never include multiple targets or AOE effects.
 
 Forbidden outputs

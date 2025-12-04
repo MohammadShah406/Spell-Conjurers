@@ -187,7 +187,7 @@ public class LLMController : MonoBehaviour
             $"Generate a JSON object representing a game skill with the following fields: " +
             $"The skill concept is: {prompt}. " +
             $"Output only valid JSON without code blocks or explanations.";
-        skillPrompt += loadedPrompt;
+        //skillPrompt += loadedPrompt;
         Debug.Log("scripts are " + cachedScripts);
         Debug.Log("spellsRef are " + cachedSpellRefs);
         // Build the OpenAI chat request
