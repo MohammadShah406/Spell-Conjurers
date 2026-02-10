@@ -26,7 +26,7 @@ public class LLMJsonGridCreator : MonoBehaviour
 
     private void Awake()
     {
-        if(Instance == null)
+        if (Instance == null)
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
@@ -36,26 +36,37 @@ public class LLMJsonGridCreator : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+    }
+
+
+    // Called only after validation passes in LLMAPIKeysView
+    public void SetAPIKey(string newKey)
+    {
+        apiKey = newKey;
+        Debug.Log("LLMJsonGridCreator: API Key set (pre-validated).");
 
         var config = OpenAIConfig.LoadConfig();
-        if (config == null)
+        if (config != null)
         {
-            Debug.LogError("Could not load OpenAI configuration file.");
-            return;
+            model = string.IsNullOrEmpty(config.model) ? "gpt-4o-mini" : config.model;
         }
 
-        apiKey = config.apiKey;
-        model = string.IsNullOrEmpty(config.model) ? "gpt-4o-mini" : config.model;
-
-        Debug.Log("OpenAI configuration loaded successfully.");
+        GameManager.Instance.tryGeneratingRounds();
     }
+
     public void Start()
     {
         //StartJsonGeneration();
     }
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
     public void StartJsonGeneration()
     {
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            Debug.LogError("Cannot start generation — API key is not set.");
+            return;
+        }
+
         if (isGenerating)
         {
             Debug.LogWarning("JSON generation is already in progress.");
@@ -107,8 +118,8 @@ public class LLMJsonGridCreator : MonoBehaviour
         Debug.Log("All requested map JSON files generated!");
         isGenerating = false;
         onJsonGenerated?.Invoke();
-
     }
+
     private async Task<string> GenerateJsonFromLLM()
     {
         string endpoint = "https://api.openai.com/v1/chat/completions";
@@ -178,10 +189,10 @@ public class LLMJsonGridCreator : MonoBehaviour
                 // Deserialize the response
                 OpenAIChatResponse response = JsonConvert.DeserializeObject<OpenAIChatResponse>(request.downloadHandler.text);
 
-                // Extract the JSON content (the actual skill)
+                // Extract the JSON content
                 string jsonContent = response?.choices?[0]?.message?.content?.Trim();
 
-                // Optional: remove markdown code fences if model includes them accidentally
+                // Remove markdown code fences if model includes them accidentally
                 if (!string.IsNullOrEmpty(jsonContent))
                 {
                     jsonContent = Regex.Replace(jsonContent, @"^```(json)?|```$", "", RegexOptions.Multiline).Trim();
@@ -195,7 +206,5 @@ public class LLMJsonGridCreator : MonoBehaviour
                 return null;
             }
         }
-
-
     }
 }

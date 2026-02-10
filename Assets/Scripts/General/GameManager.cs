@@ -41,7 +41,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        tryGeneratingRounds();
+        //tryGeneratingRounds();
     }
 
     private void Update()

@@ -16,6 +16,7 @@ public enum UIIndex
     DeathPanel = 10,
     RoundFinished = 11,
     Loading = 12,
+    llmAPIKeys = 13,
 }
 
 
@@ -35,6 +36,7 @@ public class UIController : MonoBehaviour
     [SerializeField] DeathPanelView deathPanelView;
     [SerializeField] RoundFinishedView roundFinishedView;
     [SerializeField] LoadingView loadingView;
+    [SerializeField] LLMAPIKeysView llmAPIKeysView;
 
     public GameView getGameView { get; private set; }
     public GameOverView getGameOverView { get; private set; }
@@ -51,6 +53,8 @@ public class UIController : MonoBehaviour
     public RoundFinishedView GetRoundFinishedView { get; private set; }
 
     public LoadingView GetLoadingView { get; private set; }
+
+    public LLMAPIKeysView GetLLMAPIKeysView { get; private set; }
 
     [SerializeField] List<GameObject> uiList = new List<GameObject>();
     private void Awake()
@@ -77,10 +81,11 @@ public class UIController : MonoBehaviour
         GetDeathPanelView = deathPanelView;
         GetRoundFinishedView = roundFinishedView;
         GetLoadingView = loadingView;
+        GetLLMAPIKeysView = llmAPIKeysView;
     }
     void Start()
     {
-        SwitchUI(UIIndex.MainMenu);
+        SwitchUI(UIIndex.llmAPIKeys);
     }
 
     // Update is called once per frame

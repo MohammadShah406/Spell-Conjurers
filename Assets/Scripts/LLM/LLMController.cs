@@ -32,6 +32,41 @@ public class LLMController : MonoBehaviour
 
     private void Awake()
     {
+        //var config = OpenAIConfig.LoadConfig();
+        //if (config == null)
+        //{
+        //    Debug.LogError("Could not load OpenAI configuration file.");
+        //    return;
+        //}
+
+        //apiKey = config.apiKey;
+        //model = string.IsNullOrEmpty(config.model) ? "gpt-4o-mini" : config.model;
+        //TextAsset promptFile = Resources.Load<TextAsset>(promptFileName);
+        //if (promptFile != null)
+        //{
+        //    loadedPrompt = promptFile.text;
+        //}
+        //else
+        //{
+        //    Debug.LogError("Prompt file not found in Resources!");
+        //    loadedPrompt = "";
+        //}
+
+        //Debug.Log("OpenAI configuration loaded successfully.");
+
+
+    }
+    private void Start()
+    {
+        ClearSkillsFolder();
+        cachedScripts = LoadAllProjectScripts("Scripts");
+        cachedSpellRefs = JsonManager.Instance.MergeJsonToString("SpellReference");
+
+    }
+    public void SetAPIKey(string newKey)
+    {
+        apiKey = newKey;
+        Debug.Log("API Key updated from UI.");
         var config = OpenAIConfig.LoadConfig();
         if (config == null)
         {
@@ -39,7 +74,7 @@ public class LLMController : MonoBehaviour
             return;
         }
 
-        apiKey = config.apiKey;
+        //apiKey = config.apiKey;
         model = string.IsNullOrEmpty(config.model) ? "gpt-4o-mini" : config.model;
         TextAsset promptFile = Resources.Load<TextAsset>(promptFileName);
         if (promptFile != null)
@@ -53,15 +88,6 @@ public class LLMController : MonoBehaviour
         }
 
         Debug.Log("OpenAI configuration loaded successfully.");
-
-
-    }
-    private void Start()
-    {
-        ClearSkillsFolder();
-        cachedScripts = LoadAllProjectScripts("Scripts");
-        cachedSpellRefs = JsonManager.Instance.MergeJsonToString("SpellReference");
-
     }
     public void OnGenerateSkillsButton()
     {
