@@ -1,14 +1,12 @@
-﻿using Microsoft.CodeAnalysis.Scripting;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-public class PlayerFunctionality : MonoBehaviour
+public class PlayerFunctionality : MonoBehaviour, ICombatEntity
 { 
     public Spell[] spells = new Spell[4];
     public Spell selectedSpell = null;
@@ -40,6 +38,20 @@ public class PlayerFunctionality : MonoBehaviour
     public bool turnStarted = true;
     [SerializeField] private GameObject playerVisual;
 
+    // ── ICombatEntity Implementation ──
+    string ICombatEntity.EntityName => gameObject.name;
+    GameObject ICombatEntity.GameObject => gameObject;
+    Vector2Int ICombatEntity.GridPosition { get => gridPosition; set => gridPosition = value; }
+    Stats ICombatEntity.Stats => playerStats;
+    Faction ICombatEntity.Faction => Faction.Player;
+    ICombatEntity ICombatEntity.Owner => null;
+    bool ICombatEntity.IsAlive => playerStats != null && !playerStats.isDead;
+    public int Initiative => 20;
+    public int ActionPoints { get; set; } = 2;
+    public int MaxActionPoints => 2;
+    Spell[] ICombatEntity.Spells => spells;
+    public int[] SpellCooldowns { get; private set; }
+
     private void OnEnable()
     {
         playerSpellPanel = UIController.Instance.getGameView.playerSpellPanel;
@@ -53,6 +65,7 @@ public class PlayerFunctionality : MonoBehaviour
         {
             playerStats = GetComponent<Stats>();
         }
+        SpellCooldowns = new int[spells.Length];
         for (int i = 0; i < spells.Length; i++)
         {
             spells[i] = JsonManager.Instance.ReturnPlayerSpell(i);
@@ -564,9 +577,19 @@ public class PlayerFunctionality : MonoBehaviour
     public void OnTurnStart()
     {
         SyncGridPosition();
+        ActionPoints = MaxActionPoints;
         playerStats.resource = Mathf.Clamp((int)(playerStats.resource + (playerStats.maxResource * 0.1)), 0, playerStats.maxResource);
         playerStats.UpdateStatsHolder();
         turnStarted = true;
+
+        // Tick spell cooldowns
+        if (SpellCooldowns != null)
+        {
+            for (int i = 0; i < SpellCooldowns.Length; i++)
+            {
+                if (SpellCooldowns[i] > 0) SpellCooldowns[i]--;
+            }
+        }
     }
 
     public void OnTurnEnd()

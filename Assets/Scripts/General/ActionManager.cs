@@ -31,12 +31,12 @@ public class ActionManager : MonoBehaviour
 
     private void Awake()
     {
-        Instance = this;
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
+        Instance = this;
     }
 
     public void UseSpell(Spell spell, GameObject from, GameObject to)
@@ -227,6 +227,10 @@ public class ActionManager : MonoBehaviour
         Enemy enemy = obj.GetComponent<Enemy>();
         if (enemy != null)
             return enemy.gridPosition;
+
+        SummonedEntity summon = obj.GetComponent<SummonedEntity>();
+        if (summon != null)
+            return summon.GridPosition;
 
         return new Vector2Int(
             Mathf.RoundToInt(obj.transform.position.x),

@@ -1,114 +1,113 @@
+using System;
 using System.Collections.Generic;
-using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 
+/// <summary>
+/// Central game state manager.
+/// Tracks players, enemies, currency, round progression, and win/loss conditions.
+/// </summary>
 public class GameManager : MonoBehaviour
 {
+    public static GameManager Instance { get; private set; }
+
+    [Header("Round")]
     public int roundNo;
-    public static GameManager Instance;
+
+    [Header("Entity Tracking")]
     public List<GameObject> players = new List<GameObject>();
     public List<GameObject> enemies = new List<GameObject>();
+    public List<PlayerFunctionality> playerFunctionality = new List<PlayerFunctionality>();
+
+    [Header("References")]
     [SerializeField] private LLMController llmController;
     public CurrencyData currencyData;
-    public List<PlayerFunctionality> playerFunctionality;
-    public LLMController LLMController { get; private set; }
-    public CurrencyData getcurrencyData { get; private set; }
-    public bool lostGame = false;
 
+    [Header("State")]
+    public bool lostGame = false;
+    public bool GameStarted = false;
+    public bool GameEnded = false;
     public bool debugMode = false;
 
-    public bool GameStarted = false;
+    // Public accessors (backward compat with UI code)
+    public LLMController LLMController { get; private set; }
+    public CurrencyData getcurrencyData { get; private set; }
 
     private bool shouldGenerate = false;
-
-    public bool GameEnded = false;
 
     private void Awake()
     {
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
+            return;
         }
-        else
-        {
-            Instance = this;          
-            DontDestroyOnLoad(gameObject);
-        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
         LLMController = llmController;
         getcurrencyData = currencyData;
     }
 
-    private void Start()
-    {
-        //tryGeneratingRounds();
-    }
+    // ──────────────────────────────────────────────
+    // Spell Selection Delegates
+    // ──────────────────────────────────────────────
 
-    private void Update()
-    {
-        
-    }
-
-    public void CallSetSpellFrom(string tragetName)
+    public void CallSetSpellFrom(string targetName)
     {
         for (int i = 0; i < playerFunctionality.Count; i++)
         {
-            Debug.Log("Setting spell from " + tragetName + " for player " + i + "player is :" + playerFunctionality[i]);
-            playerFunctionality[i].setSpellFrom(tragetName);
+            Debug.Log($"Setting spell from {targetName} for player {i}: {playerFunctionality[i]}");
+            playerFunctionality[i].setSpellFrom(targetName);
         }
-
     }
 
     public void CallSetSelectedSpell(int index)
     {
         for (int i = 0; i < playerFunctionality.Count; i++)
         {
-            Debug.Log("selecting spell from index " + index + " for player " + i + "player is :" + playerFunctionality[i]);
+            Debug.Log($"Selecting spell index {index} for player {i}: {playerFunctionality[i]}");
             playerFunctionality[i].SetSelectedSpell(index);
         }
     }
+
+    // ──────────────────────────────────────────────
+    // Game State
+    // ──────────────────────────────────────────────
 
     public void CheckGameState()
     {
         int playerDeaths = 0;
         int enemyDeaths = 0;
+
         foreach (GameObject player in players)
         {
-            if(player.GetComponent<Stats>().isDead)
-            {
+            if (player != null && player.GetComponent<Stats>().isDead)
                 playerDeaths++;
-            }
         }
+
         foreach (GameObject enemy in enemies)
         {
-            if (enemy.GetComponent<Stats>().isDead)
-            {
+            if (enemy != null && enemy.GetComponent<Stats>().isDead)
                 enemyDeaths++;
-            }
         }
 
         if (playerDeaths >= players.Count)
-        {
             OnPlayersLost();
-        }
-        if (enemyDeaths >= enemies.Count)
+
+        if (enemyDeaths >= enemies.Count && !GameEnded)
         {
-            if(!GameEnded)
-            {
-                GameEnded = true;
-                OnPlayersWon();
-            }
-            
+            GameEnded = true;
+            OnPlayersWon();
         }
-        
     }
 
     private void OnPlayersLost()
     {
-        if(lostGame)
-            return; 
-        Debug.Log("Players Lost");
-        if(players!= null)
+        if (lostGame) return;
+
+        Debug.Log("[GameManager] Players Lost");
+        if (players != null && players.Count > 0)
         {
             players[0].SetActive(false);
             Destroy(players[0]);
@@ -121,31 +120,22 @@ public class GameManager : MonoBehaviour
 
     private void OnPlayersWon()
     {
-        Debug.Log("Players Won");
+        Debug.Log("[GameManager] Players Won");
         ChangeCurrency(100 + 100 * roundNo, true);
-
         UIController.Instance.SwitchUI(UIIndex.RoundFinished);
-
-        
     }
+
+    // ──────────────────────────────────────────────
+    // Currency
+    // ──────────────────────────────────────────────
 
     public void ChangeCurrency(int amount, bool gold)
     {
-        Debug.Log("Crystal Currency: " + amount + " " + gold);
-
+        Debug.Log($"Currency change: {amount} (gold={gold})");
         if (gold)
-            getcurrencyData.gold = getcurrencyData.gold + amount;
+            getcurrencyData.gold += amount;
         else
-            getcurrencyData.manaStone = getcurrencyData.manaStone + amount;
-    }
-
-    public void CleanUpPlayer()
-    {
-        foreach (GameObject player in players)
-        {
-            Destroy(player);
-        }
-        players.Clear();
+            getcurrencyData.manaStone += amount;
     }
 
     public void ResetCurrency()
@@ -154,11 +144,21 @@ public class GameManager : MonoBehaviour
         getcurrencyData.manaStone = 0;
     }
 
+    // ──────────────────────────────────────────────
+    // Round Management
+    // ──────────────────────────────────────────────
+
+    public void CleanUpPlayer()
+    {
+        foreach (GameObject player in players)
+            Destroy(player);
+        players.Clear();
+    }
+
     public void GenerateNextRound()
     {
         roundNo += 1;
         UIController.Instance.getGameView.ResetGame();
-
         tryGeneratingRounds();
     }
 
@@ -172,5 +172,4 @@ public class GameManager : MonoBehaviour
             shouldGenerate = false;
         }
     }
-
 }

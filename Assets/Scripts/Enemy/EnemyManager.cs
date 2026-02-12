@@ -37,13 +37,12 @@ public class EnemyManager : MonoBehaviour
     
     private void Awake()
     {
-        Instance = this;
-        // Singleton setup
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
+        Instance = this;
     }
 
 

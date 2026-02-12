@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Rendering.Universal;
 
-public class Enemy : MonoBehaviour
+public class Enemy : MonoBehaviour, ICombatEntity
 {
     [Header("Enemy Virtual Camera")]
     public Cinemachine.CinemachineVirtualCamera virtualCamera;
@@ -31,6 +31,20 @@ public class Enemy : MonoBehaviour
 
     private Stats stats;
 
+    // ── ICombatEntity Implementation ──
+    string ICombatEntity.EntityName => gameObject.name;
+    GameObject ICombatEntity.GameObject => gameObject;
+    Vector2Int ICombatEntity.GridPosition { get => gridPosition; set => gridPosition = value; }
+    Stats ICombatEntity.Stats => stats;
+    Faction ICombatEntity.Faction => Faction.Enemy;
+    ICombatEntity ICombatEntity.Owner => null;
+    bool ICombatEntity.IsAlive => stats != null && !stats.isDead;
+    public int Initiative => 10;
+    public int ActionPoints { get; set; } = 2;
+    public int MaxActionPoints => 2;
+    Spell[] ICombatEntity.Spells => spells;
+    public int[] SpellCooldowns { get; private set; }
+
     private void Awake()
     {
         stats = GetComponent<Stats>();
@@ -39,6 +53,7 @@ public class Enemy : MonoBehaviour
     private void Start()
     {
         debugMode = GameManager.Instance.debugMode;
+        SpellCooldowns = new int[spells.Length];
     }
 
     private void Update()
@@ -476,4 +491,21 @@ public class Enemy : MonoBehaviour
     {
         return this == null || (stats != null && stats.isDead);
     }
+
+    // ── ICombatEntity Turn Lifecycle ──
+
+    public void OnTurnStart()
+    {
+        ActionPoints = MaxActionPoints;
+        // Tick spell cooldowns
+        if (SpellCooldowns != null)
+        {
+            for (int i = 0; i < SpellCooldowns.Length; i++)
+            {
+                if (SpellCooldowns[i] > 0) SpellCooldowns[i]--;
+            }
+        }
+    }
+
+    public void OnTurnEnd() { }
 }

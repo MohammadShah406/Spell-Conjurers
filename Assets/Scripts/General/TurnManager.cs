@@ -1,169 +1,192 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
-using NUnit.Framework.Interfaces;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Events;
 
+/// <summary>
+/// Unified turn manager for the combat system.
+/// Manages phase-based turns: Player → Summons → Enemies → Round End.
+/// Supports entity registration, action point tracking, and lifecycle events.
+/// </summary>
 public class TurnManager : MonoBehaviour
 {
-    public EnemyManager enemyManager;
-    public TurnState currentState = TurnState.PlayerTurn;
-
-    public bool waitButton = true; //True = enemy turn starts after player presses button
-    public bool waitTurn = false; //False = enemy turn proceeds immediately after each other
-    public float waitDuration = 1f;
-    private bool buttonPressed = false;
-
-    private bool isTakingTurn;
-
-
     public static TurnManager Instance { get; private set; }
+
+    [Header("References")]
+    public EnemyManager enemyManager;
+
+    [Header("Turn Settings")]
+    public float enemyActionDelay = 0.5f;
+    public float waitDuration = 1f;
+    public bool waitButton = true;
+    public bool waitTurn = false;
+
+    [Header("Events")]
+    public UnityEvent onPlayerTurnStart;
+    public UnityEvent onEnemyTurnStart;
+    public UnityEvent onRoundEnd;
+    public UnityEvent onRoundStart;
+
+    // --- State ---
+    public TurnState currentState { get; private set; } = TurnState.PlayerTurn;
+    private bool isTakingTurn = false;
+    private bool buttonPressed = false;
+    private int currentRound = 0;
+
+    /// <summary>All entities registered in the combat.</summary>
+    private List<ICombatEntity> combatEntities = new List<ICombatEntity>();
+
     public enum TurnState
     {
         PlayerTurn,
         EnemyTurn,
-        Waiting
+        SummonTurn,
+        Waiting,
+        RoundEnd
     }
 
     private void Awake()
     {
-        Instance = this;
-        // Singleton setup
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
-        
+        Instance = this;
     }
-    void Start()
+
+    private void Start()
     {
         if (enemyManager == null)
-        {
-            Debug.Log("TurnManager: enemyManager not found. Attempting to find");
             enemyManager = EnemyManager.Instance;
-        }
     }
 
-    void Update()
-    {
-        
-    }
+    // ──────────────────────────────────────────────
+    // Public API
+    // ──────────────────────────────────────────────
 
+    /// <summary>Convenience property for scripts checking turn state.</summary>
+    public bool IsPlayerTurn => currentState == TurnState.PlayerTurn;
+
+    /// <summary>Current round number.</summary>
+    public int CurrentRound => currentRound;
+
+    /// <summary>Called when the player ends their turn (button press or after casting).</summary>
     public void EndPlayerTurn()
     {
         if (currentState != TurnState.PlayerTurn) return;
 
-        Debug.Log("Player turn ended. Starting enemy turn...");
-
-        // Immediately clear player UI/selection/highlights so tiles are not left visible
-        if (GameManager.Instance != null && GameManager.Instance.players != null)
-        {
-            foreach (var playerObj in GameManager.Instance.players)
-            {
-                if (playerObj == null) continue;
-                var pf = playerObj.GetComponent<PlayerFunctionality>();
-                if (pf != null)
-                {
-                    // ResetTurn clears highlighted tiles and selected spell
-                    pf.ResetTurn();
-                }
-            }
-        }
+        Debug.Log("[TurnManager] Player turn ended.");
+        ClearPlayerUI();
 
         currentState = TurnState.EnemyTurn;
+        onEnemyTurnStart?.Invoke();
 
         if (GameManager.Instance.players.Count == 0)
         {
-            Debug.Log("No players found. Cannot continue with turns.");
+            Debug.Log("[TurnManager] No players. Cannot proceed.");
             return;
         }
-        StartCoroutine(HandleEnemyTurn());
 
+        StartCoroutine(HandlePostPlayerPhase());
         GameManager.Instance.CheckGameState();
     }
 
-    private IEnumerator HandleEnemyTurn()
-    {
-
-        if(GameManager.Instance.players.Count == 0)
-        {
-            Debug.Log("No players found. Skipping enemy turn.");
-            yield break;
-        }
-
-        // Tell the enemies to act
-        yield return StartCoroutine(StartEnemyTurnsCoroutine());
-
-        GameManager.Instance.CheckGameState();
-        Debug.Log("Enemy turn complete. Back to player turn.");
-        currentState = TurnState.PlayerTurn;
-
-
-        if (GameManager.Instance.players.Count == 0)
-        {
-            Debug.Log("No players found. Cannot start player turn.");
-            yield break;
-        }
-        else
-        {
-            GameManager.Instance.players[0].GetComponent<PlayerFunctionality>().OnTurnStart();
-
-            foreach (var enemy in EnemyManager.Instance.enemies)
-            {
-                enemy.GetComponent<Enemy>().virtualCamera.Priority = 9;
-            }
-
-            // Reset player movement for next turn
-            var player = FindAnyObjectByType<PlayerFunctionality>();
-            if (player != null)
-                player.ResetTurn();
-        }
-           
-    }
-
+    /// <summary>Called by UI button to advance when waitButton mode is active.</summary>
     public void WaitButtonPressed()
     {
-        if (TurnManager.Instance.currentState == TurnManager.TurnState.PlayerTurn)
+        if (currentState == TurnState.PlayerTurn)
             EndPlayerTurn();
-        else if(TurnManager.Instance.currentState == TurnManager.TurnState.EnemyTurn)
+        else if (currentState == TurnState.EnemyTurn)
             buttonPressed = true;
     }
 
-    public IEnumerator StartEnemyTurnsCoroutine()
+    /// <summary>Register an entity for combat tracking.</summary>
+    public void RegisterEntity(ICombatEntity entity)
     {
-        if (isTakingTurn)
-            yield break;
-
-        isTakingTurn = true;
-        yield return StartCoroutine(EnemyTurnRoutine());
-        isTakingTurn = false;
+        if (entity != null && !combatEntities.Contains(entity))
+        {
+            combatEntities.Add(entity);
+            Debug.Log($"[TurnManager] Registered entity: {entity.EntityName} ({entity.Faction})");
+        }
     }
 
-    private IEnumerator EnemyTurnRoutine()
+    /// <summary>Unregister an entity (death, despawn).</summary>
+    public void UnregisterEntity(ICombatEntity entity)
     {
-        buttonPressed = false;
-        isTakingTurn = true;
+        combatEntities.Remove(entity);
+    }
 
+    /// <summary>Get all registered entities of a faction.</summary>
+    public List<ICombatEntity> GetEntitiesByFaction(Faction faction)
+    {
+        return combatEntities.Where(e => e != null && e.IsAlive && e.Faction == faction).ToList();
+    }
 
+    /// <summary>Get all alive entities.</summary>
+    public List<ICombatEntity> GetAllAliveEntities()
+    {
+        return combatEntities.Where(e => e != null && e.IsAlive).ToList();
+    }
 
-        // Iterate over a copy so enemies can safely die / be removed
-        var enemiesSnapshot = new List<Enemy>(EnemyManager.Instance.enemies);
+    // ──────────────────────────────────────────────
+    // Phase Execution
+    // ──────────────────────────────────────────────
 
-        foreach (var enemy in enemiesSnapshot)
+    private IEnumerator HandlePostPlayerPhase()
+    {
+        if (GameManager.Instance.players.Count == 0) yield break;
+
+        // Phase 1: Summons act
+        if (SummonRegistry.Instance != null)
         {
-            if (enemy == null || !enemy.gameObject.activeSelf)
-                continue;
+            currentState = TurnState.SummonTurn;
+            yield return SummonRegistry.Instance.ExecuteAllSummonTurns();
+        }
+
+        // Phase 2: Enemies act
+        currentState = TurnState.EnemyTurn;
+        yield return StartCoroutine(ExecuteEnemyPhase());
+
+        // Phase 3: Post-combat check
+        GameManager.Instance.CheckGameState();
+        if (GameManager.Instance.lostGame || GameManager.Instance.GameEnded)
+            yield break;
+
+        // Phase 4: Begin new round
+        currentRound++;
+        onRoundEnd?.Invoke();
+
+        Debug.Log($"[TurnManager] Round {currentRound} complete. Player turn begins.");
+        currentState = TurnState.PlayerTurn;
+        onPlayerTurnStart?.Invoke();
+        StartPlayerTurn();
+    }
+
+    private IEnumerator ExecuteEnemyPhase()
+    {
+        if (isTakingTurn) yield break;
+        isTakingTurn = true;
+        buttonPressed = false;
+
+        // Snapshot to handle mid-turn death
+        var snapshot = new List<Enemy>(enemyManager.enemies);
+
+        foreach (var enemy in snapshot)
+        {
+            if (enemy == null || !enemy.gameObject.activeSelf) continue;
 
             var stats = enemy.GetComponent<Stats>();
-            if (stats == null || stats.health <= 0)
-                continue;
+            if (stats == null || stats.health <= 0) continue;
 
+            // Status damage at start of enemy's individual turn
             stats.TakeStatusDamage();
 
-            // Enemy may die during this call
-            yield return enemy.GetComponent<Enemy>().TakeTurn(() => { });
+            // Enemy AI turn
+            yield return enemy.TakeTurn(() => { });
 
+            // Pacing between enemy actions
             if (waitTurn)
             {
                 yield return new WaitForSeconds(waitDuration);
@@ -172,14 +195,59 @@ public class TurnManager : MonoBehaviour
             {
                 while (!buttonPressed)
                     yield return null;
-
                 buttonPressed = false;
+            }
+            else
+            {
+                yield return new WaitForSeconds(enemyActionDelay);
             }
         }
 
         isTakingTurn = false;
-        Debug.Log("All enemies finished their turns!");
+        Debug.Log("[TurnManager] All enemies finished their turns.");
     }
 
+    private void StartPlayerTurn()
+    {
+        if (GameManager.Instance.players.Count == 0) return;
 
+        var player = GameManager.Instance.players[0];
+        if (player != null)
+        {
+            var pf = player.GetComponent<PlayerFunctionality>();
+            if (pf != null) pf.OnTurnStart();
+        }
+
+        // Lower enemy camera priorities
+        if (enemyManager != null)
+        {
+            foreach (var enemy in enemyManager.enemies)
+            {
+                if (enemy != null && enemy.virtualCamera != null)
+                    enemy.virtualCamera.Priority = 9;
+            }
+        }
+
+        // Reset player movement state
+        var playerFunc = FindAnyObjectByType<PlayerFunctionality>();
+        if (playerFunc != null) playerFunc.ResetTurn();
+    }
+
+    private void ClearPlayerUI()
+    {
+        if (GameManager.Instance?.players == null) return;
+
+        foreach (var playerObj in GameManager.Instance.players)
+        {
+            if (playerObj == null) continue;
+            var pf = playerObj.GetComponent<PlayerFunctionality>();
+            if (pf != null) pf.ResetTurn();
+        }
+    }
+
+    /// <summary>Legacy coroutine entry point for backward compatibility.</summary>
+    public IEnumerator StartEnemyTurnsCoroutine()
+    {
+        yield return ExecuteEnemyPhase();
+    }
 }
